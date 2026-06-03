@@ -27,23 +27,35 @@ document.getElementById('admin-set-btn').addEventListener('click',()=>{
 const newAns=document.getElementById('admin-custom-ans').value.trim();
 if(newAns!==''){
 sessionStorage.setItem('admin_override_ans',newAns);
-alert('答えを「'+newAns+'」に設定し、ゲームをリセットします。');
+localStorage.clear();
+alert('答えを「'+newAns+'」に設定し、すべての入力値をリセットします。');
 location.reload();
 }
 });
 document.getElementById('admin-rand-btn').addEventListener('click',()=>{
 const list=window.stations||window.stationsList||window.allStations||(typeof stations!=='undefined'?stations:null);
-if(list&&list.length>0){
-const randStation=list[Math.floor(Math.random()*list.length)];
+if(list&&list.length>0&&typeof todayStation!=='undefined'&&todayStation!==null){
+const currentLength=todayStation.yomi.length;
+const filteredList=list.filter(s=>{
+const name=typeof s==='string'?s:(s.yomi||s.name);
+return name&&name.length===currentLength;
+});
+if(filteredList.length>0){
+const randStation=filteredList[Math.floor(Math.random()*filteredList.length)];
 const newAns=typeof randStation==='string'?randStation:(randStation.yomi||randStation.name);
 sessionStorage.setItem('admin_override_ans',newAns);
-alert('ランダムに「'+newAns+'」が選ばれました。ゲームをリセットします。');
+localStorage.clear();
+alert('現在の'+currentLength+'文字モードに合わせて、ランダムに「'+newAns+'」を選びました。入力値をリセットします。');
 location.reload();
 }else{
-alert('エラー：全駅データ（配列）が自動で見つかりませんでした。app.js内にある駅リストの配列名を確認してください。');
+alert('エラー：現在の文字数（'+currentLength+'文字）に一致する駅データが見つかりませんでした。');
+}
+}else{
+alert('エラー：駅データが見つからないか、ゲームがまだ読み込まれていません。');
 }
 });
 document.getElementById('admin-reset-btn').addEventListener('click',()=>{
-alert('現在のプレイ状況（入力値）をリセットします。');
+localStorage.clear();
+alert('現在のプレイ状況（入力値）を完全にリセットしました。');
 location.reload();
 });
