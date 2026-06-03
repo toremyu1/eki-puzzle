@@ -1,4 +1,5 @@
 const savedAns=sessionStorage.getItem('admin_override_ans');
+let currentLength=parseInt(sessionStorage.getItem('admin_current_length'));
 const adminPanel=document.createElement('div');
 adminPanel.id='admin-panel';
 adminPanel.style.padding='10px';
@@ -14,28 +15,54 @@ adminPanel.innerHTML=`
 <button id="admin-reset-btn">入力値リセット</button>
 `;
 document.querySelector('header').insertAdjacentElement('afterend',adminPanel);
+const getList=()=>window.stations||window.stationsList||window.allStations||(typeof stations!=='undefined'?stations:null);
 setInterval(()=>{
 if(typeof todayStation!=='undefined'&&todayStation!==null){
-if(savedAns&&todayStation.yomi!==savedAns){
-todayStation.yomi=savedAns;
-if(todayStation.name)todayStation.name=savedAns;
+if(!currentLength){
+currentLength=todayStation.yomi.length;
+sessionStorage.setItem('admin_current_length',currentLength);
 }
-document.getElementById('debug-ans-text').textContent=todayStation.yomi;
+if(savedAns&&todayStation.yomi!==savedAns){
+const list=getList();
+if(list){
+const found=list.find(s=>(typeof s==='string'?s:(s.yomi||s.name))===savedAns);
+if(found){
+if(typeof found==='string'){
+todayStation.yomi=found;
+}else{
+Object.assign(todayStation,found);
+}
+}
+}
+}
+document.getElementById('debug-ans-text').textContent=todayStation.yomi+' ('+currentLength+'文字モード)';
 }
 },100);
+const resetPlay=()=>{
+localStorage.clear();
+const keys=[];
+for(let i=0;i<sessionStorage.length;i++){
+const k=sessionStorage.key(i);
+if(k!=='admin_override_ans'&&k!=='admin_current_length')keys.push(k);
+}
+keys.forEach(k=>sessionStorage.removeItem(k));
+};
 document.getElementById('admin-set-btn').addEventListener('click',()=>{
 const newAns=document.getElementById('admin-custom-ans').value.trim();
 if(newAns!==''){
+if(newAns.length!==currentLength){
+alert('エラー：現在のモードは '+currentLength+' 文字です。'+currentLength+' 文字の駅名を入力してください。');
+return;
+}
 sessionStorage.setItem('admin_override_ans',newAns);
-localStorage.clear();
+resetPlay();
 alert('答えを「'+newAns+'」に設定し、すべての入力値をリセットします。');
 location.reload();
 }
 });
 document.getElementById('admin-rand-btn').addEventListener('click',()=>{
-const list=window.stations||window.stationsList||window.allStations||(typeof stations!=='undefined'?stations:null);
-if(list&&list.length>0&&typeof todayStation!=='undefined'&&todayStation!==null){
-const currentLength=todayStation.yomi.length;
+const list=getList();
+if(list&&list.length>0&&currentLength){
 const filteredList=list.filter(s=>{
 const name=typeof s==='string'?s:(s.yomi||s.name);
 return name&&name.length===currentLength;
@@ -44,18 +71,18 @@ if(filteredList.length>0){
 const randStation=filteredList[Math.floor(Math.random()*filteredList.length)];
 const newAns=typeof randStation==='string'?randStation:(randStation.yomi||randStation.name);
 sessionStorage.setItem('admin_override_ans',newAns);
-localStorage.clear();
-alert('現在の'+currentLength+'文字モードに合わせて、ランダムに「'+newAns+'」を選びました。入力値をリセットします。');
+resetPlay();
+alert(currentLength+'文字の駅「'+newAns+'」をランダムに選びました。入力値をリセットします。');
 location.reload();
 }else{
-alert('エラー：現在の文字数（'+currentLength+'文字）に一致する駅データが見つかりませんでした。');
+alert('エラー：'+currentLength+'文字の駅データが見つかりません。');
 }
 }else{
-alert('エラー：駅データが見つからないか、ゲームがまだ読み込まれていません。');
+alert('エラー：駅データが見つからないか、文字数モードが確定していません。');
 }
 });
 document.getElementById('admin-reset-btn').addEventListener('click',()=>{
-localStorage.clear();
+resetPlay();
 alert('現在のプレイ状況（入力値）を完全にリセットしました。');
 location.reload();
 });
