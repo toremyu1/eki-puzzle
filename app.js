@@ -351,12 +351,12 @@ return true;
 });
 if(guess!==todayStation.yomi && !isRestore){
 let count=availableStations.length;
-let htmlMsg=`<div style="display:flex; flex-direction:column; align-items:center; font-size:16px; font-weight:bold; color:#333; text-shadow:1px 1px 0 #fff, -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff;">
-<div style="margin-bottom:5px; letter-spacing:2px;">残り候補</div>
-<div style="width:75px; height:75px; border-radius:50%; background-color:#fff; border:4px solid #6aaa64; display:flex; justify-content:center; align-items:center; box-shadow:0 4px 10px rgba(0,0,0,0.3);">
-<span style="color:#e53935; font-size:36px; font-weight:900; text-shadow:none;">${count}</span>
+let htmlMsg=`<div style="display:flex; justify-content:center; align-items:center;">
+<div style="width:110px; height:110px; border-radius:50%; background-color:rgba(255,255,255,0.95); border:4px solid #6aaa64; display:flex; flex-direction:column; justify-content:center; align-items:center; box-shadow:0 4px 10px rgba(0,0,0,0.3);">
+<div style="font-size:12px; font-weight:bold; color:#666; margin-bottom:-2px;">残り候補</div>
+<div style="color:#e53935; font-size:32px; font-weight:900; margin:0; line-height:1.2;">${count}</div>
+<div style="font-size:12px; font-weight:bold; color:#666; margin-top:-2px;">駅</div>
 </div>
-<div style="margin-top:5px; letter-spacing:2px;">駅</div>
 </div>`;
 showMessage(htmlMsg,"transparent","none","none");
 }
