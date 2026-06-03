@@ -340,8 +340,8 @@ if(guess!==todayStation.yomi && !isRestore){
 let count=availableStations.length;
 let htmlMsg=`<div style="display:flex; flex-direction:column; align-items:center; font-size:16px; font-weight:bold; color:#333; text-shadow:1px 1px 0 #fff, -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff;">
 <div style="margin-bottom:5px; letter-spacing:2px;">残り候補</div>
-<div style="width:75px; height:75px; border-radius:50%; background-color:#fff; border:4px solid #6aaa64; display:flex; justify-content:center; align-items:center; box-shadow:0 4px 10px rgba(0,0,0,0.3);">
-<span style="color:#e53935; font-size:36px; font-weight:900; text-shadow:none;">${count}</span>
+<div style="width:85px; height:85px; border-radius:50%; background-color:#fff; border:4px solid #6aaa64; display:flex; justify-content:center; align-items:center; box-shadow:0 4px 10px rgba(0,0,0,0.3);">
+<span style="color:#e53935; font-size:28px; font-weight:900; text-shadow:none;">${count}</span>
 </div>
 <div style="margin-top:5px; letter-spacing:2px;">駅</div>
 </div>`;
