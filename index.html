@@ -7,6 +7,12 @@
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
+<div id="admin-panel" style="display:none; padding:10px; background:#ffebee; border:2px solid #f44336; margin-bottom:15px;">
+<b>🛠 管理者モード</b><br>
+現在の答え: <span id="debug-ans-text"></span><br>
+<input type="text" id="admin-custom-ans" placeholder="新しい答え(ひらがな)">
+<button id="admin-set-btn">答えを強制変更</button>
+</div>
 <header>
 <div style="display:flex; justify-content:space-between; width:100%; max-width:375px; margin:0 auto 5px;">
 <div style="display:flex; gap:5px;">
