@@ -416,7 +416,7 @@ navigator.clipboard.writeText(text).then(()=>showMessage("クリップボード�
 window.addEventListener("DOMContentLoaded",initGame);
 
 const urlParams = new URLSearchParams(window.location.search);
-if(urlParams.get('mode') === 'admin') {
+if(urlParams.get('mode') === 'admin' && window.location.hostname.includes('pages.dev')) {
 document.getElementById('admin-panel').style.display = 'block';
 document.getElementById('debug-ans-text').textContent = targetWord;
 }
