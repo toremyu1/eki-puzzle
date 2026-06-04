@@ -498,7 +498,20 @@ variants.push(base); variants.forEach(v=>updateKeyColor(v,"absent"));
 }
 // この入力によって、正解の可能性がある残りの駅が全国にいくつあるかを絞り込む
 filterAvailableStations(currentGuess,resultColors,isRestore);
-// 見事、すべての文字が一致（正解）した場合の勝利処理
+// ここからパネルの色カウント処理
+let achColor = JSON.parse(localStorage.getItem("ekiAchievements"));
+if(!achColor.colorCounts) achColor.colorCounts = {"4":{"correct":0,"present":0,"diacritic":0,"absent":0},"5":{"correct":0,"present":0,"diacritic":0,"absent":0},"6":{"correct":0,"present":0,"diacritic":0,"absent":0}};
+if(!achColor.colorCounts[currentMode]) achColor.colorCounts[currentMode] = {"correct":0,"present":0,"diacritic":0,"absent":0};
+let lastColors = gridHistory[gridHistory.length - 1];
+if(lastColors){
+  lastColors.forEach(color => {
+    if(achColor.colorCounts[currentMode][color] !== undefined) {
+      achColor.colorCounts[currentMode][color]++;
+    }
+  });
+  localStorage.setItem("ekiAchievements", JSON.stringify(achColor));
+}
+// すべての文字が一致した場合の処理
 if(currentGuess===todayStation.yomi){
   let actualGuesses=guessesSubmitted+1;
   guessesSubmitted=maxGuesses;
@@ -872,4 +885,13 @@ function incrementClearAchievements(actualGuesses, clearTimeMs) {
   
   // 最後に、新しく計算し終わった実績データをLocalStorageに一括で上書き保存します
   localStorage.setItem("ekiAchievements", JSON.stringify(ach));
+  
+  // --- 8. クリア済みインデックスの記録（文字数モード別） ---
+  let clearedData = JSON.parse(localStorage.getItem("ekiClearedDays") || '{"4":[],"5":[],"6":[]}');
+  if (!clearedData[currentMode]) clearedData[currentMode] = [];
+  if (!clearedData[currentMode].includes(currentDayIndex)) {
+    clearedData[currentMode].push(currentDayIndex);
+    clearedData[currentMode].sort((a, b) => a - b);
+    localStorage.setItem("ekiClearedDays", JSON.stringify(clearedData));
+  }
 }
