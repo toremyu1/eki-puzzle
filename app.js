@@ -110,8 +110,8 @@ function toHiragana(str){ return str.replace(/[ァ-ン]/g,m=>String.fromCharCode
 //画面読み込み時に最初に実行され、データ準備やボタン登録などを行う
 async function initGame(){
 try{
-//全プレイヤーの戦績データをパソコンから読み込む
-loadStats();
+loadStats();　　　　　　　//全プレイヤーの戦績データをパソコンから読み込む
+updateLoginStreak(); 　　//連続ログイン日数をカウント
 //すべての駅データが書かれた「station.json」ファイルをインターネット経由で読み込む
 const res=await fetch('stations.json');
 const raw=await res.json();
@@ -184,9 +184,11 @@ selectTodayStation(); restoreBoard(); checkSpecialEvent();
 }catch(e){ console.error("データエラー:",e); }
 }
 
+
 // ==========================================
 // パソコン（ブラウザ）へデータを保存・読み込み
 // ==========================================
+
 //保存されている過去の戦績データを読み込む
 function loadStats(){
 const saved=localStorage.getItem("ekiPuzzleStatsV2");
@@ -246,7 +248,11 @@ function loadGameState(dayIdx){
   localStorage.setItem("ekiPuzzleStateV1_Log",JSON.stringify(logData));
 }
 
-//5.今日の正解駅を決定する処理
+
+// ==========================================
+// 今日の正解駅を決定する処理
+// ==========================================
+
 //今日出題する駅を、日付をもとにした乱数シードにより1つ決定
 function selectTodayStation(){
 const modeStations=stations.filter(s=>s.yomi.length===currentMode);
@@ -279,7 +285,11 @@ if(d===currentDayIndex)todayStation=candidate;
 console.log(`※${currentMode}文字の答え:`,todayStation.kanji,todayStation.yomi);
 }
 
-//6.入力タイルとキーボード組み立て処理
+
+// ==========================================
+// 入力タイルとキーボード組み立て処理
+// ==========================================
+
 //入力タイル（四角いマス目）を画面に並べる処理
 function drawBoard(){
 const board=document.getElementById("game-board");
@@ -356,6 +366,7 @@ st.guesses.forEach(g=>{ currentGuess=g; submitGuess(true); });
 currentGuess="";
 }
 
+
 // ==========================================
 // プレイヤーの入力を処理する
 // ==========================================
@@ -392,6 +403,7 @@ function updateTiles(){
   }
 }
 
+
 // ==========================================
 // 文字の色判定処理
 // ==========================================
@@ -424,6 +436,7 @@ if(baseTargetCounts[bg]>0){ results[i]="diacritic"; baseTargetCounts[bg]--; }
 return results;
 }
 
+
 //==========================================
 //図鑑データを更新・保存するための専用の処理
 //==========================================
@@ -439,6 +452,7 @@ zukan[yomi]={status:status, date:todayStr};
 localStorage.setItem("ekiZukanData",JSON.stringify(zukan));
 }
 }
+
 
 // ==========================================
 // 9. 回答を送信したときの処理とゲームの勝敗判定
@@ -543,7 +557,11 @@ showMessage(htmlMsg,"transparent","none","none");
 }
 }
 
-//10.メッセージ表示と結果ウィンドウ
+
+// ==========================================
+// メッセージ表示と結果ウィンドウ
+// ==========================================
+
 //画面の中央に「〇〇文字入力してください」などの案内ポップアップを一時的に出す
 function showMessage(text, bg="rgba(0,0,0,0.85)", border="1px solid rgba(255,255,255,0.2)", shadow="0 8px 16px rgba(0,0,0,0.3)"){
 const box=document.getElementById("message-box");
