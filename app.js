@@ -335,25 +335,54 @@ if(baseTargetCounts[bg]>0){ results[i]="diacritic"; baseTargetCounts[bg]--; }
 return results;
 }
 
-//9.回答送信時のパネル判定とゲームの勝敗判定
-//プレイヤーが「回答」ボタンを押したときに、実際の答え合わせと画面への色付けを行う
+//==========================================
+//図鑑データを更新・保存するための専用の処理
+//==========================================
+//駅の読みがなと状態（1=遭遇、2=的中）を受け取ってパソコンに記録する
+function updateZukan(yomi, status){
+const savedZukan=localStorage.getItem("ekiZukanData");
+let zukan=savedZukan?JSON.parse(savedZukan):{};
+let todayStr=new Date().toISOString().split('T')[0];
+let currentStatus=zukan[yomi]?zukan[yomi].status:0;
+//以前より良い状態（未発見→遭遇、遭遇→的中）になった場合のみ上書き保存する
+if(status>currentStatus){
+zukan[yomi]={status:status, date:todayStr};
+localStorage.setItem("ekiZukanData",JSON.stringify(zukan));
+}
+}
+
+// ==========================================
+// 9. 回答を送信したときの処理とゲームの勝敗判定
+// ==========================================
+// プレイヤーが「回答」ボタンを押したときに、実際の答え合わせと画面への色付けを行う
 function submitGuess(isRestore=false){
-//入力された駅名が、その文字数の実在する駅名リストにあるかチェックする
+// 入力された駅名が、その文字数の実在する駅名リストにあるかチェック
 const isValid=stations.filter(s=>s.yomi.length===currentMode).some(s=>s.yomi===currentGuess);
 if(!isValid){ if(!isRestore)showMessage("実在しない駅名です"); return; }
 let st=savedState[currentMode];
-if(!isRestore){ st.guesses.push(currentGuess); localStorage.setItem("ekiPuzzleStateV1",JSON.stringify(savedState)); }
-//上で定義した文字判定ロジックを使って、各マスの色を取得する
+if(!isRestore){ 
+st.guesses.push(currentGuess); 
+localStorage.setItem("ekiPuzzleStateV1",JSON.stringify(savedState)); 
+// 【実績用】これまでに入力したすべての実在駅名を重複しないようにリストへ保存
+let allGuessed=JSON.parse(localStorage.getItem("ekiAllGuesses")||"[]");
+if(!allGuessed.includes(currentGuess)){
+allGuessed.push(currentGuess);
+localStorage.setItem("ekiAllGuesses",JSON.stringify(allGuessed));
+}
+// 【図鑑用】実在する駅を入力したので、図鑑に「青色：遭遇（ステータス1）」として記録
+updateZukan(currentGuess, 1);
+}
+// 文字判定ロジックを使って、各マスの色を取得
 const resultColors=evaluateGuess(currentGuess,todayStation.yomi);
 gridHistory.push(resultColors);
-//ゲーム盤のマス目に色のアニメーションクラスをつけ、キーボードのボタンの色も連動して更新する
+// ゲーム盤のマス目に色のアニメーションクラスをつけ、キーボードのボタンの色も連動して更新
 for(let j=0;j<rowLength;j++){
 const tile=document.getElementById(`row-${guessesSubmitted}-tile-${j}`);
 tile.textContent=currentGuess[j];
 tile.classList.add(resultColors[j]);
 const char=currentGuess[j]; const color=resultColors[j];
 updateKeyColor(char,color);
-//もしその文字が全く含まれていなければ、その文字の濁点・半濁点・小文字も一括でキーボード上で灰色にする
+// もしその文字が全く含まれていなければ、その文字の濁点版なども一括でキーボード上で黒にする
 if(color==="absent"){
 let base=getBaseChar(char);
 let targetBaseChars=todayStation.yomi.split("").map(getBaseChar);
@@ -363,13 +392,15 @@ variants.push(base); variants.forEach(v=>updateKeyColor(v,"absent"));
 }
 }
 }
-//この入力によって、正解の可能性がある残りの駅が全国にいくつあるかを絞り込む
+// この入力によって、正解の可能性がある残りの駅が全国にいくつあるかを絞り込む
 filterAvailableStations(currentGuess,resultColors,isRestore);
-//すべての文字が一致（正解）した場合の勝利処理
+// 見事、すべての文字が一致（正解）した場合の勝利処理
 if(currentGuess===todayStation.yomi){
 let actualGuesses=guessesSubmitted+1;
 guessesSubmitted=maxGuesses;
 if(!isRestore){
+// 【図鑑用】見事正解したので、図鑑に「金色：的中（ステータス2）」として上書き記録
+updateZukan(todayStation.yomi, 2);
 st.isOver=true; st.isWin=true; saveStats(true,actualGuesses); localStorage.setItem("ekiPuzzleStateV1",JSON.stringify(savedState));
 let winHtml=`<div style="font-size:24px; font-weight:bold; color:#fff; letter-spacing:2px;">正解！🎉</div>`;
 showMessage(winHtml,"#ff9800","none","0 4px 10px rgba(0,0,0,0.3)");
@@ -379,9 +410,11 @@ return;
 }
 guessesSubmitted++;
 if(!isRestore) currentGuess="";
-//回答回数が上限に達してしまい、ゲームオーバーになった場合の処理
+// 回答回数が上限に達してしまい、ゲームオーバーになった場合の処理
 if(guessesSubmitted===maxGuesses){
 if(!isRestore){
+// 【図鑑用】ゲームオーバーで答えを見たので、正解の駅を図鑑に「青色：遭遇（ステータス1）」として記録
+updateZukan(todayStation.yomi, 1);
 st.isOver=true; st.isWin=false; saveStats(false,0); localStorage.setItem("ekiPuzzleStateV1",JSON.stringify(savedState));
 setTimeout(()=>showResultModal(false,false),1000);
 }
