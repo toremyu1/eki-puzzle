@@ -103,7 +103,7 @@ themeIdx=(themeIdx+1)%themes.length;
 if(themes[themeIdx]!=="")document.body.classList.add(themes[themeIdx]);
 localStorage.setItem("ekiTheme",themes[themeIdx]);
 });
-selectTodayStation(); restoreBoard();
+selectTodayStation(); restoreBoard(); checkSpecialEvent();
 }catch(e){ console.error("データエラー:",e); }
 }
 
@@ -449,3 +449,49 @@ navigator.clipboard.writeText(text).then(()=>showMessage("クリップボード�
 }
 }
 window.addEventListener("DOMContentLoaded",initGame);
+
+//行事日エフェクト（※anniversaryは書き換える）
+window.triggerEventEffect=(ev)=>{
+document.body.className=document.body.className.replace(/event-\w+/g,"");
+let c=document.getElementById("event-container");
+if(c)c.remove();
+if(!ev)return;
+document.body.classList.add("event-"+ev);
+if(["newyear","hinamatsuri","kodomo","tanabata","nye","anniversary","christmas"].includes(ev)){
+c=document.createElement("div");
+c.id="event-container";
+document.body.appendChild(c);
+let char="❄️";
+if(ev==="hinamatsuri"||ev==="anniversary")char="🌸";
+if(ev==="newyear")char="🎍";
+if(ev==="kodomo")char="🎏";
+if(ev==="tanabata")char="🎋";
+if(ev==="nye")char="🔔";
+for(let i=0;i<30;i++){
+let p=document.createElement("div");
+p.className="particle";
+p.innerText=char;
+p.style.left=Math.random()*100+"vw";
+p.style.animationDuration=(Math.random()*4+2)+"s";
+p.style.fontSize=(Math.random()*15+15)+"px";
+p.style.opacity=Math.random()*0.5+0.5;
+c.appendChild(p);
+}
+}
+};
+const checkSpecialEvent=()=>{
+const d=new Date();const m=d.getMonth()+1;const day=d.getDate();
+let ev="";
+if(m===1&&day<=3)ev="newyear";
+else if(m===2&&day===14)ev="valentine";
+else if(m===3&&day===3)ev="hinamatsuri";
+else if(m===4&&day===1)ev="aprilfool";
+else if(m===5&&day===5)ev="kodomo";
+else if(m===6&&day===4)ev="anniversary";
+else if(m===7&&day===7)ev="tanabata";
+else if(m===10&&day===14)ev="railway";
+else if(m===10&&day===31)ev="halloween";
+else if(m===12&&(day===24||day===25))ev="christmas";
+else if(m===12&&day===31)ev="nye";
+window.triggerEventEffect(ev);
+};
