@@ -161,15 +161,34 @@ if(!dailyArchive[currentDayIndex]) dailyArchive[currentDayIndex]={};
 dailyArchive[currentDayIndex][currentMode]={kanji:todayStation.kanji, yomi:todayStation.yomi};
 localStorage.setItem("ekiPuzzleArchiveV1",JSON.stringify(dailyArchive));
 }
-//ゲームがすでにプレイ途中か終了しているか、状態を読み込む（または初期化）
+// ゲームの進行状況を日付ごとに保存・読み込みする処理です
 function loadGameState(dayIdx){
-const saved=localStorage.getItem("ekiPuzzleStateV1");
-if(saved){
-let parsed=JSON.parse(saved);
-if(parsed.date===String(dayIdx)){ savedState=parsed; return; }
+const savedLog=localStorage.getItem("ekiPuzzleStateV1_Log");
+let logData=savedLog?JSON.parse(savedLog):{};
+let todayStr=new Date().toISOString().split('T')[0];
+// 累計ログイン日数などのカウント用データを読み込みます
+let meta=JSON.parse(localStorage.getItem("ekiZukanMeta")||'{"totalLogins":0,"lastLoginDate":""}');
+if(meta.lastLoginDate!==todayStr){
+meta.totalLogins++;
+meta.lastLoginDate=todayStr;
+localStorage.setItem("ekiZukanMeta",JSON.stringify(meta));
 }
-savedState={ date:String(dayIdx), 4:{guesses:[],isWin:false,isOver:false}, 5:{guesses:[],isWin:false,isOver:false}, 6:{guesses:[],isWin:false,isOver:false} };
-localStorage.setItem("ekiPuzzleStateV1",JSON.stringify(savedState));
+if(logData[dayIdx]){
+savedState=logData[dayIdx];
+return;
+}
+// その日初めてアクセスした瞬間に、時間のリストや過去問識別の目印を含めた初期データを記録します
+savedState={ 
+date:String(dayIdx), 
+isDaily:true,
+startTime:Date.now(),
+endTime:null,
+4:{guesses:[],guessTimes:[],isWin:false,isOver:false}, 
+5:{guesses:[],guessTimes:[],isWin:false,isOver:false}, 
+6:{guesses:[],guessTimes:[],isWin:false,isOver:false} 
+};
+logData[dayIdx]=savedState;
+localStorage.setItem("ekiPuzzleStateV1_Log",JSON.stringify(logData));
 }
 
 //5.今日の正解駅を決定する処理
@@ -362,6 +381,7 @@ if(!isValid){ if(!isRestore)showMessage("実在しない駅名です"); return; 
 let st=savedState[currentMode];
 if(!isRestore){ 
 st.guesses.push(currentGuess); 
+st.guessTimes.push(Date.now());
 localStorage.setItem("ekiPuzzleStateV1",JSON.stringify(savedState)); 
 // 【実績用】これまでに入力したすべての実在駅名を重複しないようにリストへ保存
 let allGuessed=JSON.parse(localStorage.getItem("ekiAllGuesses")||"[]");
@@ -416,7 +436,7 @@ if(guessesSubmitted===maxGuesses){
 if(!isRestore){
 // 【図鑑用】ゲームオーバーで答えを見たので、正解の駅を図鑑に「目撃（ステータス1）」として記録
 updateZukan(todayStation.yomi, 1);
-st.isOver=true; st.isWin=false; saveStats(false,0); localStorage.setItem("ekiPuzzleStateV1",JSON.stringify(savedState));
+st.isOver=true; st.isWin=false; saveStats(false,0); savedState.endTime=Date.now(); localStorage.setItem("ekiPuzzleStateV1",JSON.stringify(savedState));
 setTimeout(()=>showResultModal(false,false),1000);
 }
 }
