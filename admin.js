@@ -150,3 +150,45 @@ if(!found) output+='駅ドルの保存データがありません。';
 viewArea.textContent=output;
 viewArea.style.display='block';
 });
+
+//ローカルストレージ編集用
+setTimeout(()=>{
+let sData=JSON.parse(localStorage.getItem("ekiLoginStreak")||'{"currentStreak":0,"maxStreak":0}');
+let aData=JSON.parse(localStorage.getItem("ekiAchievements")||'{"counters":{"midnightClears":0}}');
+let cData=JSON.parse(localStorage.getItem("ekiClearedDays")||'[]');
+let setData=JSON.parse(localStorage.getItem("ekiSettings")||'{"sound":true}');
+document.getElementById("adm-cur-streak").value=sData.currentStreak||0;
+document.getElementById("adm-max-streak").value=sData.maxStreak||0;
+document.getElementById("adm-count-midnight").value=aData.counters?.midnightClears||0;
+document.getElementById("adm-set-sound").value=String(setData.sound!==false);
+document.getElementById("adm-save-streak").addEventListener("click",()=>{
+sData.currentStreak=parseInt(document.getElementById("adm-cur-streak").value,10)||0;
+sData.maxStreak=parseInt(document.getElementById("adm-max-streak").value,10)||0;
+localStorage.setItem("ekiLoginStreak",JSON.stringify(sData));
+alert("連続ログイン日数を変更しました。");
+location.reload();
+});
+document.getElementById("adm-save-achieve").addEventListener("click",()=>{
+if(!aData.counters)aData.counters={"midnightClears":0};
+aData.counters.midnightClears=parseInt(document.getElementById("adm-count-midnight").value,10)||0;
+localStorage.setItem("ekiAchievements",JSON.stringify(aData));
+alert("実績カウンターを変更しました。");
+location.reload();
+});
+document.getElementById("adm-add-clear").addEventListener("click",()=>{
+let newDay=parseInt(document.getElementById("adm-clear-day").value,10);
+if(!isNaN(newDay)&&!cData.includes(newDay)){
+cData.push(newDay);
+cData.sort((a,b)=>a-b);
+localStorage.setItem("ekiClearedDays",JSON.stringify(cData));
+alert("クリア済みインデックスに日スタンプを追加しました。");
+location.reload();
+}
+});
+document.getElementById("adm-save-set").addEventListener("click",()=>{
+setData.sound=(document.getElementById("adm-set-sound").value==="true");
+localStorage.setItem("ekiSettings",JSON.stringify(setData));
+alert("ユーザー設定を更新しました。");
+location.reload();
+});
+},500);
