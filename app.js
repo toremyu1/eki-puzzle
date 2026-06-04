@@ -476,8 +476,10 @@ isAprilFoolMode=true;
 currentMode=mLen;rowLength=mLen;maxGuesses=5;
 const gb=document.getElementById("game-board");
 gb.style.setProperty("--row-length",mLen);
-gb.style.gridTemplateColumns="repeat("+mLen+", minmax(35px, 50px))";
-gb.style.overflowX="auto";gb.style.justifyContent="flex-start";gb.style.paddingBottom="15px";
+const afs=document.createElement("style");
+afs.id="af-style";
+afs.innerHTML=".event-aprilfool #game-board{display:block!important;overflow-x:auto!important;padding-bottom:20px!important;}.event-aprilfool .row{display:grid!important;grid-template-columns:repeat("+mLen+",minmax(35px,50px))!important;gap:5px!important;margin-bottom:5px!important;width:max-content!important;margin:0 auto 5px auto!important;}";
+document.head.appendChild(afs);
 if(!userStats[mLen])userStats[mLen]={played:0,won:0,currentStreak:0,maxStreak:0,dist:[0,0,0,0,0,0,0,0,0,0]};
 if(!savedState[mLen])savedState[mLen]={board:[],guesses:[],isOver:false,isWin:false,lastDate:""};
 todayStation=longestSt;
@@ -487,8 +489,8 @@ modeArea.appendChild(bMax);
 document.querySelectorAll(".mode-btn:not(#mode-"+mLen+")").forEach(b=>{
 b.addEventListener("click",()=>{
 isAprilFoolMode=false;
-const gb=document.getElementById("game-board");
-gb.style.gridTemplateColumns="";gb.style.overflowX="visible";gb.style.justifyContent="center";gb.style.paddingBottom="0";
+const old=document.getElementById("af-style");
+if(old)old.remove();
 });
 });
 const div=document.createElement("div");
