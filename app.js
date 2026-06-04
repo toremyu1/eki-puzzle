@@ -43,6 +43,7 @@ const dakuonGroups=[
 function getBaseChar(c){return baseMap[c]||c;}
 
 function toHiragana(str){ return str.replace(/[ァ-ン]/g,m=>String.fromCharCode(m.charCodeAt(0)-0x60)); }
+
 async function initGame(){
 try{
 loadStats();
@@ -89,7 +90,19 @@ document.getElementById("copy-btn").addEventListener("click",()=>shareResult("co
 document.getElementById("close-modal-btn").addEventListener("click",()=>{
 document.getElementById("result-modal").style.display="none";
 });
-
+const themes=["","theme-dark","theme-sakura","theme-ocean","theme-green","theme-orange","theme-red","theme-blue","theme-purple"];
+let themeIdx=0;
+const savedTheme=localStorage.getItem("ekiTheme");
+if(savedTheme){
+themeIdx=themes.indexOf(savedTheme);
+if(themeIdx>-1&&savedTheme!=="")document.body.classList.add(savedTheme);
+}
+document.getElementById("theme-btn").addEventListener("click",()=>{
+if(themes[themeIdx]!=="")document.body.classList.remove(themes[themeIdx]);
+themeIdx=(themeIdx+1)%themes.length;
+if(themes[themeIdx]!=="")document.body.classList.add(themes[themeIdx]);
+localStorage.setItem("ekiTheme",themes[themeIdx]);
+});
 selectTodayStation(); restoreBoard();
 }catch(e){ console.error("データエラー:",e); }
 }
