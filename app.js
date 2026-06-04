@@ -430,7 +430,11 @@ distHTML+=`<div style="display:flex;align-items:center;margin-bottom:4px;">
 }
 document.getElementById("guess-distribution").innerHTML=distHTML;
 const grid=document.getElementById("modal-grid");
-grid.innerHTML=gridHistory.map(row=>row.map(c=>colorToEmoji[c]).join("")).join("<br>");
+let gridHTML=gridHistory.map((row,i)=>{
+let r=row.map(c=>colorToEmoji[c]).join("");
+return (isWin&&i===gridHistory.length-1)?r+"💮":r;
+}).join("<br>");
+grid.innerHTML=gridHTML;
 document.getElementById("result-modal").style.display="flex";
 }
 
