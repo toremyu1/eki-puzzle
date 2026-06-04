@@ -17,7 +17,7 @@ let savedState={};　　　　　　//各文字のモードで今日のゲーム
 let ekiSettings=JSON.parse(localStorage.getItem("ekiSettings")||'{"theme":"","sound":true,"fontSize":"normal"}');　　　//ユーザー設定を保存する箱
 let ekiLoginStreak=JSON.parse(localStorage.getItem("ekiLoginStreak")||'{"currentStreak":0,"maxStreak":0,"lastLoginDate":""}');　　//連続ログイン日数を保存する箱
 let ekiClearedDays=JSON.parse(localStorage.getItem("ekiClearedDays")||'[]');　　　//クリアした日を保存する箱
-let ekiAchievements=JSON.parse(localStorage.getItem("ekiAchievements")||'{"bestScores":{"4":{"minGuesses":8,"bestTimeMs":9999999},"5":{"minGuesses":6,"bestTimeMs":9999999},"6":{"minGuesses":6,"bestTimeMs":9999999}},"counters":{"midnightClears":0,"legendStationClears":0,"terminalStationClears":0,"eventClears":0,"anniversaryClears":0},"unlockedSets":{"prefs":[],"companies":[],"clearedEvents":[]}}');　　//ベストスコアやログイン日など細かい記録を保存する箱
+let ekiAchievements=JSON.parse(localStorage.getItem("ekiAchievements")||'{"bestScores":{},"counters":{"legendStationClears":0,"noAbsentClears":0,"totalYomiLength":0,"noHintClears":0,"hintUsedClears":0,"totalSubmitCount":0},"winStreak":{"currentStreak":0,"maxStreak":0,"lastClearedDate":""},"hourlyClears":{},"unlockedSets":{"prefs":[],"companies":[],"lines":[],"clearedEvents":[],"clearedMonthDays":[],"clearedStationNames":[]}}');　　// 実績データの全体構造を定義
 //各文字数モード毎の累計プレイ回数、勝率、連勝記録、最大連勝、何回目で当たったかを記録する箱
 let userStats={　　　　　　　
 4:{played:0,won:0,currentStreak:0,maxStreak:0,dist:[0,0,0,0,0,0,0,0,0,0]},
@@ -507,6 +507,7 @@ if(currentGuess===todayStation.yomi){
     // 【図鑑用】見事正解したので、図鑑に「的中（ステータス3）」として上書き記録
     updateZukan(todayStation.yomi, 3);
     st.isOver=true; st.isWin=true; saveStats(true,actualGuesses); localStorage.setItem("ekiPuzzleStateV1",JSON.stringify(savedState));
+    //【実績用】実績を追加する
     incrementClearAchievements(actualGuesses, (st.endTime - st.startTime));
     //正解時メッセージの処理
     let winHtml=`<div style="font-size:24px; font-weight:bold; color:#fff; letter-spacing:2px;">正解！🎉</div>`;
