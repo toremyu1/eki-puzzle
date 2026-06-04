@@ -119,17 +119,17 @@ document.getElementById("result-modal").style.display="none";
 //「パレット」ボタンが押されたときに画面全体のテーマカラーを順番に変更する
 const themes=["","theme-dark","theme-sakura","theme-ocean","theme-green","theme-orange","theme-red","theme-blue","theme-purple"];
 let themeIdx=0;
-const savedTheme=localStorage.getItem("ekiTheme");
-if(savedTheme){
-themeIdx=themes.indexOf(savedTheme);
-if(themeIdx>-1&&savedTheme!=="")document.body.classList.add(savedTheme);
+if(ekiSettings.theme){
+themeIdx=themes.indexOf(ekiSettings.theme);
+if(themeIdx>-1&&ekiSettings.theme!=="")document.body.classList.add(ekiSettings.theme);
 }
 document.getElementById("theme-btn").addEventListener("click",()=>{
 document.body.className=document.body.className.replace(/event-\w+/g,"");
 if(themes[themeIdx]!=="")document.body.classList.remove(themes[themeIdx]);
 themeIdx=(themeIdx+1)%themes.length;
 if(themes[themeIdx]!=="")document.body.classList.add(themes[themeIdx]);
-localStorage.setItem("ekiTheme",themes[themeIdx]);
+ekiSettings.theme=themes[themeIdx];
+localStorage.setItem("ekiSettings",JSON.stringify(ekiSettings));
 });
 //最後に、今日の正解駅を選び、ゲーム盤を作り、行事日かどうかを調べる
 selectTodayStation(); restoreBoard(); checkSpecialEvent();
