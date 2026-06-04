@@ -560,7 +560,7 @@ document.getElementById("guess-distribution").innerHTML=distHTML;
 const grid=document.getElementById("modal-grid");
 let gridHTML=gridHistory.map((row,i)=>{
 let r=row.map(c=>colorToEmoji[c]).join("");
-return (isWin&&i===gridHistory.length-1)?r+"💮":r;
+return r;
 }).join("<br>");
 grid.innerHTML=gridHTML;
 document.getElementById("result-modal").style.display="flex";
