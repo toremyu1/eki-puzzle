@@ -14,6 +14,10 @@ let msgTimeout=null;　　　　 //画面にポップアップを出した後、
 let currentDayIndex=0;　　　 //基準日から数えて今日が何日目かを表す数字
 let isAprilFoolMode=false;　 //今がエイプリルフール限定モードを判定するためのフラグ
 let savedState={};　　　　　　//各文字のモードで今日のゲームの途中経過を保存する箱
+let ekiSettings=JSON.parse(localStorage.getItem("ekiSettings")||'{"theme":"","sound":true,"fontSize":"normal"}');　　　//ユーザー設定を保存する箱
+let ekiLoginStreak=JSON.parse(localStorage.getItem("ekiLoginStreak")||'{"currentStreak":0,"maxStreak":0,"lastLoginDate":""}');　　//連続ログイン日数を保存する箱
+let ekiClearedDays=JSON.parse(localStorage.getItem("ekiClearedDays")||'[]');　　　//クリアした日を保存する箱
+let ekiAchievements=JSON.parse(localStorage.getItem("ekiAchievements")||'{"bestScores":{"4":{"minGuesses":8,"bestTimeMs":9999999},"5":{"minGuesses":6,"bestTimeMs":9999999},"6":{"minGuesses":6,"bestTimeMs":9999999}},"counters":{"midnightClears":0,"legendStationClears":0,"terminalStationClears":0,"eventClears":0,"anniversaryClears":0},"unlockedSets":{"prefs":[],"companies":[],"clearedEvents":[]}}');　　//ベストスコアやログイン日など細かい記録を保存する箱
 //各文字数モード毎の累計プレイ回数、勝率、連勝記録、最大連勝、何回目で当たったかを記録する箱
 let userStats={　　　　　　　
 4:{played:0,won:0,currentStreak:0,maxStreak:0,dist:[0,0,0,0,0,0,0,0,0,0]},
