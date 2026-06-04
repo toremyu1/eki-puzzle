@@ -539,24 +539,26 @@ bMax.style.backgroundColor="#e91e63";bMax.style.color="#fff";bMax.style.border="
 bMax.addEventListener("click",()=>{
 document.querySelectorAll(".mode-btn").forEach(b=>b.classList.remove("active"));
 bMax.classList.add("active");
-isAprilFoolMode=true;
-currentMode=mLen;rowLength=mLen;maxGuesses=4;
+isAprilFoolMode=true;　　　//現在エイプリルフールモードで遊んでいるというフラグをオンにする
+currentMode=mLen;rowLength=mLen;maxGuesses=4;　　
 const gb=document.getElementById("game-board");
 gb.style.setProperty("--row-length",mLen);
 const afs=document.createElement("style");
 afs.id="af-style";
 afs.innerHTML=".event-aprilfool #game-board{display:block!important;width:100%!important;max-width:100vw!important;overflow-x:auto!important;padding-bottom:20px!important;box-sizing:border-box!important;}.event-aprilfool .board-row{display:grid!important;grid-template-columns:repeat("+mLen+",60px)!important;gap:5px!important;margin-bottom:5px!important;width:max-content!important;margin-left:auto!important;margin-right:auto!important;padding:0 10px!important;}.event-aprilfool .tile{width:60px!important;height:60px!important;font-size:24px!important;}";
 document.head.appendChild(afs);
-//最長文字数モードでのプレイ実績（勝率などのデータ）を保存する場所がまだ無ければ、新しく用意します
+//最長文字数モードでのプレイ実績と途中経過を保存する場所がまだ無ければ、新しく用意する
 if(!userStats[mLen])userStats[mLen]={played:0,won:0,currentStreak:0,maxStreak:0,dist:[0,0,0,0,0,0,0,0,0,0]};
 if(!savedState[mLen])savedState[mLen]={board:[],guesses:[],isOver:false,isWin:false,lastDate:""};
-todayStation=longestSt;
-restoreBoard();
+todayStation=longestSt;　　//ランダムに選んだ最長駅名を、正解駅としてセットする
+restoreBoard();　　　　　　//ゲーム盤とキーボードの表示を、新しくセットした最長文字数モード用にすべてリセットして描き直す
 });
-modeArea.appendChild(bMax);
+modeArea.appendChild(bMax);　　//出来上がった最長文字数ボタンを、画面上のボタンエリアの一番後ろに追加して表示させる
+//最長文字数以外の「通常ボタン（4〜6文字）」がクリックされた時の動作を上書きする
 document.querySelectorAll(".mode-btn:not(#mode-"+mLen+")").forEach(b=>{
 b.addEventListener("click",()=>{
-isAprilFoolMode=false;
+isAprilFoolMode=false;　　　 　//通常モードに戻るため、エイプリルフールモードの目印をオフにします
+//エイプリルフールモード用に追加していた特別なデザイン（CSS）を削除して元に戻す
 const old=document.getElementById("af-style");
 if(old)old.remove();
 });
