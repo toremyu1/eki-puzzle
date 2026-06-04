@@ -507,6 +507,7 @@ if(currentGuess===todayStation.yomi){
     // 【図鑑用】見事正解したので、図鑑に「的中（ステータス3）」として上書き記録
     updateZukan(todayStation.yomi, 3);
     st.isOver=true; st.isWin=true; saveStats(true,actualGuesses); localStorage.setItem("ekiPuzzleStateV1",JSON.stringify(savedState));
+    incrementClearAchievements(actualGuesses, (st.endTime - st.startTime));
     //正解時メッセージの処理
     let winHtml=`<div style="font-size:24px; font-weight:bold; color:#fff; letter-spacing:2px;">正解！🎉</div>`;
     showMessage(winHtml,"#ff9800","none","0 4px 10px rgba(0,0,0,0.3)");
@@ -756,3 +757,118 @@ else if(m===12&&(day===24||day===25))ev="christmas";
 else if(m===12&&day===31)ev="nye";
 window.triggerEventEffect(ev);
 };
+
+
+// ==========================================
+// 実績カウンター
+// ==========================================
+
+// プレイヤーが正解（クリア）した瞬間に、すべての実績データを一斉に計算して更新する関数
+function incrementClearAchievements(actualGuesses, clearTimeMs) {
+  // 保存されている実績データを読み込み、無ければ初期構造を作ります
+  let ach = JSON.parse(localStorage.getItem("ekiAchievements") || '{"bestScores":{},"counters":{"legendStationClears":0,"noAbsentClears":0,"totalYomiLength":0,"noHintClears":0,"hintUsedClears":0,"totalSubmitCount":0},"winStreak":{"currentStreak":0,"maxStreak":0,"lastClearedDate":""},"hourlyClears":{},"unlockedSets":{"prefs":[],"companies":[],"lines":[],"clearedEvents":[],"clearedMonthDays":[],"clearedStationNames":[]}}');
+  
+  // --- 1. 将来のモード（3文字、7文字など）に自動対応する処理 ---
+  if (!ach.bestScores[currentMode]) {
+    ach.bestScores[currentMode] = { "minGuesses": 8, "bestTimeMs": 9999999 };
+  }
+  
+  // --- 2. 最小手数と最速クリアタイムの更新 ---
+  if (actualGuesses < ach.bestScores[currentMode].minGuesses) {
+    ach.bestScores[currentMode].minGuesses = actualGuesses;
+  }
+  if (clearTimeMs < ach.bestScores[currentMode].bestTimeMs) {
+    ach.bestScores[currentMode].bestTimeMs = clearTimeMs;
+  }
+  
+  // --- 3. 24時間タイマー（時間帯）の集計 ---
+  // 現在の「時（0〜23）」を取得し、該当する時間帯のクリア回数を1増やします
+  const now = new Date();
+  const hour = String(now.getHours());
+  ach.hourlyClears[hour] = (ach.hourlyClears[hour] || 0) + 1;
+  
+  // --- 4. カウンター系（開業年・読み仮名数・送信数・ヒント関連）の集計 ---
+  // 正解した駅名の読み仮名の文字数を累計に加算します
+  ach.counters.totalYomiLength += todayStation.yomi.length;
+  
+  // 1900年以前の明治生まれの古い駅を正解した場合
+  if (parseInt(todayStation.open_year, 10) <= 1900) {
+    ach.counters.legendStationClears++; 
+  }
+  
+  // 今回のプレイで黒（灰タイル）を一度も出さずにストレートクリアした場合
+  let isNoAbsent = gridHistory[gridHistory.length - 1].every(c => c !== "absent");
+  if (isNoAbsent) {
+    ach.counters.noAbsentClears++; 
+  }
+  
+  // 今回のプレイでヒントを使ったかどうかを判定し、それぞれのカウンターを増やします
+  if (savedState[currentMode] && savedState[currentMode].usedHint === false) {
+    ach.counters.noHintClears++; // ノーヒントでクリアした回数
+  } else {
+    ach.counters.hintUsedClears++; // ヒントを使ってクリアした回数
+  }
+  
+  // 累計回答送信回数に、今回のクリアまでにかかった手数を加算します
+  ach.counters.totalSubmitCount += actualGuesses; 
+  
+  // --- 5. 通算連勝（1日3回クリアに対応する日付スタンプ判定） ---
+  const todayStr = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, '0') + "-" + String(now.getDate()).padStart(2, '0');
+  // 最後にクリアした日が「今日」以外の場合のみ、連勝の計算を行います
+  if (ach.winStreak.lastClearedDate !== todayStr) {
+    const yesterday = new Date(now);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = yesterday.getFullYear() + "-" + String(yesterday.getMonth() + 1).padStart(2, '0') + "-" + String(yesterday.getDate()).padStart(2, '0');
+    
+    // 最後にクリアした日が「昨日」であれば連勝を伸ばし、それ以外なら1日にリセットします
+    if (ach.winStreak.lastClearedDate === yesterdayStr) {
+      ach.winStreak.currentStreak++; 
+    } else {
+      ach.winStreak.currentStreak = 1; 
+    }
+    
+    // 最高連勝記録を上回った場合はデータを塗り替えます
+    if (ach.winStreak.currentStreak > ach.winStreak.maxStreak) {
+      ach.winStreak.maxStreak = ach.winStreak.currentStreak;
+    }
+    ach.winStreak.lastClearedDate = todayStr; // 最終クリア日を今日に更新します
+  }
+  
+  // --- 6. コレクション要素（都道府県・事業者・路線・駅名・月日）の集計 ---
+  // 配列（リスト）の中にまだ存在しない場合のみ、新しく追加（push）します
+  if (todayStation.pref && !ach.unlockedSets.prefs.includes(todayStation.pref)) {
+    ach.unlockedSets.prefs.push(todayStation.pref);
+  }
+  if (todayStation.companies) {
+    todayStation.companies.forEach(c => {
+      if (!ach.unlockedSets.companies.includes(c)) ach.unlockedSets.companies.push(c);
+    });
+  }
+  if (todayStation.lines) {
+    todayStation.lines.forEach(l => {
+      if (!ach.unlockedSets.lines.includes(l)) ach.unlockedSets.lines.push(l);
+    });
+  }
+  if (!ach.unlockedSets.clearedStationNames.includes(todayStation.kanji)) {
+    ach.unlockedSets.clearedStationNames.push(todayStation.kanji); // 駅名（新幹線全制覇などの判定用）
+  }
+  
+  // 毎月1日や周年記念などの判定用に、月日のスタンプ（例：06-05）を保存します
+  const monthDayStr = String(now.getMonth() + 1).padStart(2, '0') + "-" + String(now.getDate()).padStart(2, '0');
+  if (!ach.unlockedSets.clearedMonthDays.includes(monthDayStr)) {
+    ach.unlockedSets.clearedMonthDays.push(monthDayStr); 
+  }
+  
+  // --- 7. 行事日イベント名の集計 ---
+  // 画面のクラス名から現在のイベント名（christmasなど）を取得して保存します
+  const currentEvent = document.body.className.match(/event-(\w+)/);
+  if (currentEvent && currentEvent[1]) {
+    const evName = currentEvent[1];
+    if (!ach.unlockedSets.clearedEvents.includes(evName)) {
+      ach.unlockedSets.clearedEvents.push(evName); 
+    }
+  }
+  
+  // 最後に、新しく計算し終わった実績データをLocalStorageに一括で上書き保存します
+  localStorage.setItem("ekiAchievements", JSON.stringify(ach));
+}
