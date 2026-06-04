@@ -11,6 +11,7 @@ let gridHistory=[];
 let debugOffset=0;
 let msgTimeout=null;
 let currentDayIndex=0;
+let isAprilFoolMode=false;
 let savedState={};
 let userStats={
 4:{played:0,won:0,currentStreak:0,maxStreak:0,dist:[0,0,0,0,0,0,0,0,0,0]},
@@ -382,10 +383,12 @@ let st=userStats[currentMode];
 if(!st.dist) st.dist=[0,0,0,0,0,0,0,0,0,0];
 document.getElementById("modal-title").textContent=isWin?"正解！おめでとう！":"残念！ゲームオーバー";
 document.getElementById("modal-desc").textContent=`${todayStation.kanji} (${todayStation.yomi})`;
-let encodedStation=encodeURIComponent(encodeURIComponent(encodeURIComponent(todayStation.kanji)));
+let searchKw=typeof isAprilFoolMode!=="undefined"&&isAprilFoolMode?todayStation.pref:todayStation.kanji;
+let prText=typeof isAprilFoolMode!=="undefined"&&isAprilFoolMode?`＼ 聖地のある「${todayStation.pref}」へ巡礼して指の疲れを癒やす ／`:`＼ 正解の駅へ聖地巡礼に行こう！ ／`;
+let encodedStation=encodeURIComponent(encodeURIComponent(encodeURIComponent(searchKw)));
 let yahooUrl=`https://px.a8.net/svt/ejp?a8mat=4B5NW1+DE94S2+4ZCO+BW8O2&a8ejpredirect=https%3A%2F%2Ftravel.yahoo.co.jp%2FikCo.ashx%3Fcosid%3Dy_a8net%26surl%3Dhttps%253A%252F%252Ftravel.yahoo.co.jp%252Fsearch%253Fadc%253D1%2526discsort%253D1%2526kwd%253D${encodedStation}%2526lc%253D1%2526ppc%253D2%2526rc%253D1%2526si%253D6`;
 let yahooImp='<img border="0" width="1" height="1" src="https://www10.a8.net/0.gif?a8mat=4B5NW1+DE94S2+4ZCO+BW8O2" alt="" style="display:none;">';
-let rakutenKeyword=encodeURIComponent(encodeURIComponent(todayStation.kanji));
+let rakutenKeyword=encodeURIComponent(encodeURIComponent(searchKw));
 let rakutenUrl=`https://af.moshimo.com/af/c/click?a_id=5616621&p_id=55&pc_id=55&pl_id=624&url=https%3A%2F%2Fkw.travel.rakuten.co.jp%2Fkeyword%2FSearch.do%3Fcharset%3Dutf-8%26f_max%3D30%26l-id%3DtopC_search_keyword%26f_query%3D${rakutenKeyword}`;
 let rakutenImp='<img src="//i.moshimo.com/af/i/impression?a_id=5616621&p_id=55&pc_id=55&pl_id=624" width="1" height="1" style="border:none;" alt="" loading="lazy">';
 document.getElementById("wiki-link-container").innerHTML=`
@@ -393,7 +396,7 @@ document.getElementById("wiki-link-container").innerHTML=`
 <a href="${todayStation.url}" target="_blank" style="display:inline-block; padding:8px 12px; background-color:#e0e0e0; color:#333; text-decoration:none; border-radius:4px; font-weight:bold; font-size:12px;">Wikipediaで見る</a>
 </div>
 <div style="background-color:#fff3e0; border:1px solid #ffcc80; border-radius:6px; padding:10px; margin-bottom:5px;">
-<div style="font-size:12px; font-weight:bold; color:#e65100; margin-bottom:8px;">＼ 正解の駅へ聖地巡礼に行こう！ ／</div>
+<div style="font-size:12px; font-weight:bold; color:#e65100; margin-bottom:8px;">${prText}</div>
 <div style="display:flex; justify-content:center; gap:8px; align-items:center; flex-wrap:wrap;">
 <a href="${yahooUrl}" target="_blank" style="display:flex; justify-content:center; align-items:center; padding:8px 0; background-color:#ffffff; border:1px solid #ff0033; color:#333; text-decoration:none; border-radius:4px; font-weight:bold; font-size:12px; width:45%;">
 <img src="./yahoo_japan_icon_64.svg" alt="Y!" style="height:14px; margin-right:4px; border:none;">トラベル
@@ -456,38 +459,60 @@ window.triggerEventEffect=(ev)=>{
 document.body.className=document.body.className.replace(/event-\w+/g,"");
 let c=document.getElementById("event-container");
 if(c)c.remove();
-const titleEl=document.querySelector("h1");
-if(titleEl&&titleEl.dataset.origText)titleEl.innerText=titleEl.dataset.origText;
 if(!ev)return;
 document.body.classList.add("event-"+ev);
-if(ev==="aprilfool"&&titleEl){
-if(!titleEl.dataset.origText)titleEl.dataset.origText=titleEl.innerText;
-titleEl.innerText="嘘ドル";
+if(ev==="aprilfool"){
+let longestSt=stations.reduce((a,b)=>a.yomi.length>b.yomi.length?a:b,stations[0]);
+let mLen=longestSt.yomi.length;
+const modeArea=document.querySelector(".mode-btn").parentNode;
+if(modeArea&&!document.getElementById("mode-"+mLen)){
+const bMax=document.createElement("button");
+bMax.id="mode-"+mLen;bMax.className="mode-btn btn";bMax.innerText=mLen;
+bMax.style.backgroundColor="#e91e63";bMax.style.color="#fff";bMax.style.border="none";
+bMax.addEventListener("click",()=>{
+document.querySelectorAll(".mode-btn").forEach(b=>b.classList.remove("active"));
+bMax.classList.add("active");
+isAprilFoolMode=true;
+currentMode=mLen;rowLength=mLen;maxGuesses=5;
+const gb=document.getElementById("game-board");
+gb.style.setProperty("--row-length",mLen);
+gb.style.gridTemplateColumns="repeat("+mLen+", minmax(35px, 50px))";
+gb.style.overflowX="auto";gb.style.justifyContent="flex-start";gb.style.paddingBottom="15px";
+if(!userStats[mLen])userStats[mLen]={played:0,won:0,currentStreak:0,maxStreak:0,dist:[0,0,0,0,0,0,0,0,0,0]};
+if(!savedState[mLen])savedState[mLen]={board:[],guesses:[],isOver:false,isWin:false,lastDate:""};
+todayStation=longestSt;
+restoreBoard();
+});
+modeArea.appendChild(bMax);
+document.querySelectorAll(".mode-btn:not(#mode-"+mLen+")").forEach(b=>{
+b.addEventListener("click",()=>{
+isAprilFoolMode=false;
+const gb=document.getElementById("game-board");
+gb.style.gridTemplateColumns="";gb.style.overflowX="visible";gb.style.justifyContent="center";gb.style.paddingBottom="0";
+});
+});
+const div=document.createElement("div");
+div.style.position="fixed";div.style.top="50%";div.style.left="50%";div.style.transform="translate(-50%,-50%)";
+div.style.background="#fff";div.style.border="4px solid #e91e63";div.style.padding="25px";div.style.zIndex="10000";
+div.style.borderRadius="12px";div.style.textAlign="center";div.style.color="#333";div.style.boxShadow="0 4px 15px rgba(0,0,0,0.3)";
+div.style.width="85%";div.style.maxWidth="400px";
+div.innerHTML="<h2 style='color:#e91e63;margin-top:0;'>嘘ドルへようこそ！</h2><p style='font-size:16px;line-height:1.6;'>本日はエイプリルフール。</p><p style='font-size:16px;line-height:1.6;'>日本一長い駅名（"+mLen+"文字）を当てる<br><b>超・鬼畜モード</b>が解禁されました！</p><p style='font-size:14px;color:#555;'>画面上の「"+mLen+"」ボタンから挑戦できます。<br>横にスクロールして全文字を入力してください。<br>（※回答回数は特別に <b>5回</b> です）</p><button id='close-af-btn' class='btn' style='background:#e91e63;color:#fff;margin-top:15px;font-size:18px;'>挑戦する</button>";
+document.body.appendChild(div);
+document.getElementById("close-af-btn").addEventListener("click",()=>div.remove());
+}
 }
 if(["newyear","hinamatsuri","kodomo","tanabata","nye","anniversary","christmas","valentine","halloween","railway"].includes(ev)){
-c=document.createElement("div");
-c.id="event-container";
-document.body.appendChild(c);
+c=document.createElement("div");c.id="event-container";document.body.appendChild(c);
 let char="❄️";
 if(ev==="hinamatsuri"||ev==="anniversary")char="🌸";
-if(ev==="newyear")char="🎍";
-if(ev==="kodomo")char="🎏";
-if(ev==="tanabata")char="🎋";
-if(ev==="nye")char="🔔";
-if(ev==="valentine")char=Math.random()>0.5?"💖":"🍫";
-if(ev==="halloween")char=Math.random()>0.5?"🎃":"🦇";
-if(ev==="railway")char=Math.random()>0.5?"🚄":"🚃";
+if(ev==="newyear")char="🎍";if(ev==="kodomo")char="🎏";if(ev==="tanabata")char="🎋";if(ev==="nye")char="🔔";
+if(ev==="valentine")char=Math.random()>0.5?"💖":"🍫";if(ev==="halloween")char=Math.random()>0.5?"🎃":"🦇";if(ev==="railway")char=Math.random()>0.5?"🚄":"🚃";
 for(let i=0;i<30;i++){
-let p=document.createElement("div");
-p.className="particle";
-p.innerText=char;
-p.style.left=Math.random()*100+"vw";
-p.style.animationDuration=(Math.random()*4+2)+"s";
-p.style.fontSize=(Math.random()*15+15)+"px";
-p.style.opacity=Math.random()*0.5+0.5;
-c.appendChild(p);
+let p=document.createElement("div");p.className="particle";p.innerText=char;
+p.style.left=Math.random()*100+"vw";p.style.animationDuration=(Math.random()*4+3)+"s";
+p.style.fontSize=(Math.random()*15+15)+"px";p.style.opacity=Math.random()*0.5+0.5;c.appendChild(p);
 }
-setTimeout(()=>{if(c)c.remove();},5000);
+setTimeout(()=>{if(c)c.remove();},8000);
 }
 };
 const checkSpecialEvent=()=>{
