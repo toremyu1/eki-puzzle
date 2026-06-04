@@ -1,7 +1,7 @@
 name: Auto Update Stations
 on:
   schedule:
-    - cron: '0 19 * * *' # 毎日UTC19時（日本時間の朝4時）に実行
+    - cron: '0 18 * * *' # 毎日UTC18時（日本時間の朝3時）に実行
   workflow_dispatch:
 jobs:
   update:
