@@ -113,7 +113,7 @@ document.getElementById("close-modal-btn").addEventListener("click",()=>{
 document.getElementById("result-modal").style.display="none";
 });
 //「パレット」ボタンが押されたときに画面全体のテーマカラーを順番に変更する
-const themes=["","theme-dark","theme-sakura","theme-ocean","theme-blue","theme-green","theme-orange","theme-red","theme-purple"];
+const themes=["","theme-dark","theme-sakura","theme-ocean","theme-green","theme-orange","theme-red","theme-blue","theme-purple"];
 let themeIdx=0;
 const savedTheme=localStorage.getItem("ekiTheme");
 if(savedTheme){
