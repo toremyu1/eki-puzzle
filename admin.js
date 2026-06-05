@@ -12,22 +12,22 @@ adminPanel.innerHTML=`
 <button id="admin-rand-btn" style="margin-right:5px;">ランダム変更</button>
 <button id="admin-reset-btn" style="margin-right:5px;">入力値リセット</button>
 <button id="admin-stats-wipe-btn" style="background-color:#ffe6e6; color:#c62828; border:1px solid #c62828;">戦績全消去</button>
+
 <div style="margin-top:10px; padding:10px; background:#fff3e0; border:1px solid #ff9800; border-radius:4px;">
 <b>【全データ一覧＆直接編集】</b><br>
-<button id="adm-load-all-btn" style="margin-bottom:10px;">全データを読み込んで表示</button>
-<div id="adm-all-data-container" style="max-height:400px; overflow-y:auto; background:#fff; padding:5px; border:1px solid #ccc;"></div>
+<button id="adm-load-all-btn" style="margin-bottom:10px; padding:4px 8px;">全データを読み込んで表示</button>
+<div id="adm-all-data-container" style="max-height:400px; overflow-y:auto; background:#fff; padding:5px; border:1px solid #ccc; font-size:12px; color:#333;">ここにデータが表示されます</div>
 </div>
+
 <div style="margin-top:10px; padding:10px; background:#f5f5f5; border:1px solid #ddd; border-radius:4px; font-size:12px; color:black; text-align:left;">
-<b>【データ書き換えツール】</b><br>
+<b>【各種カウンター手動編集】</b><br>
 連続ログイン: <input type="number" id="adm-cur-streak" style="width:50px;"> 日 / 最高: <input type="number" id="adm-max-streak" style="width:50px;"> 日 <button id="adm-save-streak">保存</button><br>
-実績カウンター(深夜クリア回数): <input type="number" id="adm-count-midnight" style="width:50px;"> 回 <button id="adm-save-achieve">保存</button><br>
-クリア済インデックス(日付インデックス追加): <input type="number" id="adm-clear-day" style="width:60px;"> <button id="adm-add-clear">追加</button><br>
-通常連勝: <input type="number" id="adm-cur-streak" style="width:40px;"> 日 / 最高: <input type="number" id="adm-max-streak" style="width:40px;"> 日 <button id="adm-save-streak">保存</button><br>
 通算連勝: <input type="number" id="adm-total-streak" style="width:40px;"> 日 / 最高: <input type="number" id="adm-total-max" style="width:40px;"> 日 <button id="adm-save-total-streak">保存</button><br>
 実績[ノーヒント]: <input type="number" id="adm-count-nohint" style="width:50px;"> 回 <button id="adm-save-achieve-1">保存</button><br>
 実績[累計送信数]: <input type="number" id="adm-count-submit" style="width:50px;"> 回 <button id="adm-save-achieve-2">保存</button><br>
 ユーザー設定(音声): <select id="adm-set-sound"><option value="true">ON</option><option value="false">OFF</option></select> <button id="adm-save-set">保存</button>
 </div>
+
 <div style="margin-top:10px; padding-top:10px; border-top:1px solid #ccc;">
 <select id="admin-event-select">
 <option value="">通常（演出オフ）</option>
@@ -36,7 +36,7 @@ adminPanel.innerHTML=`
 <option value="hinamatsuri">ひなまつり（🌸）</option>
 <option value="aprilfool">エイプリルフール（反転）</option>
 <option value="kodomo">こどもの日（🎏）</option>
-<option value="anniversary">周年記念（🌸）</option>
+<option value="site_anniversary">サイト周年（🎉とヘッドマーク）</option>
 <option value="tanabata">七夕（🎋）</option>
 <option value="railway">鉄道の日（色）</option>
 <option value="halloween">ハロウィン（色）</option>
@@ -44,6 +44,7 @@ adminPanel.innerHTML=`
 <option value="nye">大晦日（🔔）</option>
 </select>
 <button id="admin-event-btn">演出テスト</button>
+<button id="admin-user-anni-btn" style="background:#e8f5e9; border:1px solid #4caf50; margin-left:10px;">個人の周年をテスト(初回日を1年前の今日にする)</button>
 </div>
 `;
 document.querySelector('header').insertAdjacentElement('afterend',adminPanel);
@@ -58,11 +59,7 @@ const list=getList();
 if(list){
 const found=list.find(s=>(typeof s==='string'?s:(s.yomi||s.name))===savedAns);
 if(found){
-if(typeof found==='string'){
-todayStation.yomi=found;
-}else{
-Object.assign(todayStation,found);
-}
+if(typeof found==='string'){todayStation.yomi=found;}else{Object.assign(todayStation,found);}
 }
 }
 }
@@ -78,197 +75,65 @@ if(k&&!k.startsWith('admin_override_ans_'))keys.push(k);
 }
 keys.forEach(k=>sessionStorage.removeItem(k));
 };
+
+// 基本ボタンの動作
 document.getElementById('admin-set-btn').addEventListener('click',()=>{
 const newAns=document.getElementById('admin-custom-ans').value.trim();
 if(newAns!==''){
-if(newAns.length!==currentLength){
-alert('エラー：現在のモードは '+currentLength+' 文字です。'+currentLength+' 文字の駅名を入力してください。');
-return;
-}
+if(newAns.length!==currentLength){alert('エラー：現在のモードは '+currentLength+' 文字です。');return;}
 sessionStorage.setItem('admin_override_ans_'+currentLength,newAns);
-resetPlay();
-alert('答えを「'+newAns+'」に設定し、すべての入力値をリセットします。');
-location.reload();
+resetPlay(); alert('答えを変更しました。'); location.reload();
 }
 });
 document.getElementById('admin-rand-btn').addEventListener('click',()=>{
 const list=getList();
 if(list&&list.length>0&&currentLength){
-const filteredList=list.filter(s=>{
-const name=typeof s==='string'?s:(s.yomi||s.name);
-return name&&name.length===currentLength;
-});
+const filteredList=list.filter(s=>{const name=typeof s==='string'?s:(s.yomi||s.name);return name&&name.length===currentLength;});
 if(filteredList.length>0){
 const randStation=filteredList[Math.floor(Math.random()*filteredList.length)];
 const newAns=typeof randStation==='string'?randStation:(randStation.yomi||randStation.name);
 sessionStorage.setItem('admin_override_ans_'+currentLength,newAns);
-resetPlay();
-alert(currentLength+'文字の駅「'+newAns+'」をランダムに選びました。入力値をリセットします。');
-location.reload();
-}else{
-alert('エラー：'+currentLength+'文字の駅データが見つかりません。');
+resetPlay(); alert('ランダムに変更しました。'); location.reload();
 }
-}else{
-alert('エラー：駅データが見つからないか、文字数モードが確定していません。');
 }
 });
-document.getElementById('admin-reset-btn').addEventListener('click',()=>{
-resetPlay();
-alert('現在のプレイ状況（入力値）を完全にリセットしました。');
-location.reload();
-});
+document.getElementById('admin-reset-btn').addEventListener('click',()=>{resetPlay();location.reload();});
 document.getElementById('admin-stats-wipe-btn').addEventListener('click',()=>{
-if(confirm('【警告】4〜6文字すべての成績データ（勝率・分布など）を完全にリセットします。よろしいですか？')){
-localStorage.removeItem('ekiPuzzleStatsV2');
-alert('全成績データを初期化しました。');
-location.reload();
-}
+if(confirm('全成績データを初期化します。よろしいですか？')){localStorage.removeItem('ekiPuzzleStatsV2');location.reload();}
 });
 
-//行事日エフェクト
+// 行事日テスト
 document.getElementById('admin-event-btn').addEventListener('click',()=>{
 const ev=document.getElementById('admin-event-select').value;
 if(window.triggerEventEffect) window.triggerEventEffect(ev);
 });
 
-//保存データ閲覧用
-document.getElementById('admin-view-storage-btn').addEventListener('click',()=>{
-const viewArea=document.getElementById('admin-storage-view');
-if(viewArea.style.display==='block'){
-viewArea.style.display='none';
-return;
-}
-let output='=== LocalStorage 保存データ ===\n\n';
-let found=false;
-for(let i=0;i<localStorage.length;i++){
-const key=localStorage.key(i);
-// 「eki」から始まる駅ドル関連のデータだけを抽出します
-if(key.startsWith('eki')){
-found=true;
-let val=localStorage.getItem(key);
-try{
-// JSONデータであれば、見やすく改行・インデントして整形します
-val=JSON.stringify(JSON.parse(val),null,2);
-}catch(e){}
-output+='【 '+key+' 】\n'+val+'\n\n';
-}
-}
-if(!found) output+='駅ドルの保存データがありません。';
-viewArea.textContent=output;
-viewArea.style.display='block';
+// 個人の周年テスト
+document.getElementById('admin-user-anni-btn').addEventListener('click', () => {
+  let meta = JSON.parse(localStorage.getItem("ekiZukanMeta") || '{}');
+  const d = new Date();
+  meta.firstPlayDate = (d.getFullYear() - 1) + "-" + String(d.getMonth() + 1).padStart(2, '0') + "-" + String(d.getDate()).padStart(2, '0');
+  localStorage.setItem("ekiZukanMeta", JSON.stringify(meta));
+  alert("初回プレイ日を「1年前の今日」に書き換えました。ページを再読み込みします。");
+  location.reload();
 });
 
-// 管理者パネルが画面に描画された後に、入力欄に現在の数値を入れ、ボタンの動作を登録する
-setTimeout(() => {
-  // 保存されているデータを読み込む（実績データは最新の構造で読み込む）
-  let sData = JSON.parse(localStorage.getItem("ekiLoginStreak") || '{"currentStreak":0,"maxStreak":0}');
-  let aData = JSON.parse(localStorage.getItem("ekiAchievements") || '{"counters":{"noHintClears":0,"totalSubmitCount":0},"winStreak":{"currentStreak":0,"maxStreak":0}}');
-  let setData = JSON.parse(localStorage.getItem("ekiSettings") || '{"sound":true}');
-  
-  // 画面の入力欄に現在のデータを入れておく
-  document.getElementById("adm-cur-streak").value = sData.currentStreak || 0;
-  document.getElementById("adm-max-streak").value = sData.maxStreak || 0;
-  
-  // 新しく追加した通算連勝、ノーヒント回数、累計送信数のデータを入力欄に入れる
-  document.getElementById("adm-total-streak").value = (aData.winStreak && aData.winStreak.currentStreak) ? aData.winStreak.currentStreak : 0;
-  document.getElementById("adm-total-max").value = (aData.winStreak && aData.winStreak.maxStreak) ? aData.winStreak.maxStreak : 0;
-  document.getElementById("adm-count-nohint").value = (aData.counters && aData.counters.noHintClears) ? aData.counters.noHintClears : 0;
-  document.getElementById("adm-count-submit").value = (aData.counters && aData.counters.totalSubmitCount) ? aData.counters.totalSubmitCount : 0;
-  
-  document.getElementById("adm-set-sound").value = String(setData.sound !== false);
-  
-  // 通常の連続ログイン日数を保存する処理
-  document.getElementById("adm-save-streak").addEventListener("click", () => {
-    sData.currentStreak = parseInt(document.getElementById("adm-cur-streak").value, 10) || 0;
-    sData.maxStreak = parseInt(document.getElementById("adm-max-streak").value, 10) || 0;
-    localStorage.setItem("ekiLoginStreak", JSON.stringify(sData));
-    alert("通常連続ログイン日数を変更しました。");
-    location.reload();
-  });
-  
-  // 【新規追加】通算連勝データを保存する処理
-  document.getElementById("adm-save-total-streak").addEventListener("click", () => {
-    if (!aData.winStreak) aData.winStreak = { "currentStreak": 0, "maxStreak": 0, "lastClearedDate": "" };
-    aData.winStreak.currentStreak = parseInt(document.getElementById("adm-total-streak").value, 10) || 0;
-    aData.winStreak.maxStreak = parseInt(document.getElementById("adm-total-max").value, 10) || 0;
-    localStorage.setItem("ekiAchievements", JSON.stringify(aData));
-    alert("通算連勝データを変更しました。");
-    location.reload();
-  });
-  
-  // 【新規追加】ノーヒントクリア回数を保存する処理
-  document.getElementById("adm-save-achieve-1").addEventListener("click", () => {
-    if (!aData.counters) aData.counters = { "noHintClears": 0 };
-    aData.counters.noHintClears = parseInt(document.getElementById("adm-count-nohint").value, 10) || 0;
-    localStorage.setItem("ekiAchievements", JSON.stringify(aData));
-    alert("ノーヒントクリア回数を変更しました。");
-    location.reload();
-  });
-  
-  // 【新規累計回答送信数を保存する処理
-  document.getElementById("adm-save-achieve-2").addEventListener("click", () => {
-    if (!aData.counters) aData.counters = { "totalSubmitCount": 0 };
-    aData.counters.totalSubmitCount = parseInt(document.getElementById("adm-count-submit").value, 10) || 0;
-    localStorage.setItem("ekiAchievements", JSON.stringify(aData));
-    alert("累計回答送信数を変更しました。");
-    location.reload();
-  });
-  
-  // ユーザー設定（音声）を保存する処理
-  document.getElementById("adm-save-set").addEventListener("click", () => {
-    setData.sound = (document.getElementById("adm-set-sound").value === "true");
-    localStorage.setItem("ekiSettings", JSON.stringify(setData));
-    alert("ユーザー設定を更新しました。");
-    location.reload();
-  });
-}, 500);
-
-
-// エディタの「読込」ボタンを押したときの処理
-document.getElementById('adm-load-key').addEventListener('click', () => {
-  // 選択されたデータの名前（キー）を取得する
-  const key = document.getElementById('adm-edit-key').value;
-  // パソコン内からデータを取得する
-  const val = localStorage.getItem(key);
-  try {
-    // 取得したデータが存在すれば、改行して綺麗に整え、テキストエリアに表示する
-    document.getElementById('adm-edit-val').value = val ? JSON.stringify(JSON.parse(val), null, 2) : "{}";
-  } catch(e) {
-    // データが壊れている場合はそのまま表示する
-    document.getElementById('adm-edit-val').value = val || "";
-  }
-});
-
-// 「全データを読み込んで表示」ボタンが押されたときの処理
+// 全データ一覧と直接編集
 document.getElementById('adm-load-all-btn').addEventListener('click', () => {
   const container = document.getElementById('adm-all-data-container');
-  container.innerHTML = ''; // 表示エリアを一度空にしてリセットする
+  container.innerHTML = '';
   let found = false;
-
-  // パソコンに保存されているすべてのデータを順番に確認する
   for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i);
-    
-    // 「eki」から始まる駅ドルのデータだけを抽出する
     if (key.startsWith('eki')) {
       found = true;
       let val = localStorage.getItem(key);
       let displayVal = val;
-      
-      try {
-        // データがJSON形式であれば、見やすく改行して整える
-        displayVal = JSON.stringify(JSON.parse(val), null, 2);
-      } catch(e) {
-        // JSON形式でなければ元の文字列のままにする
-      }
-
-      // データ1つにつき、タイトル、入力エリア、保存ボタンのセット（ブロック）を作る
+      try { displayVal = JSON.stringify(JSON.parse(val), null, 2); } catch(e) {}
       const block = document.createElement('div');
       block.style.marginBottom = '15px';
       block.style.borderBottom = '1px dashed #ccc';
       block.style.paddingBottom = '10px';
-      
-      // ブロックの中にHTML要素を流し込む
       block.innerHTML = `
         <div style="font-weight:bold; color:#d32f2f; margin-bottom:5px;">${key}</div>
         <textarea id="edit-${key}" style="width:100%; height:100px; font-family:monospace; font-size:12px; margin-bottom:5px;">${displayVal}</textarea>
@@ -276,44 +141,59 @@ document.getElementById('adm-load-all-btn').addEventListener('click', () => {
           <button id="save-${key}" style="background-color:#ffe6e6; color:#c62828; padding:4px 10px;">上書き保存</button>
         </div>
       `;
-      
-      // 完成したブロックを画面のコンテナに追加する
       container.appendChild(block);
-
-      // そのブロック専用の「上書き保存」ボタンが押されたときの処理を登録する
       document.getElementById(`save-${key}`).addEventListener('click', () => {
-        // テキストエリアに書き込まれた新しい文字列を取得する
         const newVal = document.getElementById(`edit-${key}`).value;
         try {
-          // 文字列が `{` や `[` で始まる場合、正しいJSONデータか構文チェックを行う
-          if (newVal.trim().startsWith('{') || newVal.trim().startsWith('[')) {
-            JSON.parse(newVal);
-          }
-          // 問題なければ、パソコン内のデータを上書き保存する
+          if (newVal.trim().startsWith('{') || newVal.trim().startsWith('[')) JSON.parse(newVal);
           localStorage.setItem(key, newVal);
           alert(key + " を上書き保存しました。");
         } catch(e) {
-          // 括弧の閉じ忘れなどがあればエラーを出す
-          alert("エラー：正しいJSON形式ではありません。（括弧やカンマの閉じ忘れがないか確認してください）");
+          alert("エラー：正しいJSON形式ではありません。");
         }
       });
     }
   }
-  
-  // 駅ドルのデータが1つも見つからなかった場合のメッセージ
-  if (!found) {
-    container.innerHTML = '駅ドルの保存データがありません。';
-  }
+  if (!found) container.innerHTML = '駅ドルの保存データがありません。';
 });
 
-// 「個人の周年をテスト」ボタンが押されたときの処理
-document.getElementById('admin-user-anni-btn').addEventListener('click', () => {
-  // メタデータ（初回プレイ日など）を読み込む
-  let meta = JSON.parse(localStorage.getItem("ekiZukanMeta") || '{}');
-  const d = new Date();
-  // 強制的に、初回プレイ日を「今日のちょうど1年前」に書き換える
-  meta.firstPlayDate = (d.getFullYear() - 1) + "-" + String(d.getMonth() + 1).padStart(2, '0') + "-" + String(d.getDate()).padStart(2, '0');
-  localStorage.setItem("ekiZukanMeta", JSON.stringify(meta));
-  alert("初回プレイ日を「1年前の今日」に書き換えました。ページを再読み込みします。");
-  location.reload();
-});
+// 各種カウンター読み込みと保存
+setTimeout(() => {
+  let sData = JSON.parse(localStorage.getItem("ekiLoginStreak") || '{"currentStreak":0,"maxStreak":0}');
+  let aData = JSON.parse(localStorage.getItem("ekiAchievements") || '{"counters":{"noHintClears":0,"totalSubmitCount":0},"winStreak":{"currentStreak":0,"maxStreak":0}}');
+  let setData = JSON.parse(localStorage.getItem("ekiSettings") || '{"sound":true}');
+  
+  document.getElementById("adm-cur-streak").value = sData.currentStreak || 0;
+  document.getElementById("adm-max-streak").value = sData.maxStreak || 0;
+  document.getElementById("adm-total-streak").value = (aData.winStreak && aData.winStreak.currentStreak) ? aData.winStreak.currentStreak : 0;
+  document.getElementById("adm-total-max").value = (aData.winStreak && aData.winStreak.maxStreak) ? aData.winStreak.maxStreak : 0;
+  document.getElementById("adm-count-nohint").value = (aData.counters && aData.counters.noHintClears) ? aData.counters.noHintClears : 0;
+  document.getElementById("adm-count-submit").value = (aData.counters && aData.counters.totalSubmitCount) ? aData.counters.totalSubmitCount : 0;
+  document.getElementById("adm-set-sound").value = String(setData.sound !== false);
+  
+  document.getElementById("adm-save-streak").addEventListener("click", () => {
+    sData.currentStreak = parseInt(document.getElementById("adm-cur-streak").value, 10) || 0;
+    sData.maxStreak = parseInt(document.getElementById("adm-max-streak").value, 10) || 0;
+    localStorage.setItem("ekiLoginStreak", JSON.stringify(sData)); alert("保存しました。"); location.reload();
+  });
+  document.getElementById("adm-save-total-streak").addEventListener("click", () => {
+    if (!aData.winStreak) aData.winStreak = { "currentStreak": 0, "maxStreak": 0, "lastClearedDate": "" };
+    aData.winStreak.currentStreak = parseInt(document.getElementById("adm-total-streak").value, 10) || 0;
+    aData.winStreak.maxStreak = parseInt(document.getElementById("adm-total-max").value, 10) || 0;
+    localStorage.setItem("ekiAchievements", JSON.stringify(aData)); alert("保存しました。"); location.reload();
+  });
+  document.getElementById("adm-save-achieve-1").addEventListener("click", () => {
+    if (!aData.counters) aData.counters = { "noHintClears": 0 };
+    aData.counters.noHintClears = parseInt(document.getElementById("adm-count-nohint").value, 10) || 0;
+    localStorage.setItem("ekiAchievements", JSON.stringify(aData)); alert("保存しました。"); location.reload();
+  });
+  document.getElementById("adm-save-achieve-2").addEventListener("click", () => {
+    if (!aData.counters) aData.counters = { "totalSubmitCount": 0 };
+    aData.counters.totalSubmitCount = parseInt(document.getElementById("adm-count-submit").value, 10) || 0;
+    localStorage.setItem("ekiAchievements", JSON.stringify(aData)); alert("保存しました。"); location.reload();
+  });
+  document.getElementById("adm-save-set").addEventListener("click", () => {
+    setData.sound = (document.getElementById("adm-set-sound").value === "true");
+    localStorage.setItem("ekiSettings", JSON.stringify(setData)); alert("保存しました。"); location.reload();
+  });
+}, 500);
