@@ -232,20 +232,30 @@ selectTodayStation(); restoreBoard(); checkSpecialEvent();
 
 //保存されている過去の戦績データを読み込む
 function loadStats(){
-const saved=localStorage.getItem("ekiPuzzleStatsV2");
-if(saved) userStats=JSON.parse(saved);
+  const saved=localStorage.getItem("ekiPuzzleStatsV2");
+  if(saved) userStats=JSON.parse(saved);
+  // ランダムモード専用の集計枠が存在しなければ作成する
+  if(!userStats["random"]){
+    userStats["random"]={played:0,won:0,currentStreak:0,maxStreak:0,dist:[0,0,0,0,0,0,0,0,0,0]};
+  }
 }
 //今回のゲーム結果をこれまでのデータに加算して新しく保存する
 function saveStats(isWin,actualGuesses){
-let st=userStats[currentMode];
-if(!st.dist) st.dist=[0,0,0,0,0,0,0,0,0,0];
-st.played++;
-if(isWin){
-st.won++; st.currentStreak++;
-if(st.currentStreak>st.maxStreak)st.maxStreak=st.currentStreak;
-st.dist[actualGuesses]=(st.dist[actualGuesses]||0)+1;
-}else{ st.currentStreak=0; }
-localStorage.setItem("ekiPuzzleStatsV2",JSON.stringify(userStats));
+  // ランダムモード中は「random」の枠に集計する
+  let targetMode = isPlayingRandom ? "random" : currentMode;
+  let st=userStats[targetMode];
+  if(!st) st={played:0,won:0,currentStreak:0,maxStreak:0,dist:[0,0,0,0,0,0,0,0,0,0]};
+  if(!st.dist) st.dist=[0,0,0,0,0,0,0,0,0,0];
+  
+  st.played++;
+  if(isWin){
+    st.won++; st.currentStreak++;
+    if(st.currentStreak>st.maxStreak)st.maxStreak=st.currentStreak;
+    st.dist[actualGuesses]=(st.dist[actualGuesses]||0)+1;
+  }else{ st.currentStreak=0; }
+  
+  userStats[targetMode]=st;
+  localStorage.setItem("ekiPuzzleStatsV2",JSON.stringify(userStats));
 }
 //過去に遊んだアーカイブ情報を読み込む
 function loadArchive(){
@@ -413,18 +423,21 @@ currentGuess="";
 // ==========================================
 // キーボードの文字や、特殊ボタン（回答・消去）が押されたときの振り分けを行います
 function handleKeyPress(char){
-  let st=savedState[currentMode];
-  if(st.isOver||guessesSubmitted>=maxGuesses)return;
+  // ランダムモード時は専用のデータ(savedState["random"])を参照する
+  let stateKey = isPlayingRandom ? "random" : currentMode;
+  let st = savedState[stateKey];
+  if(!st || st.isOver || guessesSubmitted>=maxGuesses) return;
   
-  // そのモードで「最初の1文字目」が入力された瞬間に、専用のタイマーをスタートします
   if(!st.startTime && char!=="BACK" && char!=="CLEAR" && char!=="ENTER"){
     st.startTime=Date.now();
-    const savedLog=localStorage.getItem("ekiPuzzleStateV1_Log");
-    let logData=savedLog?JSON.parse(savedLog):{};
-    logData[currentDayIndex]=savedState;
-    localStorage.setItem("ekiPuzzleStateV1_Log",JSON.stringify(logData));
+    // 通常モードのみ途中経過のログを保存する
+    if(!isPlayingRandom){
+      const savedLog=localStorage.getItem("ekiPuzzleStateV1_Log");
+      let logData=savedLog?JSON.parse(savedLog):{};
+      logData[currentDayIndex]=savedState;
+      localStorage.setItem("ekiPuzzleStateV1_Log",JSON.stringify(logData));
+    }
   }
-　//「1文字削除」「全削除」「回答」ボタンが押されたときの処理
   if(char==="BACK"){
     if(currentGuess.length>0){ currentGuess=currentGuess.slice(0,-1); updateTiles(); }
   }else if(char==="CLEAR"){
@@ -504,14 +517,20 @@ function submitGuess(isRestore=false){
   const isValid=stations.filter(s=>s.yomi.length===currentMode).some(s=>s.yomi===currentGuess);
   if(!isValid){ if(!isRestore)showMessage("実在しない駅名です"); return; }
   
-  let st=savedState[currentMode];
+  let stateKey = isPlayingRandom ? "random" : currentMode;
+  let st = savedState[stateKey];
+  if(!st) {
+    st = {guesses: [], guessTimes: [], startTime: null, endTime: null, usedHint: false, isWin: false, isOver: false};
+    savedState[stateKey] = st;
+  }
+
   if(!isRestore){ 
-    // 【重要】ランダムモード（特別きっぷ）プレイ中は、一切の履歴保存や図鑑更新を行わない
+    st.guesses.push(currentGuess); 
+    st.guessTimes.push(Date.now());
+    
+    // 【重要】通常モードのみ履歴保存や図鑑更新を行う
     if(!isPlayingRandom){
-      st.guesses.push(currentGuess); 
-      st.guessTimes.push(Date.now());
       localStorage.setItem("ekiPuzzleStateV1",JSON.stringify(savedState)); 
-      
       let allGuessed=JSON.parse(localStorage.getItem("ekiAllGuesses")||"[]");
       if(!allGuessed.includes(currentGuess)){
         allGuessed.push(currentGuess);
@@ -546,11 +565,14 @@ function submitGuess(isRestore=false){
     let actualGuesses=guessesSubmitted+1;
     guessesSubmitted=maxGuesses;
     if(!isRestore){ 
+      st.endTime=Date.now();
+      st.isOver=true; st.isWin=true; 
+      saveStats(true,actualGuesses); 
+      
       if(!isPlayingRandom){
-        // 通常モードのみ、クリア実績と正解の図鑑保存を行う
-        st.endTime=Date.now();
+        // 通常モードのみクリア実績や図鑑保存
         updateZukan(todayStation.yomi, 3);
-        st.isOver=true; st.isWin=true; saveStats(true,actualGuesses); localStorage.setItem("ekiPuzzleStateV1",JSON.stringify(savedState));
+        localStorage.setItem("ekiPuzzleStateV1",JSON.stringify(savedState));
         incrementClearAchievements(actualGuesses, (st.endTime - st.startTime));
       }
       let winHtml=`<div style="font-size:24px; font-weight:bold; color:#fff; letter-spacing:2px;">正解！🎉</div>`;
@@ -565,26 +587,17 @@ function submitGuess(isRestore=false){
   
   if(guessesSubmitted===maxGuesses){
     if(!isRestore){
+      st.endTime=Date.now();
+      st.isOver=true; st.isWin=false; 
+      saveStats(false,0); 
+      
       if(!isPlayingRandom){
-        // 通常モードのみ、ゲームオーバー時の保存を行う
         updateZukan(todayStation.yomi, 1);
-        st.isOver=true; st.isWin=false; saveStats(false,0); savedState.endTime=Date.now(); localStorage.setItem("ekiPuzzleStateV1",JSON.stringify(savedState));
+        localStorage.setItem("ekiPuzzleStateV1",JSON.stringify(savedState));
       }
       setTimeout(()=>showResultModal(false,false),1000);
     }
   }
-}
-guessesSubmitted++;
-if(!isRestore) currentGuess="";
-// 回答回数が上限に達してしまい、ゲームオーバーになった場合の処理
-if(guessesSubmitted===maxGuesses){
-if(!isRestore){
-// 【図鑑用】ゲームオーバーで答えを見たので、正解の駅を図鑑に「目撃（ステータス1）」として記録
-updateZukan(todayStation.yomi, 1);
-st.isOver=true; st.isWin=false; saveStats(false,0); savedState.endTime=Date.now(); localStorage.setItem("ekiPuzzleStateV1",JSON.stringify(savedState));
-setTimeout(()=>showResultModal(false,false),1000);
-}
-}
 }
 //キーボードのボタンの色を、より優先度の高い色（黒＜紫＜黄＜緑）へ上書き更新する処理
 function updateKeyColor(char,newColor){
@@ -634,9 +647,12 @@ clearTimeout(msgTimeout); msgTimeout=setTimeout(()=>box.classList.add("hidden"),
 }
 //ゲーム終了時に、正解の駅名、Wikipediaへのリンク、旅行サイトへの広告、過去の戦績グラフをまとめて表示する大きな画面を作る
 function showResultModal(isWin,isRestore){
-let st=userStats[currentMode];
-if(!st.dist) st.dist=[0,0,0,0,0,0,0,0,0,0];
-document.getElementById("modal-title").textContent=isWin?"正解！おめでとう！":"残念！ゲームオーバー";
+  // ランダムモードのときは、ランダム専用の戦績データを読み込む
+  let targetMode = isPlayingRandom ? "random" : currentMode;
+  let st = userStats[targetMode];
+  if(!st) st = {played:0,won:0,currentStreak:0,maxStreak:0,dist:[0,0,0,0,0,0,0,0,0,0]};
+  if(!st.dist) st.dist=[0,0,0,0,0,0,0,0,0,0];
+  document.getElementById("modal-title").textContent=isWin?"正解！おめでとう！":"残念！ゲームオーバー";
 document.getElementById("modal-desc").textContent=`${todayStation.kanji} (${todayStation.yomi})`;
 let safePref=todayStation.pref||"富山県";
 let searchKw=typeof isAprilFoolMode!=="undefined"&&isAprilFoolMode?safePref:todayStation.kanji;
@@ -694,16 +710,6 @@ return r;
 }).join("<br>");
 grid.innerHTML=gridHTML;
   // ランダムモード中は、日々の勝率や戦績グラフなどの要素を非表示にしてスッキリさせる
-    if(isPlayingRandom){
-      document.getElementById("stats-container").style.display = "none";
-      document.getElementById("guess-distribution").style.display = "none";
-      document.getElementById("guess-distribution").previousElementSibling.style.display = "none"; // グラフの上の横線(hr)も消す
-    } else {
-      document.getElementById("stats-container").style.display = "flex";
-      document.getElementById("guess-distribution").style.display = "block";
-      document.getElementById("guess-distribution").previousElementSibling.style.display = "block";
-    }
-
     document.getElementById("result-modal").style.display="flex"; // ←元からあるコード
 }
 //結果画面でシェアボタンが押されたとき、文字と絵文字のパズル結果を組み立てて各SNSの投稿画面を開く
@@ -865,18 +871,18 @@ if (meta.firstPlayDate) {
       
       // 記念ボタンが押されたときの特別な動作
       btnAnni.addEventListener("click", () => {
+        // ランダムモードON
+        isPlayingRandom = true; 
         document.querySelectorAll(".mode-btn").forEach(b => b.classList.remove("active"));
         btnAnni.classList.add("active");
-        
-        // ランダムモードをオンにする
-        isPlayingRandom = true;
         
         const modeStations = stations.filter(s => s.yomi.length === 5);
         todayStation = modeStations[Math.floor(Math.random() * modeStations.length)];
         currentMode = 5; rowLength = 5; maxGuesses = 6;
         document.getElementById("game-board").style.setProperty("--row-length", 5);
         
-        // 既存の今日のセーブデータを上書き破壊しないよう、画面だけをまっさらにリセットする
+        // ランダム専用の枠を初期化し、画面をまっさらにする
+        savedState["random"] = {guesses: [], guessTimes: [], startTime: null, endTime: null, usedHint: false, isWin: false, isOver: false};
         currentGuess = ""; guessesSubmitted = 0; gridHistory = []; keyColors = {};
         drawBoard(); buildKeyboard();
         
