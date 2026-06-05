@@ -887,13 +887,17 @@ if (meta.firstPlayDate) {
       btnAnni.style.border = "2px solid #ff8c00";
       
       // 記念ボタンが押されたときの特別な動作
+      // 記念ボタンが押されたときの特別な動作
       btnAnni.addEventListener("click", () => {
-        // ランダムモードON
+        // ランダムモードをONにする
         isPlayingRandom = true; 
         document.querySelectorAll(".mode-btn").forEach(b => b.classList.remove("active"));
         btnAnni.classList.add("active");
         
+        // 5文字の駅リストを取得し、候補駅（残り駅数）を正しくリセットする
         const modeStations = stations.filter(s => s.yomi.length === 5);
+        availableStations = [...modeStations]; // ←【修正】ここで残り駅のリストをリセットします
+        
         todayStation = modeStations[Math.floor(Math.random() * modeStations.length)];
         currentMode = 5; rowLength = 5; maxGuesses = 6;
         document.getElementById("game-board").style.setProperty("--row-length", 5);
@@ -901,6 +905,11 @@ if (meta.firstPlayDate) {
         // ランダム専用の枠を初期化し、画面をまっさらにする
         savedState["random"] = {guesses: [], guessTimes: [], startTime: null, endTime: null, usedHint: false, isWin: false, isOver: false};
         currentGuess = ""; guessesSubmitted = 0; gridHistory = []; keyColors = {};
+        
+        // 残り駅数の表示要素があれば、初期状態の件数に書き換える
+        const remainEl = document.getElementById("remaining-count");
+        if(remainEl) remainEl.textContent = availableStations.length;
+        
         drawBoard(); buildKeyboard();
         
         showMessage("特別きっぷ発券！<br>何度でもランダム出題に挑戦できます", "#ff9800", "none", "0 4px 10px rgba(0,0,0,0.3)");
