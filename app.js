@@ -299,6 +299,22 @@ function loadGameState(dayIdx){
   localStorage.setItem("ekiPuzzleStateV1_Log",JSON.stringify(logData));
 }
 
+// ==========================================
+// 状態保存用の共通関数（確実なセーブ）
+// ==========================================
+function saveGameState() {
+  // ランダムモードのプレイ状況は再読み込みで復元する必要がないため保存しない
+  if (isPlayingRandom) return;
+  
+  // 従来のセーブデータ（念のため更新）
+  localStorage.setItem("ekiPuzzleStateV1", JSON.stringify(savedState));
+  
+  // 新方式の履歴ログ用（こちらがページ再読み込み時の復元に絶対必要）
+  const savedLog = localStorage.getItem("ekiPuzzleStateV1_Log");
+  let logData = savedLog ? JSON.parse(savedLog) : {};
+  logData[currentDayIndex] = savedState;
+  localStorage.setItem("ekiPuzzleStateV1_Log", JSON.stringify(logData));
+}
 
 // ==========================================
 // 今日の正解駅を決定する処理
@@ -421,23 +437,22 @@ currentGuess="";
 // ==========================================
 // プレイヤーの入力を処理する
 // ==========================================
-// キーボードの文字や、特殊ボタン（回答・消去）が押されたときの振り分けを行います
+// キーボードの文字や、特殊ボタン（回答・消去）が押されたときの振り分けを行う
+// プレイヤーの入力を処理する
 function handleKeyPress(char){
   // ランダムモード時は専用のデータ(savedState["random"])を参照する
   let stateKey = isPlayingRandom ? "random" : currentMode;
   let st = savedState[stateKey];
   if(!st || st.isOver || guessesSubmitted>=maxGuesses) return;
   
+  // 最初の1文字目が入力されたときにタイマーを開始してセーブする
   if(!st.startTime && char!=="BACK" && char!=="CLEAR" && char!=="ENTER"){
     st.startTime=Date.now();
-    // 通常モードのみ途中経過のログを保存する
-    if(!isPlayingRandom){
-      const savedLog=localStorage.getItem("ekiPuzzleStateV1_Log");
-      let logData=savedLog?JSON.parse(savedLog):{};
-      logData[currentDayIndex]=savedState;
-      localStorage.setItem("ekiPuzzleStateV1_Log",JSON.stringify(logData));
+    if(!isPlayingRandom) {
+      saveGameState(); // ← 確実なセーブを実行
     }
   }
+  
   if(char==="BACK"){
     if(currentGuess.length>0){ currentGuess=currentGuess.slice(0,-1); updateTiles(); }
   }else if(char==="CLEAR"){
@@ -449,6 +464,7 @@ function handleKeyPress(char){
     if(currentGuess.length<rowLength){ currentGuess+=char; updateTiles(); }
   }
 }
+
 //タイルに入力中文字を表示する
 function updateTiles(){
   for(let j=0;j<rowLength;j++){
@@ -530,7 +546,8 @@ function submitGuess(isRestore=false){
     
     // 【重要】通常モードのみ履歴保存や図鑑更新を行う
     if(!isPlayingRandom){
-      localStorage.setItem("ekiPuzzleStateV1",JSON.stringify(savedState)); 
+      saveGameState(); // ← 確実なセーブを実行
+      
       let allGuessed=JSON.parse(localStorage.getItem("ekiAllGuesses")||"[]");
       if(!allGuessed.includes(currentGuess)){
         allGuessed.push(currentGuess);
@@ -570,9 +587,8 @@ function submitGuess(isRestore=false){
       saveStats(true,actualGuesses); 
       
       if(!isPlayingRandom){
-        // 通常モードのみクリア実績や図鑑保存
         updateZukan(todayStation.yomi, 3);
-        localStorage.setItem("ekiPuzzleStateV1",JSON.stringify(savedState));
+        saveGameState(); // ← 確実なセーブを実行
         incrementClearAchievements(actualGuesses, (st.endTime - st.startTime));
       }
       let winHtml=`<div style="font-size:24px; font-weight:bold; color:#fff; letter-spacing:2px;">正解！🎉</div>`;
@@ -593,12 +609,13 @@ function submitGuess(isRestore=false){
       
       if(!isPlayingRandom){
         updateZukan(todayStation.yomi, 1);
-        localStorage.setItem("ekiPuzzleStateV1",JSON.stringify(savedState));
+        saveGameState(); // ← 確実なセーブを実行
       }
       setTimeout(()=>showResultModal(false,false),1000);
     }
   }
 }
+
 //キーボードのボタンの色を、より優先度の高い色（黒＜紫＜黄＜緑）へ上書き更新する処理
 function updateKeyColor(char,newColor){
 let currColor=keyColors[char];
