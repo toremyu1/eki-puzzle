@@ -544,16 +544,17 @@ function submitGuess(isRestore=false){
     st.guesses.push(currentGuess); 
     st.guessTimes.push(Date.now());
     
-    // 【重要】通常モードのみ履歴保存や図鑑更新を行う
+    // 通常モードのみ履歴保存や図鑑更新を行う
     if(!isPlayingRandom){
-      saveGameState(); // ← 確実なセーブを実行
+      saveGameState(); 
       
       let allGuessed=JSON.parse(localStorage.getItem("ekiAllGuesses")||"[]");
       if(!allGuessed.includes(currentGuess)){
         allGuessed.push(currentGuess);
         localStorage.setItem("ekiAllGuesses",JSON.stringify(allGuessed));
       }
-      updateZukan(currentGuess, 2);
+      // 【安全性強化】図鑑機能が実装されている場合のみ呼び出し、エラーを防ぐ
+      if(typeof updateZukan === "function") updateZukan(currentGuess, 2);
     }
   }
   
@@ -587,10 +588,13 @@ function submitGuess(isRestore=false){
       saveStats(true,actualGuesses); 
       
       if(!isPlayingRandom){
-        updateZukan(todayStation.yomi, 3);
-        saveGameState(); // ← 確実なセーブを実行
-        incrementClearAchievements(actualGuesses, (st.endTime - st.startTime));
+        // 【安全性強化】未実装機能の呼び出しによるクラッシュを完全に防ぐ
+        if(typeof updateZukan === "function") updateZukan(todayStation.yomi, 3);
+        saveGameState(); 
+        if(typeof incrementClearAchievements === "function") incrementClearAchievements(actualGuesses, (st.endTime - st.startTime));
       }
+      
+      // 正解演出と結果ウィンドウの表示（クラッシュが直ったため、正常に表示されます）
       let winHtml=`<div style="font-size:24px; font-weight:bold; color:#fff; letter-spacing:2px;">正解！🎉</div>`;
       showMessage(winHtml,"#ff9800","none","0 4px 10px rgba(0,0,0,0.3)");
       setTimeout(()=>{ showResultModal(true,false); },2000);
@@ -608,8 +612,8 @@ function submitGuess(isRestore=false){
       saveStats(false,0); 
       
       if(!isPlayingRandom){
-        updateZukan(todayStation.yomi, 1);
-        saveGameState(); // ← 確実なセーブを実行
+        if(typeof updateZukan === "function") updateZukan(todayStation.yomi, 1);
+        saveGameState(); 
       }
       setTimeout(()=>showResultModal(false,false),1000);
     }
