@@ -13,16 +13,9 @@ adminPanel.innerHTML=`
 <button id="admin-reset-btn" style="margin-right:5px;">入力値リセット</button>
 <button id="admin-stats-wipe-btn" style="background-color:#ffe6e6; color:#c62828; border:1px solid #c62828;">戦績全消去</button>
 <div style="margin-top:10px; padding:10px; background:#fff3e0; border:1px solid #ff9800; border-radius:4px;">
-<span style="color:#000000";><b>【JSONデータ直接編集】</b></span><br>
-<select id="adm-edit-key" style="padding:4px;">
-<option value="ekiZukanData">図鑑 (ekiZukanData)</option>
-<option value="ekiAllGuesses">入力履歴 (ekiAllGuesses)</option>
-<option value="ekiAchievements">実績 (ekiAchievements)</option>
-<option value="ekiPuzzleStatsV2">成績 (ekiPuzzleStatsV2)</option>
-</select>
-<button id="adm-load-key" style="margin-left:5px;">読込</button>
-<button id="adm-save-key" style="background-color:#ffe6e6; color:#c62828; margin-left:5px;">上書き保存</button><br>
-<textarea id="adm-edit-val" style="width:100%; height:100px; font-family:monospace; margin-top:5px; font-size:12px;"></textarea>
+<b>【全データ一覧＆直接編集】</b><br>
+<button id="adm-load-all-btn" style="margin-bottom:10px;">全データを読み込んで表示</button>
+<div id="adm-all-data-container" style="max-height:400px; overflow-y:auto; background:#fff; padding:5px; border:1px solid #ccc;"></div>
 </div>
 <div style="margin-top:10px; padding:10px; background:#f5f5f5; border:1px solid #ddd; border-radius:4px; font-size:12px; color:black; text-align:left;">
 <b>【データ書き換えツール】</b><br>
@@ -246,22 +239,74 @@ document.getElementById('adm-load-key').addEventListener('click', () => {
   }
 });
 
-// エディタの「上書き保存」ボタンを押したときの処理
-document.getElementById('adm-save-key').addEventListener('click', () => {
-  const key = document.getElementById('adm-edit-key').value;
-  const val = document.getElementById('adm-edit-val').value;
-  try {
-    // ユーザーが書き換えた文字が、正しいJSONデータか確認する（エラーチェック）
-    JSON.parse(val);
-    // 問題なければパソコン内に上書き保存する
-    localStorage.setItem(key, val);
-    alert(key + " を上書き保存しました。");
-  } catch(e) {
-    alert("エラー：入力されたテキストは正しいJSON形式ではありません。（括弧やカンマの閉じ忘れなど）");
+// 「全データを読み込んで表示」ボタンが押されたときの処理
+document.getElementById('adm-load-all-btn').addEventListener('click', () => {
+  const container = document.getElementById('adm-all-data-container');
+  container.innerHTML = ''; // 表示エリアを一度空にしてリセットする
+  let found = false;
+
+  // パソコンに保存されているすべてのデータを順番に確認する
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    
+    // 「eki」から始まる駅ドルのデータだけを抽出する
+    if (key.startsWith('eki')) {
+      found = true;
+      let val = localStorage.getItem(key);
+      let displayVal = val;
+      
+      try {
+        // データがJSON形式であれば、見やすく改行して整える
+        displayVal = JSON.stringify(JSON.parse(val), null, 2);
+      } catch(e) {
+        // JSON形式でなければ元の文字列のままにする
+      }
+
+      // データ1つにつき、タイトル、入力エリア、保存ボタンのセット（ブロック）を作る
+      const block = document.createElement('div');
+      block.style.marginBottom = '15px';
+      block.style.borderBottom = '1px dashed #ccc';
+      block.style.paddingBottom = '10px';
+      
+      // ブロックの中にHTML要素を流し込む
+      block.innerHTML = `
+        <div style="font-weight:bold; color:#d32f2f; margin-bottom:5px;">${key}</div>
+        <textarea id="edit-${key}" style="width:100%; height:100px; font-family:monospace; font-size:12px; margin-bottom:5px;">${displayVal}</textarea>
+        <div style="text-align:right;">
+          <button id="save-${key}" style="background-color:#ffe6e6; color:#c62828; padding:4px 10px;">上書き保存</button>
+        </div>
+      `;
+      
+      // 完成したブロックを画面のコンテナに追加する
+      container.appendChild(block);
+
+      // そのブロック専用の「上書き保存」ボタンが押されたときの処理を登録する
+      document.getElementById(`save-${key}`).addEventListener('click', () => {
+        // テキストエリアに書き込まれた新しい文字列を取得する
+        const newVal = document.getElementById(`edit-${key}`).value;
+        try {
+          // 文字列が `{` や `[` で始まる場合、正しいJSONデータか構文チェックを行う
+          if (newVal.trim().startsWith('{') || newVal.trim().startsWith('[')) {
+            JSON.parse(newVal);
+          }
+          // 問題なければ、パソコン内のデータを上書き保存する
+          localStorage.setItem(key, newVal);
+          alert(key + " を上書き保存しました。");
+        } catch(e) {
+          // 括弧の閉じ忘れなどがあればエラーを出す
+          alert("エラー：正しいJSON形式ではありません。（括弧やカンマの閉じ忘れがないか確認してください）");
+        }
+      });
+    }
+  }
+  
+  // 駅ドルのデータが1つも見つからなかった場合のメッセージ
+  if (!found) {
+    container.innerHTML = '駅ドルの保存データがありません。';
   }
 });
 
-// 「個人の周年をテスト」ボタンを押したときの処理
+// 「個人の周年をテスト」ボタンが押されたときの処理
 document.getElementById('admin-user-anni-btn').addEventListener('click', () => {
   // メタデータ（初回プレイ日など）を読み込む
   let meta = JSON.parse(localStorage.getItem("ekiZukanMeta") || '{}');
