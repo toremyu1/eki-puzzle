@@ -171,13 +171,17 @@ document.getElementById("line-btn").addEventListener("click",()=>shareResult("li
 document.getElementById("fb-btn").addEventListener("click",()=>shareResult("facebook"));
 document.getElementById("copy-btn").addEventListener("click",()=>shareResult("copy"));
 document.getElementById("close-modal-btn").addEventListener("click",()=>{
-  // 【メモ】データのバックアップ（コード発行）ボタンを押したときの動き
-document.getElementById("export-data-btn").addEventListener("click", () => {
+// 【メモ】データのバックアップ（コード発行）ボタンを押したときの動き
+document.getElementById("export-data-btn").addEventListener("click", (e) => {
+  e.preventDefault(); // リンクのデフォルト動作（上へジャンプ）を無効化
   exportUserData();
 });
+
 // 【メモ】データの復活（コード入力）ボタンを押したときの動き
-document.getElementById("import-data-btn").addEventListener("click", () => {
+document.getElementById("import-data-btn").addEventListener("click", (e) => {
+  e.preventDefault(); // リンクのデフォルト動作（上へジャンプ）を無効化
   const code = prompt("控えておいた「引き継ぎコード」をここに貼り付けてください：");
+  
   if (code) {
     importUserData(code);
   }
