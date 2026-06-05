@@ -171,6 +171,17 @@ document.getElementById("line-btn").addEventListener("click",()=>shareResult("li
 document.getElementById("fb-btn").addEventListener("click",()=>shareResult("facebook"));
 document.getElementById("copy-btn").addEventListener("click",()=>shareResult("copy"));
 document.getElementById("close-modal-btn").addEventListener("click",()=>{
+  // 【メモ】データのバックアップ（コード発行）ボタンを押したときの動き
+document.getElementById("export-data-btn").addEventListener("click", () => {
+  exportUserData();
+});
+// 【メモ】データの復活（コード入力）ボタンを押したときの動き
+document.getElementById("import-data-btn").addEventListener("click", () => {
+  const code = prompt("控えておいた「引き継ぎコード」をここに貼り付けてください：");
+  if (code) {
+    importUserData(code);
+  }
+});
 document.getElementById("result-modal").style.display="none";
 });
 //「パレット」ボタンが押されたときに画面全体のテーマカラーを順番に変更する
@@ -181,7 +192,7 @@ themeIdx=themes.indexOf(ekiSettings.theme);
 if(themeIdx>-1&&ekiSettings.theme!=="")document.body.classList.add(ekiSettings.theme);
 }
 document.getElementById("theme-btn").addEventListener("click",()=>{
-  // ボタンを押す前に、エイプリルフールモードだったかどうかを記憶しておきます
+  // ボタンを押す前に、エイプリルフールモードだったかどうかを記憶しておく
   const isAF = document.body.classList.contains("event-aprilfool");
   document.body.className=document.body.className.replace(/event-\w+/g,"");
   if(themes[themeIdx]!=="")document.body.classList.remove(themes[themeIdx]);
@@ -189,7 +200,7 @@ document.getElementById("theme-btn").addEventListener("click",()=>{
   if(themes[themeIdx]!=="")document.body.classList.add(themes[themeIdx]);
   ekiSettings.theme=themes[themeIdx];
   localStorage.setItem("ekiSettings",JSON.stringify(ekiSettings));
-  // もし元がエイプリルフールだったなら、クラスを消された直後に強制的に再付与します
+  // もし元がエイプリルフールだったなら、クラスを消された直後に強制的に再付与
   if (isAF) document.body.classList.add("event-aprilfool");
 });
 //最後に、今日の正解駅を選び、ゲーム盤を作り、行事日かどうかを調べる
