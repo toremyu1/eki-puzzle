@@ -112,13 +112,18 @@ async function initGame(){
 try{
   // 現在のデータ構造のバージョンを記録（将来のバグ防止用）
   if (!localStorage.getItem("ekiSystemVersion")) localStorage.setItem("ekiSystemVersion", "1.0");
-  // URLの末尾に「?emergency_reset=true」がついている場合はデータを全消去して復活させる
+  // URLの末尾に「?emergency_reset=true」がついている場合の処理
   if (new URLSearchParams(window.location.search).get("emergency_reset") === "true") {
+  // ページ読み込み時に、まず確認ダイアログを表示してユーザーに問いかける
+  if (confirm("これまでのプレイ実績や設定がすべて消去されます。本当に初期化しますか？")) {
+    // ユーザーが「OK」を押した場合のみ、データを全消去する
     localStorage.clear();
-    alert("データを初期化しました。");
-    window.location.href = window.location.origin + window.location.pathname;
-    return;
+    alert("データを初期化しました。");  
   }
+  // 「OK」の場合も、消去を「キャンセル」した場合も、通常のURL（末尾の?~がない状態）に画面を切り替える
+  window.location.href = window.location.origin + window.location.pathname;
+  return;
+}
 loadStats();　　　　　　　//全プレイヤーの戦績データをパソコンから読み込む
 updateLoginStreak(); 　　//連続ログイン日数をカウント
 //すべての駅データが書かれた「station.json」ファイルをインターネット経由で読み込む
