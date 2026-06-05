@@ -937,11 +937,24 @@ function incrementClearAchievements(actualGuesses, clearTimeMs) {
 
 
 // ==========================================
-// データのエクスポートとインポート
+// データのエクスポートとインポート（改ざん防止機能付き）
 // ==========================================
+
+// データから固有の「合言葉（チェックサム）」を生成する関数
+// 文字列の文字コードを計算して、短い英数字の組み合わせを作ります
+function generateChecksum(str) {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash; // 32ビットの整数に変換
+  }
+  return hash.toString(36); // 短い英数字の文字列にして返す
+}
 
 // データを1つのテキストにまとめて書き出す（エクスポート）
 function exportUserData() {
+  // ローカルストレージから必要な全データを集める
   const data = {
     stats: localStorage.getItem("ekiPuzzleStatsV2"),
     archive: localStorage.getItem("ekiPuzzleArchiveV1"),
@@ -953,12 +966,19 @@ function exportUserData() {
     settings: localStorage.getItem("ekiSettings"),
     streak: localStorage.getItem("ekiLoginStreak"),
     version: localStorage.getItem("ekiSystemVersion"),
-    // 【追加】進行状況のログデータも引き継ぎ対象に含めます
     log: localStorage.getItem("ekiPuzzleStateV1_Log")
   };
   
-  const code = btoa(encodeURIComponent(JSON.stringify(data)));
+  // データをJSON文字列に変換する
+  const payloadString = JSON.stringify(data);
+  // データの中身から、改ざん確認用の合言葉（チェックサム）を作成する
+  const checksum = generateChecksum(payloadString);
   
+  // データ本体と合言葉をセットにしてから、Base64（暗号風）に変換する
+  const secureData = JSON.stringify({ payload: payloadString, sig: checksum });
+  const code = btoa(encodeURIComponent(secureData));
+  
+  // 出来上がった文字列をクリップボードにコピーする
   navigator.clipboard.writeText(code).then(() => {
     alert("引き継ぎコードをクリップボードにコピーしました！\n\n※大切なデータですので、ブラウザの不具合に備えて、念のためメモ帳アプリやメールなどに貼り付けて別で控えておくことを強くおすすめします。");
   });
@@ -967,8 +987,26 @@ function exportUserData() {
 // テキストからデータを復元する（インポート）
 function importUserData(code) {
   try {
-    const json = JSON.parse(decodeURIComponent(atob(code)));
+    // Base64をデコードし、日本語を復元してからJSONオブジェクトに戻す
+    const secureJson = JSON.parse(decodeURIComponent(atob(code)));
     
+    // 読み込んだコードの中に「データ本体」と「合言葉」が存在するか確認する
+    if (!secureJson.payload || !secureJson.sig) {
+      throw new Error("不正なデータ形式です。");
+    }
+    
+    // 読み込んだデータ本体から、改めて合言葉を計算し直す
+    const expectedChecksum = generateChecksum(secureJson.payload);
+    
+    // コードに記録されていた合言葉と、計算し直した合言葉が一致しなければエラーにする（改ざん検知）
+    if (secureJson.sig !== expectedChecksum) {
+      throw new Error("データが改ざんされているか、壊れています。");
+    }
+    
+    // 合言葉が一致したので、データ本体をJavaScriptで扱える形に戻す
+    const json = JSON.parse(secureJson.payload);
+    
+    // データが存在するものだけローカルストレージに上書きしていく
     if(json.stats) localStorage.setItem("ekiPuzzleStatsV2", json.stats);
     if(json.archive) localStorage.setItem("ekiPuzzleArchiveV1", json.archive);
     if(json.zukan) localStorage.setItem("ekiZukanData", json.zukan);
@@ -979,12 +1017,15 @@ function importUserData(code) {
     if(json.settings) localStorage.setItem("ekiSettings", json.settings);
     if(json.streak) localStorage.setItem("ekiLoginStreak", json.streak);
     if(json.version) localStorage.setItem("ekiSystemVersion", json.version); 
-    // 【追加】インポート側でもログデータを復元できるようにします
     if(json.log) localStorage.setItem("ekiPuzzleStateV1_Log", json.log);
     
     alert("データを復元しました。再読み込みします。");
+    
+    // ページを再読み込みして、復元したデータを直ちに画面に反映させる
     location.reload();
   } catch(e) { 
-    alert("無効なコードです。"); 
+    // 壊れたコードや改ざんされたコードが入力された場合のエラー処理
+    alert("無効なコードです。正しくコピーできているか確認してください。"); 
+    console.error("インポートエラー:", e);
   }
 }
