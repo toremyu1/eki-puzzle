@@ -110,6 +110,15 @@ function toHiragana(str){ return str.replace(/[ァ-ン]/g,m=>String.fromCharCode
 //画面読み込み時に最初に実行され、データ準備やボタン登録などを行う
 async function initGame(){
 try{
+  // 現在のデータ構造のバージョンを記録（将来のバグ防止用）
+  if (!localStorage.getItem("ekiSystemVersion")) localStorage.setItem("ekiSystemVersion", "1.0");
+  // URLの末尾に「?emergency_reset=true」がついている場合はデータを全消去して復活させる
+  if (new URLSearchParams(window.location.search).get("emergency_reset") === "true") {
+    localStorage.clear();
+    alert("データを初期化しました。");
+    window.location.href = window.location.origin + window.location.pathname;
+    return;
+  }
 loadStats();　　　　　　　//全プレイヤーの戦績データをパソコンから読み込む
 updateLoginStreak(); 　　//連続ログイン日数をカウント
 //すべての駅データが書かれた「station.json」ファイルをインターネット経由で読み込む
@@ -902,5 +911,62 @@ function incrementClearAchievements(actualGuesses, clearTimeMs) {
     clearedData[currentMode].push(currentDayIndex);
     clearedData[currentMode].sort((a, b) => a - b);
     localStorage.setItem("ekiClearedDays", JSON.stringify(clearedData));
+  }
+}
+
+
+// ==========================================
+// データのエクスポートとインポート
+// ==========================================
+
+// データを1つのテキストにまとめて書き出す（エクスポート）
+function exportUserData() {
+  // ローカルストレージから必要な全データを集める
+  const data = {
+    stats: localStorage.getItem("ekiPuzzleStatsV2"),
+    archive: localStorage.getItem("ekiPuzzleArchiveV1"),
+    zukan: localStorage.getItem("ekiZukanData"),
+    meta: localStorage.getItem("ekiZukanMeta"),
+    achievements: localStorage.getItem("ekiAchievements"),
+    guesses: localStorage.getItem("ekiAllGuesses"),
+    cleared: localStorage.getItem("ekiClearedDays"),
+    settings: localStorage.getItem("ekiSettings"),
+    streak: localStorage.getItem("ekiLoginStreak"),
+    version: localStorage.getItem("ekiSystemVersion") // 【追加】データのバージョン証明書も持ち出す
+  };
+  
+  // JSONを文字列にし、日本語が文字化けしないようエンコード後、Base64（暗号風）に変換する
+  const code = btoa(encodeURIComponent(JSON.stringify(data)));
+  
+  // 出来上がった文字列をクリップボードにコピーする
+  navigator.clipboard.writeText(code).then(() => alert("引き継ぎコードをコピーしました！"));
+}
+
+
+// テキストからデータを復元する（インポート）
+function importUserData(code) {
+  try {
+    // Base64をデコードし、日本語を復元してからJSONオブジェクトに戻す
+    const json = JSON.parse(decodeURIComponent(atob(code)));
+    
+    // データが存在するものだけローカルストレージに上書きしていく
+    if(json.stats) localStorage.setItem("ekiPuzzleStatsV2", json.stats);
+    if(json.archive) localStorage.setItem("ekiPuzzleArchiveV1", json.archive);
+    if(json.zukan) localStorage.setItem("ekiZukanData", json.zukan);
+    if(json.meta) localStorage.setItem("ekiZukanMeta", json.meta);
+    if(json.achievements) localStorage.setItem("ekiAchievements", json.achievements);
+    if(json.guesses) localStorage.setItem("ekiAllGuesses", json.guesses);
+    if(json.cleared) localStorage.setItem("ekiClearedDays", json.cleared);
+    if(json.settings) localStorage.setItem("ekiSettings", json.settings);
+    if(json.streak) localStorage.setItem("ekiLoginStreak", json.streak);
+    if(json.version) localStorage.setItem("ekiSystemVersion", json.version); // 【追加】バージョン証明書も上書きする
+    
+    alert("データを復元しました。再読み込みします。");
+    
+    // ページを再読み込みして、復元したデータを直ちに画面に反映させる
+    location.reload();
+  } catch(e) { 
+    // 壊れたコードが入力された場合のエラー処理
+    alert("無効なコードです。"); 
   }
 }
