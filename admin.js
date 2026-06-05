@@ -5,8 +5,8 @@ adminPanel.style.background='#ffebee';
 adminPanel.style.border='2px solid #f44336';
 adminPanel.style.marginBottom='15px';
 adminPanel.innerHTML=`
-<b>🛠 管理者モード</b><br>
-現在の答え: <span id="debug-ans-text">（読込中...）</span><br>
+<span style="color:#000000;"><b>🛠 管理者モード</b><br>
+現在の答え: <span id="debug-ans-text">（読込中...）</span></span><br>
 <input type="text" id="admin-custom-ans" placeholder="新しい答え(ひらがな)" style="padding:4px;margin-right:5px;">
 <button id="admin-set-btn" style="margin-right:5px;">確定変更</button>
 <button id="admin-rand-btn" style="margin-right:5px;">ランダム変更</button>
