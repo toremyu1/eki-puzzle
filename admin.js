@@ -13,7 +13,7 @@ adminPanel.innerHTML=`
 <button id="admin-reset-btn" style="margin-right:5px;">入力値リセット</button>
 <button id="admin-stats-wipe-btn" style="background-color:#ffe6e6; color:#c62828; border:1px solid #c62828;">戦績全消去</button>
 <div style="margin-top:10px; padding:10px; background:#fff3e0; border:1px solid #ff9800; border-radius:4px;">
-<b>【JSONデータ直接編集】</b><br>
+<span style="color:#000000";><b>【JSONデータ直接編集】</b></span><br>
 <select id="adm-edit-key" style="padding:4px;">
 <option value="ekiZukanData">図鑑 (ekiZukanData)</option>
 <option value="ekiAllGuesses">入力履歴 (ekiAllGuesses)</option>
