@@ -134,15 +134,18 @@ body.event-newyear .key {
   color: #b71c1c;
 }
 
-/* 深夜の静寂や、除夜の鐘の厳かさをイメージした漆黒と銀灰色の設定です */
+/* 大晦日用の特別なプレミアムテーマカラー */
+/* 除夜の鐘が響く大晦日の静寂と、境内の灯火をイメージした厳かな色彩です */
 body.event-nye {
-  background-color: #121212;
-  color: #bdbdbd;
+  background-color: #161219;
+  color: #d1c7bd;
 }
+
 body.event-nye .tile {
-  border-color: #424242;
+  border-color: #36303d;
 }
+
 body.event-nye .key {
-  background-color: #212121;
-  color: #bdbdbd;
+  background-color: #25202b;
+  color: #d1c7bd;
 }
