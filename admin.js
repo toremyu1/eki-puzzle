@@ -10,11 +10,12 @@ adminPanel.innerHTML=`
 <input type="text" id="admin-custom-ans" placeholder="新しい答え(ひらがな)" style="padding:4px;margin-right:5px;">
 <button id="admin-set-btn" style="margin-right:5px;">確定変更</button>
 <button id="admin-rand-btn" style="margin-right:5px;">ランダム変更</button>
-<button id="admin-reset-btn" style="margin-right:5px;">入力値リセット</button>
+<button id="admin-reset-btn" style="margin-right:5px;" title="成績や図鑑はそのままに、盤面だけをやり直します">盤面リセット</button>
 <button id="admin-stats-wipe-btn" style="background-color:#ffe6e6; color:#c62828; border:1px solid #c62828;">戦績全消去</button>
+<button id="admin-full-wipe-btn" style="background-color:#b71c1c; color:#fff; border:1px solid #b71c1c; margin-left:5px;">データ完全消去</button>
 
 <div style="margin-top:10px; padding:10px; background:#fff3e0; border:1px solid #ff9800; border-radius:4px;">
-<span style="color:#000000;"><b>【全データ一覧＆直接編集】</b></span><br>
+<b>【全データ一覧＆直接編集】</b><br>
 <button id="adm-load-all-btn" style="margin-bottom:10px; padding:4px 8px;">全データを読み込んで表示</button>
 <div id="adm-all-data-container" style="max-height:400px; overflow-y:auto; background:#fff; padding:5px; border:1px solid #ccc; font-size:12px; color:#333;">ここにデータが表示されます</div>
 </div>
@@ -29,6 +30,7 @@ adminPanel.innerHTML=`
 </div>
 
 <div style="margin-top:10px; padding-top:10px; border-top:1px solid #ccc;">
+<input type="number" id="admin-site-anni-year" value="1" style="width:40px; margin-right:5px;" title="サイト周年の数値(n)">
 <select id="admin-event-select">
 <option value="">通常（演出オフ）</option>
 <option value="newyear">正月（🎍）</option>
@@ -43,7 +45,6 @@ adminPanel.innerHTML=`
 <option value="christmas">クリスマス（❄️＆色）</option>
 <option value="nye">大晦日（🔔）</option>
 </select>
-<input type="number" id="admin-site-anni-year" value="1" style="width:40px; margin-left:5px;" title="サイト周年の数値(n)">
 <button id="admin-event-btn">演出テスト</button>
 <button id="admin-user-anni-btn" style="background:#e8f5e9; border:1px solid #4caf50; margin-left:10px;">個人の周年をテスト(初回日を1年前の今日にする)</button>
 </div>
@@ -67,14 +68,24 @@ if(typeof found==='string'){todayStation.yomi=found;}else{Object.assign(todaySta
 document.getElementById('debug-ans-text').textContent=todayStation.yomi+' ('+currentLength+'文字モード)';
 }
 },100);
+
 const resetPlay=()=>{
-localStorage.clear();
-const keys=[];
-for(let i=0;i<sessionStorage.length;i++){
-const k=sessionStorage.key(i);
-if(k&&!k.startsWith('admin_override_ans_'))keys.push(k);
-}
-keys.forEach(k=>sessionStorage.removeItem(k));
+  // 盤面とキーボードの進行状況（セーブデータ）だけを消去する
+  localStorage.removeItem("ekiPuzzleStateV1");
+  
+  // ログの進行状況も今日の分だけ消去する
+  if(typeof currentDayIndex !== "undefined"){
+    let logData = JSON.parse(localStorage.getItem("ekiPuzzleStateV1_Log")||"{}");
+    delete logData[currentDayIndex];
+    localStorage.setItem("ekiPuzzleStateV1_Log", JSON.stringify(logData));
+  }
+  
+  const keys=[];
+  for(let i=0;i<sessionStorage.length;i++){
+    const k=sessionStorage.key(i);
+    if(k&&!k.startsWith('admin_override_ans_'))keys.push(k);
+  }
+  keys.forEach(k=>sessionStorage.removeItem(k));
 };
 
 // 基本ボタンの動作
@@ -83,7 +94,7 @@ const newAns=document.getElementById('admin-custom-ans').value.trim();
 if(newAns!==''){
 if(newAns.length!==currentLength){alert('エラー：現在のモードは '+currentLength+' 文字です。');return;}
 sessionStorage.setItem('admin_override_ans_'+currentLength,newAns);
-resetPlay(); alert('答えを変更しました。'); location.reload();
+resetPlay(); alert('答えを変更し、盤面をリセットしました。'); location.reload();
 }
 });
 document.getElementById('admin-rand-btn').addEventListener('click',()=>{
@@ -94,26 +105,32 @@ if(filteredList.length>0){
 const randStation=filteredList[Math.floor(Math.random()*filteredList.length)];
 const newAns=typeof randStation==='string'?randStation:(randStation.yomi||randStation.name);
 sessionStorage.setItem('admin_override_ans_'+currentLength,newAns);
-resetPlay(); alert('ランダムに変更しました。'); location.reload();
+resetPlay(); alert('ランダムに変更し、盤面をリセットしました。'); location.reload();
 }
 }
 });
 document.getElementById('admin-reset-btn').addEventListener('click',()=>{resetPlay();location.reload();});
 document.getElementById('admin-stats-wipe-btn').addEventListener('click',()=>{
-if(confirm('全成績データを初期化します。よろしいですか？')){localStorage.removeItem('ekiPuzzleStatsV2');location.reload();}
+if(confirm('戦績データ(勝率グラフ等)を初期化します。よろしいですか？')){localStorage.removeItem('ekiPuzzleStatsV2');location.reload();}
 });
 
-// 行事日テスト（管理者画面からの演出起動）
+// 【新規追加】データ完全消去ボタンの動作
+document.getElementById('admin-full-wipe-btn').addEventListener('click', () => {
+  if (confirm('【警告】戦績、図鑑、履歴など、すべてのセーブデータを完全に消去して初期状態に戻します。本当によろしいですか？')) {
+    localStorage.clear();
+    sessionStorage.clear();
+    alert('すべてのデータを完全に消去しました。');
+    location.reload();
+  }
+});
+
+// 行事日テスト
 document.getElementById('admin-event-btn').addEventListener('click', () => {
   const ev = document.getElementById('admin-event-select').value;
-  // 入力された周年の数値(n)を取得する
   const nYear = document.getElementById('admin-site-anni-year').value;
-  
-  // もしサイト周年のテストなら、その数値をブラウザの一時記憶（sessionStorage）に保存しておく
   if (ev === "site_anniversary") {
     sessionStorage.setItem("debug_site_anni_year", nYear);
   }
-  
   if (window.triggerEventEffect) window.triggerEventEffect(ev);
 });
 
