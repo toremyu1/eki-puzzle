@@ -28,6 +28,14 @@ let userStats={　　　　　　　
 };
 //過去に解いた問題を記録しておく箱
 let dailyArchive={};
+// イベントポップアップの順番待ち列
+let eventPopupQueue = [];
+function showNextEventPopup() {
+  if (eventPopupQueue.length > 0) {
+    const nextPopup = eventPopupQueue.shift(); // 列の先頭を取り出す
+    nextPopup(); // ポップアップを表示する
+  }
+}
 
 // ==========================================
 //連続ログイン日数処理
@@ -878,14 +886,20 @@ if(ev==="aprilfool"){
     document.querySelectorAll(".mode-btn:not(#mode-"+mLen+")").forEach(b=>{
       b.addEventListener("click",()=>{ isAprilFoolMode=false; const old=document.getElementById("af-style"); if(old)old.remove(); });
     });
-    const div=document.createElement("div");
-    div.style.position="fixed";div.style.top="50%";div.style.left="50%";div.style.transform="translate(-50%,-50%)";
-    div.style.background="#fff";div.style.border="4px solid #e91e63";div.style.padding="25px";div.style.zIndex="10000";
-    div.style.borderRadius="12px";div.style.textAlign="center";div.style.color="#333";div.style.boxShadow="0 4px 15px rgba(0,0,0,0.3)";
-    div.style.width="85%";div.style.maxWidth="400px";
-    div.innerHTML="<h2 style='color:#e91e63;margin-top:0;'>駅ドルへようこそ！</h2><p style='font-size:16px;line-height:1.6;'>本日はエイプリルフール。</p><p style='font-size:16px;line-height:1.6;'>日本一長い駅名（"+mLen+"文字）を当てる<br><b>超・鬼畜モード</b>が解禁されました！</p><p style='font-size:14px;color:#555;'>画面上の「"+mLen+"文字」ボタンから挑戦できます。<br>横にスクロールして全文字を入力してください。<br>（※回答回数は特別に <b>4回</b> です）</p><button id='close-af-btn' class='btn' style='background:#e91e63;color:#fff;margin-top:15px;font-size:18px;'>挑戦する</button>";
-    document.body.appendChild(div);
-    document.getElementById("close-af-btn").addEventListener("click",()=>div.remove());
+    // 【変更】エイプリルフールのポップアップを順番待ち列に入れる
+    eventPopupQueue.push(() => {
+      const div=document.createElement("div");
+      div.style.position="fixed";div.style.top="50%";div.style.left="50%";div.style.transform="translate(-50%,-50%)";
+      div.style.background="#fff";div.style.border="4px solid #e91e63";div.style.padding="25px";div.style.zIndex="10000";
+      div.style.borderRadius="12px";div.style.textAlign="center";div.style.color="#333";div.style.boxShadow="0 4px 15px rgba(0,0,0,0.3)";
+      div.style.width="85%";div.style.maxWidth="400px";
+      div.innerHTML="<h2 style='color:#e91e63;margin-top:0;'>駅ドルへようこそ！</h2><p style='font-size:16px;line-height:1.6;'>本日はエイプリルフール。</p><p style='font-size:16px;line-height:1.6;'>日本一長い駅名（"+mLen+"文字）を当てる<br><b>超・鬼畜モード</b>が解禁されました！</p><p style='font-size:14px;color:#555;'>画面上の「"+mLen+"文字」ボタンから挑戦できます。<br>横にスクロールして全文字を入力してください。<br>（※回答回数は特別に <b>4回</b> です）</p><button id='close-af-btn' class='btn' style='background:#e91e63;color:#fff;margin-top:15px;font-size:18px;'>挑戦する</button>";
+      document.body.appendChild(div);
+      document.getElementById("close-af-btn").addEventListener("click",()=>{
+        div.remove();
+        showNextEventPopup(); // ★閉じた後に、次のポップアップを呼ぶ
+      });
+    });
   }
 }
 if(["newyear","hinamatsuri","kodomo","tanabata","nye","anniversary","site_anniversary","christmas","valentine","halloween","railway"].includes(ev)){
@@ -974,25 +988,27 @@ if (meta.firstPlayDate) {
       });
       modeArea.appendChild(btnAnni);
 
-      // 【追加】ユーザー周年の読み込み時ポップアップ
-      const userAnniDiv = document.createElement("div");
-      userAnniDiv.style.position = "fixed"; userAnniDiv.style.top = "50%"; userAnniDiv.style.left = "50%"; userAnniDiv.style.transform = "translate(-50%,-50%)";
-      userAnniDiv.style.background = "#fff"; userAnniDiv.style.border = "4px solid #4caf50"; userAnniDiv.style.padding = "25px"; userAnniDiv.style.zIndex = "10000";
-      userAnniDiv.style.borderRadius = "12px"; userAnniDiv.style.textAlign = "center"; userAnniDiv.style.color = "#333"; userAnniDiv.style.boxShadow = "0 4px 15px rgba(0,0,0,0.3)";
-      userAnniDiv.style.width = "85%"; userAnniDiv.style.maxWidth = "350px";
-      userAnniDiv.innerHTML = "<h2 style='color:#4caf50;margin-top:0;'>🎉 ご乗車 " + years + " 周年！ 🎉</h2>" +
-                              "<p style='font-size:14px;line-height:1.6;'>今日で「駅ドル」の運行に加わっていただいてから、ちょうど <b>" + years + " 年</b> が経ちました！</p>" +
-                              "<p style='font-size:14px;line-height:1.6;'>日頃の感謝を込めまして、何度でも遊べる<b>ランダム出題モード</b>の特別きっぷを発券いたしました。<br>（画面上の金色のボタンから挑戦できます）</p>" +
-                              "<p style='font-size:12px;color:#777;'>※特別きっぷの戦績記録は、本日限定で集計されます。</p>" +
-                              "<button id='close-user-anni-btn' class='btn' style='background:#4caf50;color:#fff;margin-top:15px;font-size:16px;width:100%;'>出発進行！</button>";
-      document.body.appendChild(userAnniDiv);
-      document.getElementById('close-user-anni-btn').addEventListener('click', () => userAnniDiv.remove());
-    }
+      // 【変更】ユーザー周年のポップアップを順番待ち列に入れる
+      eventPopupQueue.push(() => {
+        const userAnniDiv = document.createElement("div");
+        userAnniDiv.style.position = "fixed"; userAnniDiv.style.top = "50%"; userAnniDiv.style.left = "50%"; userAnniDiv.style.transform = "translate(-50%,-50%)";
+        userAnniDiv.style.background = "#fff"; userAnniDiv.style.border = "4px solid #4caf50"; userAnniDiv.style.padding = "25px"; userAnniDiv.style.zIndex = "10000";
+        userAnniDiv.style.borderRadius = "12px"; userAnniDiv.style.textAlign = "center"; userAnniDiv.style.color = "#333"; userAnniDiv.style.boxShadow = "0 4px 15px rgba(0,0,0,0.3)";
+        userAnniDiv.style.width = "85%"; userAnniDiv.style.maxWidth = "350px";
+        userAnniDiv.innerHTML="<h2 style='color:#4caf50;margin-top:0;'>🎉 ご乗車 "+years+" 周年！ 🎉</h2><p style='font-size:14px;line-height:1.6;'>今日で「駅ドル」の運行に加わっていただいてから、ちょうど <b>"+years+" 年</b> が経ちました！</p><p style='font-size:14px;line-height:1.6;'>日頃の感謝を込めまして、何度でも遊べる<b>ランダム出題モード</b>の特別きっぷを発券いたしました。<br>（画面上の金色のボタンから挑戦できます）</p><p style='font-size:12px;color:#777;'>※特別きっぷの戦績記録は、本日限定で集計されます。</p><button id='close-user-anni-btn' class='btn' style='background:#4caf50;color:#fff;margin-top:15px;font-size:16px;width:100%;'>出発進行！</button>";
+        document.body.appendChild(userAnniDiv);
+        document.getElementById('close-user-anni-btn').addEventListener('click', () => {
+          userAnniDiv.remove();
+          showNextEventPopup(); // ★閉じた後に、次のポップアップを呼ぶ
+        });
+      });
     // ユーザー記念日用の紙吹雪をセット
     if(ev === "") ev = "anniversary";
   }
 }
 window.triggerEventEffect(ev);
+//キューに溜まったポップアップの表示をスタートする！
+showNextEventPopup();
 };
 
 
