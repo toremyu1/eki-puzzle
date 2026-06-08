@@ -190,7 +190,13 @@ else showMessage("ゲームクリア後に見ることができます");
 //「4文字」「5文字」「6文字」の切り替えボタンが押されたときの処理
 [4,5,6].forEach(num=>{
 document.getElementById(`mode-${num}`).addEventListener("click",()=>{
-  isPlayingRandom = false; // 【追加】通常モードに戻ったのでランダムフラグを解除する
+  isPlayingRandom = false; 
+  isAprilFoolMode = false; // 【追加】エイプリルフールフラグを解除する
+  
+  // 【追加】ハードモードスイッチの操作不可（グレーアウト）状態を解除する
+  const hs = document.getElementById("hardmode-switch");
+  if(hs) hs.disabled = false;
+  
   document.querySelectorAll(".mode-btn").forEach(b=>b.classList.remove("active"));
   document.getElementById(`mode-${num}`).classList.add("active");
   currentMode=num; rowLength=num; maxGuesses=(num===4)?8:6;
@@ -615,9 +621,14 @@ function submitGuess(isRestore=false){
   const isValid=stations.filter(s=>s.yomi.length===currentMode).some(s=>s.yomi===currentGuess);
   if(!isValid){ if(!isRestore)showMessage("実在しない駅名です"); return; }
   
-  // ハードモードのルールチェック（過去データの復元時、およびランダムモード時は除外）
-  if (!isRestore && !isPlayingRandom && ekiSettings.hardMode) {
-    if (!validateHardMode(currentGuess)) return;
+  // ランダムモード（周年モード）でもハードモードの縛りを適用する。
+  // ただし、エイプリルフールモード時は強制的に縛りを無効化する。
+  if (!isRestore && ekiSettings.hardMode) {
+    if (typeof isAprilFoolMode !== "undefined" && isAprilFoolMode) {
+      // エイプリルフールモードは例外としてスルーする
+    } else {
+      if (!validateHardMode(currentGuess)) return;
+    }
   }
   
   let stateKey = isPlayingRandom ? "random" : currentMode;
@@ -1018,10 +1029,20 @@ window.triggerEventEffect=(ev)=>{
       bMax.style.backgroundColor="#e91e63";bMax.style.color="#fff";bMax.style.border="none";
       
       bMax.addEventListener("click",()=>{
-        document.querySelectorAll(".mode-btn").forEach(b=>b.classList.remove("active"));
-        bMax.classList.add("active"); 
-        isAprilFoolMode=true; 
-        isPlayingRandom=false;
+        // 【追加】エイプリルフールモードではハードモードスイッチを強制OFFにし、操作不可（グレーアウト）にする
+        const hs = document.getElementById("hardmode-switch");
+        if(hs) {
+          hs.checked = false;
+          hs.disabled = true;
+        }
+        ekiSettings.hardMode = false;
+        
+      if(typeof updateHelpContent === "function") updateHelpContent();
+
+    document.querySelectorAll(".mode-btn").forEach(b=>b.classList.remove("active"));
+    bMax.classList.add("active"); 
+    isAprilFoolMode=true; 
+    isPlayingRandom=false;
         currentMode=mLen; rowLength=mLen; maxGuesses=4;
         
         const gb=document.getElementById("game-board"); gb.style.setProperty("--row-length",mLen);
@@ -1130,7 +1151,14 @@ if (meta.firstPlayDate) {
       btnAnni.addEventListener("click", () => {
         // ランダムモードをONにする
         isPlayingRandom = true; 
+        isAprilFoolMode = false; // 【追加】念のためエイプリルフールフラグを解除する
+        
+        // 【追加】ハードモードスイッチの操作不可（グレーアウト）状態を解除する
+        const hs = document.getElementById("hardmode-switch");
+        if(hs) hs.disabled = false;
+
         document.querySelectorAll(".mode-btn").forEach(b => b.classList.remove("active"));
+        
         btnAnni.classList.add("active");
         
         // 5文字の駅リストを取得し、候補駅（残り駅数）を正しくリセットする
