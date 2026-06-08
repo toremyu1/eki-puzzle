@@ -816,123 +816,120 @@ window.addEventListener("DOMContentLoaded",initGame);
 
 //11.行事日エフェクト
 window.triggerEventEffect=(ev)=>{
-document.body.className=document.body.className.replace(/event-\w+/g,"");
-let c=document.getElementById("event-container");
-if(c)c.remove();
-const oldHm = document.getElementById("site-anni-headmark");
-if(oldHm) oldHm.remove();
+  document.body.className=document.body.className.replace(/event-\w+/g,"");
+  let c=document.getElementById("event-container");
+  if(c)c.remove();
+  const oldHm = document.getElementById("site-anni-headmark");
+  if(oldHm) oldHm.remove();
 
-if(!ev)return;
-document.body.classList.add("event-"+ev);
+  if(!ev)return;
+  document.body.classList.add("event-"+ev);
 
-//サイト周年記念（ロゴの特別装飾と感謝メッセージ）
-if(ev === "site_anniversary"){
-  // 管理者パネルで設定した数値を取得する（通常は1）
-  let nYear = sessionStorage.getItem("debug_site_anni_year") || 1; 
-  
-  const h1 = document.querySelector('h1');
-  if(h1){
-    const headmark = document.createElement("div");
-    headmark.id = "site-anni-headmark";
-    // タイトルの上に被せるのではなく、Flexboxの仕様を活かしてタイトルの右隣に配置する
-    headmark.style.marginLeft = "10px";
-    headmark.style.transform = "rotate(10deg)"; // 少し傾けてお祭り感を出す
-    headmark.innerHTML = `<svg width="45" height="45" viewBox="0 0 100 100">
-      <circle cx="50" cy="50" r="45" fill="#ffd700" stroke="#ff8c00" stroke-width="4"/>
-      <circle cx="50" cy="50" r="38" fill="#fff"/>
-      <text x="50" y="42" font-family="sans-serif" font-size="18" font-weight="bold" fill="#d32f2f" text-anchor="middle">祝</text>
-      <text x="50" y="70" font-family="sans-serif" font-size="22" font-weight="bold" fill="#d32f2f" text-anchor="middle">${nYear}周年</text>
-      <path d="M 20 85 L 10 110 L 35 95 Z" fill="#ff8c00"/>
-      <path d="M 80 85 L 90 110 L 65 95 Z" fill="#ff8c00"/>
-    </svg>`;
-    h1.appendChild(headmark);
-  }
-  
-  const siteAnniDiv = document.createElement("div");
-  siteAnniDiv.style.position = "fixed"; siteAnniDiv.style.top = "50%"; siteAnniDiv.style.left = "50%"; siteAnniDiv.style.transform = "translate(-50%,-50%)";
-  siteAnniDiv.style.background = "#fff"; siteAnniDiv.style.border = "4px solid #ffd700"; siteAnniDiv.style.padding = "25px"; siteAnniDiv.style.zIndex = "10000";
-  siteAnniDiv.style.borderRadius = "12px"; siteAnniDiv.style.textAlign = "center"; siteAnniDiv.style.color = "#333"; siteAnniDiv.style.boxShadow = "0 4px 15px rgba(0,0,0,0.3)";
-  siteAnniDiv.style.width = "85%"; siteAnniDiv.style.maxWidth = "350px";
-  // n周年 の数値を文章にも反映させる
-  siteAnniDiv.innerHTML = `<h2 style='color:#d32f2f;margin-top:0;'>🎉 駅ドル ${nYear}周年記念！ 🎉</h2>` +
-                          `<p style='font-size:14px;line-height:1.6;'>皆様にご乗車いただき、駅ドルは無事に ${nYear} 周年を迎えることができました。</p>` +
-                          `<p style='font-size:14px;line-height:1.6;'>日頃の感謝を込めて、本日は特別なお祭り仕様で運行中です。<br>これからも末永いご愛顧をよろしくお願いいたします！</p>` +
-                          `<button id='close-site-anni-btn' class='btn' style='background:#d32f2f;color:#fff;margin-top:15px;font-size:16px;'>出発進行！</button>`;
-  document.body.appendChild(siteAnniDiv);
-  document.getElementById('close-site-anni-btn').addEventListener('click', () => siteAnniDiv.remove());
-}
-
-//エイプリルフール限定モード
-if(ev==="aprilfool"){
-  let mLen=stations.reduce((max,s)=>Math.max(max,s.yomi.length),0);
-  let longestPool=stations.filter(s=>s.yomi.length===mLen);
-  let afSaved=localStorage.getItem("ekiAF_"+currentDayIndex);
-  let longestSt;
-  if(afSaved){ longestSt=JSON.parse(afSaved); }else{ longestSt=longestPool[Math.floor(Math.random()*longestPool.length)]; localStorage.setItem("ekiAF_"+currentDayIndex,JSON.stringify(longestSt)); }
-  const modeArea=document.querySelector(".mode-btn").parentNode;
-  if(modeArea&&!document.getElementById("mode-"+mLen)){
-    const bMax=document.createElement("button");
-    bMax.id="mode-"+mLen;bMax.className="mode-btn btn";bMax.innerText=mLen+"文字";
-    bMax.style.backgroundColor="#e91e63";bMax.style.color="#fff";bMax.style.border="none";
+  //サイト周年記念（ロゴの特別装飾と感謝メッセージ）
+  if(ev === "site_anniversary"){
+    let nYear = sessionStorage.getItem("debug_site_anni_year") || 1; 
+    const h1 = document.querySelector('h1');
+    if(h1){
+      const headmark = document.createElement("div");
+      headmark.id = "site-anni-headmark";
+      headmark.style.marginLeft = "10px";
+      headmark.style.transform = "rotate(10deg)"; 
+      headmark.innerHTML = `<svg width="45" height="45" viewBox="0 0 100 100"><circle cx="50" cy="50" r="45" fill="#ffd700" stroke="#ff8c00" stroke-width="4"/><circle cx="50" cy="50" r="38" fill="#fff"/><text x="50" y="42" font-family="sans-serif" font-size="18" font-weight="bold" fill="#d32f2f" text-anchor="middle">祝</text><text x="50" y="70" font-family="sans-serif" font-size="22" font-weight="bold" fill="#d32f2f" text-anchor="middle">${nYear}周年</text><path d="M 20 85 L 10 110 L 35 95 Z" fill="#ff8c00"/><path d="M 80 85 L 90 110 L 65 95 Z" fill="#ff8c00"/></svg>`;
+      h1.appendChild(headmark);
+    }
     
-    bMax.addEventListener("click",()=>{
-      document.querySelectorAll(".mode-btn").forEach(b=>b.classList.remove("active"));
-      bMax.classList.add("active"); 
-      isAprilFoolMode=true; 
-      isPlayingRandom=false;
-      currentMode=mLen; rowLength=mLen; maxGuesses=4;
-      
-      const gb=document.getElementById("game-board"); gb.style.setProperty("--row-length",mLen);
-      const afs=document.createElement("style"); afs.id="af-style";
-      afs.innerHTML=".event-aprilfool #game-board{display:block!important;width:100%!important;max-width:100vw!important;overflow-x:auto!important;padding-bottom:20px!important;box-sizing:border-box!important;}.event-aprilfool .board-row{display:grid!important;grid-template-columns:repeat("+mLen+",60px)!important;gap:5px!important;margin-bottom:5px!important;width:max-content!important;margin-left:auto!important;margin-right:auto!important;padding:0 10px!important;}.event-aprilfool .tile{width:60px!important;height:60px!important;font-size:24px!important;}";
-      document.head.appendChild(afs);
-
-      //エイプリルフール限定モードのデータ初期化
-      if(!userStats[mLen])userStats[mLen]={played:0,won:0,currentStreak:0,maxStreak:0,dist:[0,0,0,0,0,0,0,0,0,0]};
-      if(!savedState[mLen]) {
-        savedState[mLen]={guesses:[], guessTimes:[], startTime:null, endTime:null, usedHint:false, isOver:false, isWin:false};
-      } else {
-        if(!savedState[mLen].guessTimes) savedState[mLen].guessTimes = [];
-      }
-      
-      todayStation=longestSt; restoreBoard();
-    });
-    
-    modeArea.appendChild(bMax);
-    document.querySelectorAll(".mode-btn:not(#mode-"+mLen+")").forEach(b=>{
-      b.addEventListener("click",()=>{ isAprilFoolMode=false; const old=document.getElementById("af-style"); if(old)old.remove(); });
-    });
-
-    // 順番待ちポップアップ（エイプリルフール）
-    eventPopupQueue.push(() => {
-      const div=document.createElement("div");
-      div.style.position="fixed";div.style.top="50%";div.style.left="50%";div.style.transform="translate(-50%,-50%)";
-      div.style.background="#fff";div.style.border="4px solid #e91e63";div.style.padding="25px";div.style.zIndex="10000";
-      div.style.borderRadius="12px";div.style.textAlign="center";div.style.color="#333";div.style.boxShadow="0 4px 15px rgba(0,0,0,0.3)";
-      div.style.width="85%";div.style.maxWidth="400px";
-      div.innerHTML="<h2 style='color:#e91e63;margin-top:0;'>駅ドルへようこそ！</h2><p style='font-size:16px;line-height:1.6;'>本日はエイプリルフール。</p><p style='font-size:16px;line-height:1.6;'>日本一長い駅名（"+mLen+"文字）を当てる<br><b>超・鬼畜モード</b>が解禁されました！</p><p style='font-size:14px;color:#555;'>画面上の「"+mLen+"文字」ボタンから挑戦できます。<br>横にスクロールして全文字を入力してください。<br>（※回答回数は特別に <b>4回</b> です）</p><button id='close-af-btn' class='btn' style='background:#e91e63;color:#fff;margin-top:15px;font-size:18px;'>挑戦する</button>";
-      document.body.appendChild(div);
-      document.getElementById("close-af-btn").addEventListener("click",()=>{
-        div.remove();
-        showNextEventPopup(); // ★閉じた後に次を呼ぶ
+    // 【優先度10】サイト周年ポップアップを順番待ち列に登録
+    registerEventPopup(10, () => {
+      const siteAnniDiv = document.createElement("div");
+      siteAnniDiv.style.position = "fixed"; siteAnniDiv.style.top = "50%"; siteAnniDiv.style.left = "50%"; siteAnniDiv.style.transform = "translate(-50%,-50%)";
+      siteAnniDiv.style.background = "#fff"; siteAnniDiv.style.border = "4px solid #ffd700"; siteAnniDiv.style.padding = "25px"; siteAnniDiv.style.zIndex = "10000";
+      siteAnniDiv.style.borderRadius = "12px"; siteAnniDiv.style.textAlign = "center"; siteAnniDiv.style.color = "#333"; siteAnniDiv.style.boxShadow = "0 4px 15px rgba(0,0,0,0.3)";
+      siteAnniDiv.style.width = "85%"; siteAnniDiv.style.maxWidth = "350px";
+      siteAnniDiv.innerHTML = "<h2 style='color:#d32f2f;margin-top:0;'>🎉 駅ドル "+nYear+"周年記念！ 🎉</h2><p style='font-size:14px;line-height:1.6;'>皆様にご乗車いただき、駅ドルは無事に "+nYear+" 周年を迎えることができました。</p><p style='font-size:14px;line-height:1.6;'>日頃の感謝を込めて、本日は特別なお祭り仕様で運行中です。<br>これからも末永いご愛顧をよろしくお願いいたします！</p><button id='close-site-anni-btn' class='btn' style='background:#d32f2f;color:#fff;margin-top:15px;font-size:16px;'>出発進行！</button>";
+      document.body.appendChild(siteAnniDiv);
+      document.getElementById('close-site-anni-btn').addEventListener('click', () => {
+        siteAnniDiv.remove();
+        showNextEventPopup(); // 閉じた後に次のポップアップを呼ぶ
       });
     });
   }
-}
-if(["newyear","hinamatsuri","kodomo","tanabata","nye","anniversary","site_anniversary","christmas","valentine","halloween","railway"].includes(ev)){
-c=document.createElement("div");c.id="event-container";document.body.appendChild(c);
-let char=Math.random()>0.5?"❄️":"🎄";
-if(ev==="hinamatsuri"||ev==="anniversary"||ev==="site_anniversary")char="🌸";
-if(ev==="newyear")char="🎍";if(ev==="kodomo")char="🎏";if(ev==="tanabata")char="🎋";if(ev==="nye")char="🔔";
-if(ev==="valentine")char=Math.random()>0.5?"💖":"🍫";if(ev==="halloween")char=Math.random()>0.5?"🎃":"🦇";if(ev==="railway")char=Math.random()>0.5?"🚄":"🚃";
-for(let i=0;i<30;i++){
-let p=document.createElement("div");p.className="particle";p.innerText=char;
-p.style.left=Math.random()*100+"vw";p.style.animationDuration=(Math.random()*4+3)+"s";
-p.style.fontSize=(Math.random()*15+15)+"px";p.style.opacity=Math.random()*0.5+0.5;c.appendChild(p);
-}
-setTimeout(()=>{if(c)c.remove();},8000);
-}
+
+  //エイプリルフール限定モード
+  if(ev==="aprilfool"){
+    let mLen=stations.reduce((max,s)=>Math.max(max,s.yomi.length),0);
+    let longestPool=stations.filter(s=>s.yomi.length===mLen);
+    let afSaved=localStorage.getItem("ekiAF_"+currentDayIndex);
+    let longestSt;
+    if(afSaved){ longestSt=JSON.parse(afSaved); }else{ longestSt=longestPool[Math.floor(Math.random()*longestPool.length)]; localStorage.setItem("ekiAF_"+currentDayIndex,JSON.stringify(longestSt)); }
+    const modeArea=document.querySelector(".mode-btn").parentNode;
+    if(modeArea&&!document.getElementById("mode-"+mLen)){
+      const bMax=document.createElement("button");
+      bMax.id="mode-"+mLen;bMax.className="mode-btn btn";bMax.innerText=mLen+"文字";
+      bMax.style.backgroundColor="#e91e63";bMax.style.color="#fff";bMax.style.border="none";
+      
+      bMax.addEventListener("click",()=>{
+        document.querySelectorAll(".mode-btn").forEach(b=>b.classList.remove("active"));
+        bMax.classList.add("active"); 
+        isAprilFoolMode=true; 
+        isPlayingRandom=false;
+        currentMode=mLen; rowLength=mLen; maxGuesses=4;
+        
+        const gb=document.getElementById("game-board"); gb.style.setProperty("--row-length",mLen);
+        const afs=document.createElement("style"); afs.id="af-style";
+        afs.innerHTML=".event-aprilfool #game-board{display:block!important;width:100%!important;max-width:100vw!important;overflow-x:auto!important;padding-bottom:20px!important;box-sizing:border-box!important;}.event-aprilfool .board-row{display:grid!important;grid-template-columns:repeat("+mLen+",60px)!important;gap:5px!important;margin-bottom:5px!important;width:max-content!important;margin-left:auto!important;margin-right:auto!important;padding:0 10px!important;}.event-aprilfool .tile{width:60px!important;height:60px!important;font-size:24px!important;}";
+        document.head.appendChild(afs);
+
+        //エイプリルフール限定モードのデータ初期化
+        if(!userStats[mLen])userStats[mLen]={played:0,won:0,currentStreak:0,maxStreak:0,dist:[0,0,0,0,0,0,0,0,0,0]};
+        if(!savedState[mLen]) {
+          savedState[mLen]={guesses:[], guessTimes:[], startTime:null, endTime:null, usedHint:false, isOver:false, isWin:false};
+        } else {
+          if(!savedState[mLen].guessTimes) savedState[mLen].guessTimes = [];
+        }
+        
+        todayStation=longestSt; restoreBoard();
+      });
+      
+      modeArea.appendChild(bMax);
+      document.querySelectorAll(".mode-btn:not(#mode-"+mLen+")").forEach(b=>{
+        b.addEventListener("click",()=>{ isAprilFoolMode=false; const old=document.getElementById("af-style"); if(old)old.remove(); });
+      });
+
+      // 【優先度20】エイプリルフールのポップアップを順番待ち列に登録
+      registerEventPopup(20, () => {
+        const div=document.createElement("div");
+        div.style.position="fixed";div.style.top="50%";div.style.left="50%";div.style.transform="translate(-50%,-50%)";
+        div.style.background="#fff";div.style.border="4px solid #e91e63";div.style.padding="25px";div.style.zIndex="10000";
+        div.style.borderRadius="12px";div.style.textAlign="center";div.style.color="#333";div.style.boxShadow="0 4px 15px rgba(0,0,0,0.3)";
+        div.style.width="85%";div.style.maxWidth="400px";
+        div.innerHTML="<h2 style='color:#e91e63;margin-top:0;'>駅ドルへようこそ！</h2><p style='font-size:16px;line-height:1.6;'>本日はエイプリルフール。</p><p style='font-size:16px;line-height:1.6;'>日本一長い駅名（"+mLen+"文字）を当てる<br><b>超・鬼畜モード</b>が解禁されました！</p><p style='font-size:14px;color:#555;'>画面上の「"+mLen+"文字」ボタンから挑戦できます。<br>横にスクロールして全文字を入力してください。<br>（※回答回数は特別に <b>4回</b> です）</p><button id='close-af-btn' class='btn' style='background:#e91e63;color:#fff;margin-top:15px;font-size:18px;'>挑戦する</button>";
+        document.body.appendChild(div);
+        document.getElementById("close-af-btn").addEventListener("click",()=>{
+          div.remove();
+          showNextEventPopup(); // 閉じた後に次のポップアップを呼ぶ
+        });
+      });
+    }
+  }
+
+  if(["newyear","hinamatsuri","kodomo","tanabata","nye","anniversary","site_anniversary","christmas","valentine","halloween","railway"].includes(ev)){
+    c=document.createElement("div");c.id="event-container";document.body.appendChild(c);
+    let char=Math.random()>0.5?"❄️":"🎄";
+    if(ev==="hinamatsuri"||ev==="anniversary"||ev==="site_anniversary")char="🌸";
+    if(ev==="newyear")char="🎍";if(ev==="kodomo")char="🎏";if(ev==="tanabata")char="🎋";if(ev==="nye")char="🔔";
+    if(ev==="valentine")char=Math.random()>0.5?"💖":"🍫";if(ev==="halloween")char=Math.random()>0.5?"🎃":"🦇";if(ev==="railway")char=Math.random()>0.5?"🚄":"🚃";
+    for(let i=0;i<30;i++){
+      let p=document.createElement("div");p.className="particle";p.innerText=char;
+      p.style.left=Math.random()*100+"vw";p.style.animationDuration=(Math.random()*4+3)+"s";
+      p.style.fontSize=(Math.random()*15+15)+"px";p.style.opacity=Math.random()*0.5+0.5;c.appendChild(p);
+    }
+    setTimeout(()=>{if(c)c.remove();},8000);
+  }
+
+  // すべてのイベント判定が終わった最後に、順番待ち列を一斉スタートさせる
+  setTimeout(startEventPopups, 100);
 };
+
 //現在の日付を取得して、今日が何か特別な「行事日」に該当するかどうかを毎日チェックする
 const checkSpecialEvent=()=>{
 const d=new Date();const m=d.getMonth()+1;const day=d.getDate();
