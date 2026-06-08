@@ -28,12 +28,29 @@ let userStats={　　　　　　　
 };
 //過去に解いた問題を記録しておく箱
 let dailyArchive={};
-// イベントポップアップの順番待ち列
+// イベントポップアップの順番待ち列（優先順位・拡張対応版）
 let eventPopupQueue = [];
+let isPopupRunning = false;
+
+// priority(数値)が小さい順に表示されます。
+// 基準： 10(サイト周年), 20(エイプリル), 30(ユーザー周年), 99(将来のその他用)
+function registerEventPopup(priority, actionFunc) {
+  eventPopupQueue.push({ priority: priority, action: actionFunc });
+}
+
+function startEventPopups() {
+  if (isPopupRunning) return; // 既に動いていれば何もしない
+  isPopupRunning = true;
+  eventPopupQueue.sort((a, b) => a.priority - b.priority); // 優先度順に並び替え
+  showNextEventPopup();
+}
+
 function showNextEventPopup() {
   if (eventPopupQueue.length > 0) {
-    const nextPopup = eventPopupQueue.shift(); // 列の先頭を取り出す
-    nextPopup(); // ポップアップを表示する
+    const nextPopup = eventPopupQueue.shift();
+    nextPopup.action();
+  } else {
+    isPopupRunning = false; // 列が空になったら待機状態に戻す
   }
 }
 
@@ -933,14 +950,28 @@ else if(m===12&&day===31)ev="nye";
 
 // サイト周年の自動判定
 const openDate = new Date(SITE_OPEN_DATE);
-// 今日が公開日と同じ「月・日」で、かつ年が1年以上進んでいる場合
 if (m === openDate.getMonth() + 1 && day === openDate.getDate() && d.getFullYear() > openDate.getFullYear()) {
   ev = "site_anniversary";
-  // 何周年かを自動計算して、演出用の変数（sessionStorage）にこっそり保存しておく
   let nYear = d.getFullYear() - openDate.getFullYear();
   sessionStorage.setItem("debug_site_anni_year", nYear);
+  
+  // 【優先度10】サイト周年ポップアップを登録（一番最初に表示）
+  registerEventPopup(10, () => {
+    const siteAnniDiv = document.createElement("div");
+    siteAnniDiv.style.position = "fixed"; siteAnniDiv.style.top = "50%"; siteAnniDiv.style.left = "50%"; siteAnniDiv.style.transform = "translate(-50%,-50%)";
+    siteAnniDiv.style.background = "#fff"; siteAnniDiv.style.border = "4px solid #ff9800"; siteAnniDiv.style.padding = "25px"; siteAnniDiv.style.zIndex = "10000";
+    siteAnniDiv.style.borderRadius = "12px"; siteAnniDiv.style.textAlign = "center"; siteAnniDiv.style.color = "#333"; siteAnniDiv.style.boxShadow = "0 4px 15px rgba(0,0,0,0.3)";
+    siteAnniDiv.style.width = "85%"; siteAnniDiv.style.maxWidth = "350px";
+<div style="font-size:14px;line-height:1.6;margin-bottom:15px;text-align:left;">
+    siteAnniDiv.innerHTML="<h2 style='color:#ff9800;margin-top:0;'>🎉 サイト公開 "+nYear+" 周年！ 🎉</h2><p style='font-size:14px;line-height:1.6;'>皆様のおかげで、駅ドルは <b>"+nYear+" 周年</b> を迎えました！<br>いつも遊んでいただきありがとうございます。</p><button id='close-site-anni-btn' class='btn' style='background:#ff9800;color:#fff;margin-top:15px;font-size:16px;width:100%;'>閉じる</button>";
+</div>
+    document.body.appendChild(siteAnniDiv);
+    document.getElementById('close-site-anni-btn').addEventListener('click', () => {
+      siteAnniDiv.remove();
+      showNextEventPopup(); 
+    });
+  });
 }
-
 // ユーザー個人の周年記念判定
 const meta = JSON.parse(localStorage.getItem("ekiZukanMeta") || '{}');
 if (meta.firstPlayDate) {
@@ -988,18 +1019,20 @@ if (meta.firstPlayDate) {
       });
       modeArea.appendChild(btnAnni);
 
-      // 【変更】ユーザー周年のポップアップを順番待ち列に入れる
-      eventPopupQueue.push(() => {
+      // 【優先度30】ユーザー周年ポップアップを登録（一番最後に表示）
+      registerEventPopup(30, () => {
         const userAnniDiv = document.createElement("div");
         userAnniDiv.style.position = "fixed"; userAnniDiv.style.top = "50%"; userAnniDiv.style.left = "50%"; userAnniDiv.style.transform = "translate(-50%,-50%)";
         userAnniDiv.style.background = "#fff"; userAnniDiv.style.border = "4px solid #4caf50"; userAnniDiv.style.padding = "25px"; userAnniDiv.style.zIndex = "10000";
         userAnniDiv.style.borderRadius = "12px"; userAnniDiv.style.textAlign = "center"; userAnniDiv.style.color = "#333"; userAnniDiv.style.boxShadow = "0 4px 15px rgba(0,0,0,0.3)";
         userAnniDiv.style.width = "85%"; userAnniDiv.style.maxWidth = "350px";
+<div style="font-size:14px;line-height:1.6;margin-bottom:15px;text-align:left;">
         userAnniDiv.innerHTML="<h2 style='color:#4caf50;margin-top:0;'>🎉 ご乗車 "+years+" 周年！ 🎉</h2><p style='font-size:14px;line-height:1.6;'>今日で「駅ドル」の運行に加わっていただいてから、ちょうど <b>"+years+" 年</b> が経ちました！</p><p style='font-size:14px;line-height:1.6;'>日頃の感謝を込めまして、何度でも遊べる<b>ランダム出題モード</b>の特別きっぷを発券いたしました。<br>（画面上の金色のボタンから挑戦できます）</p><p style='font-size:12px;color:#777;'>※特別きっぷの戦績記録は、本日限定で集計されます。</p><button id='close-user-anni-btn' class='btn' style='background:#4caf50;color:#fff;margin-top:15px;font-size:16px;width:100%;'>出発進行！</button>";
+</div>
         document.body.appendChild(userAnniDiv);
         document.getElementById('close-user-anni-btn').addEventListener('click', () => {
           userAnniDiv.remove();
-          showNextEventPopup(); // ★閉じた後に、次のポップアップを呼ぶ
+          showNextEventPopup(); // ★閉じた後に次を呼ぶ
         });
       });
     }
