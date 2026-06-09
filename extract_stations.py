@@ -1,5 +1,4 @@
-#Google Colab用
-# !pip install requests beautifulsoup4 
+# !pip install requests beautifulsoup4
 
 import time
 import json
@@ -18,25 +17,25 @@ municipality_cache = {}
 # =========================================================================
 # 【ここに追加！】uub.jpから最新の全国市区町村リストを全自動で取得する関数
 # =========================================================================
-def fetch_all_municipalities():
-    url = "https://uub.jp/ctv/search.cgi?L=kanni&Pa=全国&B=最新&C=1&T=1&V=1&U=1&Dn=1&Dp=1&Dj=1&Da=1&Dm=1&R=stan&A=all&M=part"
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-    }
-    try:
-        print("uub.jp から最新の市区町村リストを取得しています...")
-        response = requests.get(url, headers=headers, timeout=10)
-        response.raise_for_status()
-        response.encoding = response.apparent_encoding
-        soup = BeautifulSoup(response.text, 'html.parser')
+# def fetch_all_municipalities():
+#     url = "https://uub.jp/ctv/search.cgi?L=kanni&Pa=全国&B=最新&C=1&T=1&V=1&U=1&Dn=1&Dp=1&Dj=1&Da=1&Dm=1&R=stan&A=all&M=part"
+#     headers = {
+#         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+#     }
+#     try:
+#         print("uub.jp から最新の市区町村リストを取得しています...")
+#         response = requests.get(url, headers=headers, timeout=10)
+#         response.raise_for_status()
+#        response.encoding = response.apparent_encoding
+#         soup = BeautifulSoup(response.text, 'html.parser')
         
-        municipality_tags = soup.find_all('td', class_=['bcity', 'btown', 'bvill'])
-        municipalities = [tag.get_text(strip=True) for tag in municipality_tags]
-        return municipalities
-    except Exception as e:
-        print(f"市区町村リストの取得に失敗しました: {e}")
-        # 万が一uub.jpが落ちていた時のための最低限のセーフティネット（上郡町・平群町）
-        return ['上郡町', '平群町']
+#         municipality_tags = soup.find_all('td', class_=['bcity', 'btown', 'bvill'])
+#         municipalities = [tag.get_text(strip=True) for tag in municipality_tags]
+#         return municipalities
+#     except Exception as e:
+#         print(f"市区町村リストの取得に失敗しました: {e}")
+#         # 万が一uub.jpが落ちていた時のための最低限のセーフティネット（上郡町・平群町）
+#         return ['上郡町', '平群町']
 
 
 
@@ -195,7 +194,7 @@ def get_todays_sub_pages():
     weekday = datetime.datetime.today().weekday()
 
     # ★動作テストのため、強制的に「6:日曜日」に設定します
-    weekday = 6
+    # weekday = 6
 
     # 取得した全ページを曜日ごとに自動で7等分する
     chunks = [[] for _ in range(7)]
@@ -207,7 +206,7 @@ def get_todays_sub_pages():
         chunks[weekday] = ["あ"]
 
     # ★テスト用に「あ」のページだけを強制的に指定します
-    # return ["ま"], weekday
+    return ["お"], weekday
 
     return chunks[weekday], weekday
 
@@ -618,6 +617,23 @@ def extract_and_count_stations():
             preserved_id = old_item.get("id")
             preserved_start = old_item.get("startDay", 0)
             preserved_end = old_item.get("endDay", 999999)
+
+            # 【究極安全化】もし「読みがな(文字数)」が変更されていたら、過去のプールを壊さないよう別駅として世代交代させる
+            if old_item.get("yomi") != v["yomi"]:
+                # 古いデータを「今日で廃止」としてアーカイブ化
+                archived_url = url + f"_archived_yomi{current_day_index}"
+                old_item["endDay"] = current_day_index
+                existing_stations[archived_url] = old_item
+                
+                # 新しい読みがなのデータを、新しいIDで今日からの新駅として登録
+                max_id += 1
+                v["id"] = max_id
+                v["startDay"] = current_day_index
+                v["endDay"] = 999999
+                v["missingCount"] = 0
+                existing_stations[url] = v
+                print(f"  [読みがな変更検知] {v['kanji']} の読みが変更されたため、新ID({max_id})で世代交代しました。({old_item.get('yomi')} -> {v['yomi']})")
+                continue
 
             existing_stations[url] = v
             existing_stations[url]["id"] = preserved_id
