@@ -141,24 +141,61 @@ try{
   if (!localStorage.getItem("ekiSystemVersion")) localStorage.setItem("ekiSystemVersion", "1.0");
   // URLの末尾に「?emergency_reset=true」がついている場合の処理
   if (new URLSearchParams(window.location.search).get("emergency_reset") === "true") {
-  // ページ読み込み時に、まず確認ダイアログを表示してユーザーに問いかける
-  if (confirm("これまでのプレイ実績や設定がすべて消去されます。本当に初期化しますか？")) {
-    // ユーザーが「OK」を押した場合のみ、データを全消去する
-    localStorage.clear();
-    alert("データを初期化しました。");  
+    if (confirm("これまでのプレイ実績や設定がすべて消去されます。本当に初期化しますか？")) {
+      localStorage.clear();
+      alert("データを初期化しました。");  
+    }
+    window.location.href = window.location.origin + window.location.pathname;
+    return;
   }
-  // 「OK」の場合も、消去を「キャンセル」した場合も、通常のURL（末尾の?~がない状態）に画面を切り替える
-  window.location.href = window.location.origin + window.location.pathname;
-  return;
-}
-loadStats();　　　　　　　//全プレイヤーの戦績データをパソコンから読み込む
-updateLoginStreak(); 　　//連続ログイン日数をカウント
-//すべての駅データが書かれた「station.json」ファイルをインターネット経由で読み込む。キャッシュを強制的に無視して常に最新を取得する
-const res=await fetch('stations.json', { cache: "no-store" });
-const raw=await res.json();
-//貨物専用駅を除外し、駅名の読みを全てひらがなに整えて保存
-stations=raw.filter(s=>!(s.companies&&s.companies.length===1&&s.companies[0]==="日本貨物鉄道")).map(s=>({...s,yomi:toHiragana(s.yomi)}));
-if(stations.length===0)return;
+  loadStats();
+  updateLoginStreak();
+
+  // 【究極版】データ取得失敗時の安全装置（Cache APIを使った非同期の大容量バックアップ）
+  let raw = [];
+  try {
+    // 常に最新を取りに行く
+    const res = await fetch('stations.json', { cache: "no-store" });
+    if (!res.ok) throw new Error("ネットワークエラー");
+    
+    // 【重要】レスポンスの中身（2MB）は1回しか読めないため、バックアップ用にコピー（clone）を作る
+    const resToCache = res.clone();
+    raw = await res.json();
+    
+    // Cache APIを使って、ブラウザの専用金庫に非同期で安全に保存する（フリーズしない・容量制限に引っかからない）
+    if ('caches' in window) {
+      const cache = await caches.open('eki-backup-v1');
+      cache.put('stations.json', resToCache).catch(e => console.warn("キャッシュ保存スキップ:", e));
+    }
+  } catch (err) {
+    console.warn("最新データの取得に失敗。Cache APIのバックアップを使用します。", err);
+    
+    let isRecovered = false;
+    // 通信エラー時は、Cache APIの金庫から過去のデータを引っ張り出す
+    if ('caches' in window) {
+      const cache = await caches.open('eki-backup-v1');
+      const cachedRes = await cache.match('stations.json');
+      if (cachedRes) {
+        raw = await cachedRes.json();
+        isRecovered = true;
+      }
+    }
+    
+    // バックアップすら無い（完全な初回プレイで通信エラー）場合の致命的エラー画面
+    if (!isRecovered) {
+      document.body.innerHTML = `
+        <div style="text-align:center; padding:50px; font-family:sans-serif;">
+          <h3 style="color:#e53935;">駅データの読み込みに失敗しました</h3>
+          <p style="font-size:14px; color:#555;">通信環境の良いところで、もう一度お試しください。</p>
+          <button onclick="location.reload()" style="margin-top:20px; padding:10px 20px; font-size:16px; font-weight:bold; background:#3498db; color:#fff; border:none; border-radius:5px;">再読み込み</button>
+        </div>`;
+      return; // 処理を止める
+    }
+  }
+
+  //貨物専用駅を除外し、駅名の読みを全てひらがなに整えて保存
+  stations=raw.filter(s=>!(s.companies&&s.companies.length===1&&s.companies[0]==="日本貨物鉄道")).map(s=>({...s,yomi:toHiragana(s.yomi)}));
+  if(stations.length===0)return;
 //画面下部の「回答」「1字消す」「全削除」ボタンの動作
 document.getElementById("enter-btn").addEventListener("click",()=>handleKeyPress("ENTER"));
 document.getElementById("back-btn").addEventListener("click",()=>handleKeyPress("BACK"));
