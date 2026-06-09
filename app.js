@@ -949,10 +949,10 @@ function showResultModal(isWin,isRestore){
 楽天市場で探す
 </a>
 <div style="width:100%; border-top:1px dashed #ffcc80; margin:6px 0;"></div>
-<div style="width:100%; font-size:11px; font-weight:bold; color:#e65100; margin-bottom:4px; text-align:left; padding-left:5%;">値 地域を応援して名産品を貰う（ふるさと納税）</div>
-<a href="${satofullUrl}" target="_blank" style="display:flex; justify-content:center; align-items:center; background-color:#ffffff; border:1px solid #cccccc; border-radius:4px; width:45%; height:32px; overflow:hidden; position:relative; text-decoration:none;">
+<div style="width:100%; font-size:11px; font-weight:bold; color:#e65100; margin-bottom:4px; text-align:left; padding-left:5%;">🗾 地域を応援して名産品を貰う（ふるさと納税）</div>
+<a href="${satofullUrl}" target="_blank" style="display:flex; justify-content:center; align-items:center; background-color:#ffffff; border:none; border-radius:4px; width:45%; height:32px; overflow:hidden; position:relative; text-decoration:none;">
 <span style="font-size:11px; font-weight:bold; color:#33aaff;">さとふるで探す</span>
-<img src="https://www.satofull.jp/static/packages/default/images/linksetting/bnr-satofull-728_90_b.jpg" alt="さとふる" style="position:absolute; top:0; left:0; width:100%; height:100%; object-fit:contain; background-color:#ffffff; border:none;" onerror="this.style.display='none';">
+<img src="https://www.satofull.jp/static/packages/default/images/linksetting/bnr-satofull-728_90_b.jpg" alt="さとふる" style="position:absolute; top:0; left:0; width:100%; height:100%; object-fit:cover; background-color:#ffffff; border:none;" onerror="this.style.display='none';">
 </a>
 <a href="${rakutenFurusatoUrl}" target="_blank" style="display:flex; justify-content:center; align-items:center; padding:8px 0; background-color:#7a0000; color:#ffffff; border:none; border-radius:4px; font-weight:bold; font-size:11px; width:45%;">
 楽天ふるさと納税
