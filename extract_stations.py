@@ -1,3 +1,5 @@
+!pip install requests beautifulsoup4
+
 import time
 import json
 import re
@@ -11,9 +13,31 @@ import urllib.parse  # 追加：URLを解析するためのモジュール
 #自治体データキャッシュ用
 municipality_cache = {}
 
-import re
-import copy
-from bs4 import BeautifulSoup
+
+# =========================================================================
+# 【ここに追加！】uub.jpから最新の全国市区町村リストを全自動で取得する関数
+# =========================================================================
+def fetch_all_municipalities():
+    url = "https://uub.jp/ctv/search.cgi?L=kanni&Pa=全国&B=最新&C=1&T=1&V=1&U=1&Dn=1&Dp=1&Dj=1&Da=1&Dm=1&R=stan&A=all&M=part"
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    }
+    try:
+        print("uub.jp から最新の市区町村リストを取得しています...")
+        response = requests.get(url, headers=headers, timeout=10)
+        response.raise_for_status()
+        response.encoding = response.apparent_encoding
+        soup = BeautifulSoup(response.text, 'html.parser')
+        
+        municipality_tags = soup.find_all('td', class_=['bcity', 'btown', 'bvill'])
+        municipalities = [tag.get_text(strip=True) for tag in municipality_tags]
+        return municipalities
+    except Exception as e:
+        print(f"市区町村リストの取得に失敗しました: {e}")
+        # 万が一uub.jpが落ちていた時のための最低限のセーフティネット（上郡町・平群町）
+        return ['上郡町', '平群町']
+
+
 
 # =========================================================================
 # 【差し替え箇所1】自治体ページから「都道府県」だけをピンポイントで抜く関数
@@ -170,7 +194,7 @@ def get_todays_sub_pages():
     weekday = datetime.datetime.today().weekday()
 
     # ★動作テストのため、強制的に「6:日曜日」に設定します
-    weekday = 1
+    # weekday = 6
 
     # 取得した全ページを曜日ごとに自動で7等分する
     chunks = [[] for _ in range(7)]
@@ -182,7 +206,7 @@ def get_todays_sub_pages():
         chunks[weekday] = ["あ"]
 
     # ★テスト用に「あ」のページだけを強制的に指定します
-    # return ["お"], weekday
+    # return ["ま"], weekday
 
     return chunks[weekday], weekday
 
@@ -192,6 +216,7 @@ def fetch_station_details(url):
     """
     data = {
         "pref": "",
+        "county": "",                 
         "municipality": "",
         "ward": "",                 # 政令指定都市の行政区名のみ
         "muni_url": "",             # 自治体ページのURL保存用
@@ -244,22 +269,20 @@ def fetch_station_details(url):
                             txt = a.get_text(strip=True)
                             href = a.get('href')
 
-                            # 修正箇所1：startswithではなく、inを使って柔軟に判定
                             if not href or '/wiki/' not in href:
                                 continue
 
                             is_tokyo_ku = txt.endswith('区') and (data["pref"] == '東京都' or '東京' in value_text)
 
-                            # 市区町村の特定とURLの確保
-                            if txt.endswith(('市', '町', '村')) or is_tokyo_ku:
-                                if not data["municipality"]:
-                                    prev = a.find_previous_sibling('a')
-                                    if prev and prev.get_text(strip=True).endswith('郡'):
-                                        data["municipality"] = prev.get_text(strip=True) + txt
-                                    else:
-                                        data["municipality"] = txt
+                            # ★変更箇所：郡名と市区町村を独立して抽出
+                            if txt.endswith('郡'):
+                                if not data.get("county"):
+                                    data["county"] = txt
 
-                                    # 修正箇所2：urljoinを使って安全に絶対URLへ変換
+                            # 市区町村の特定とURLの確保
+                            elif txt.endswith(('市', '町', '村')) or is_tokyo_ku:
+                                if not data["municipality"]:
+                                    data["municipality"] = txt
                                     data["muni_url"] = urllib.parse.urljoin("https://ja.wikipedia.org", href)
 
                             # 政令指定都市の行政区は名前のみ抽出
@@ -273,17 +296,32 @@ def fetch_station_details(url):
                         loc = re.sub(r'^(?:東京都|北海道|(?:京都|大阪)府|[一-龠]{2,3}県)', '', loc).strip()
                         # 【スペース削除対応】空白を完全に消去してから判別
                         loc = loc.replace(' ', '').replace(' ', '')
+                        
+                        # ★変更箇所：郡と市区町村を別々にキャプチャする
                         m = re.match(r'^((?:.+?郡)?)(.+?(?:市|区|町|村))', loc)
                         if m:
-                            res_muni = m.group(1) + m.group(2)
-                            if loc.startswith(res_muni + res_muni[-1]): res_muni += res_muni[-1]
-                            if loc.startswith(res_muni + '市'): res_muni += '市'
-                            data["municipality"] = res_muni
+                            county_str = m.group(1)
+                            muni_str = m.group(2)
+                            
+                            if county_str:
+                                data["county"] = county_str
+                                
+                            # 大町町や野々市市などの文字重複対策
+                            if loc.startswith(county_str + muni_str + muni_str[-1]): 
+                                muni_str += muni_str[-1]
+                            if loc.startswith(county_str + muni_str + '市'): 
+                                muni_str += '市'
+                                
+                            data["municipality"] = muni_str
 
                     # 4. 【合体】自治体データを取得して駅データに統合
                     if data["muni_url"]:
                         if data["muni_url"] not in municipality_cache:
-                            print(f"    自治体詳細データを取得中: {data['municipality']}")
+                            
+                            # ★変更箇所：ログ出力時に郡名と市区町村名を足して表示
+                            full_muni_name = data.get("county", "") + data["municipality"]
+                            print(f"    自治体詳細データを取得中: {full_muni_name}")
+                            
                             try:
                                 m_res = requests.get(data["muni_url"], headers={"User-Agent": "EkiDleBot/1.0"}, timeout=10)
                                 municipality_cache[data["muni_url"]] = extract_municipality_data(m_res.text)
@@ -338,30 +376,30 @@ def fetch_station_details(url):
                 # ⑦ 所属路線
                 elif '所属路線' in header or header == '路線':
                     paren_depth = 0
-                    
+
                     # td要素内のすべての要素とテキストを上から順番に走査
                     for node in td.descendants:
-                        
+
                         # テキストデータ（文字）の場合、カッコの開閉状態をカウント
                         if getattr(node, 'name', None) is None:
                             text_str = str(node)
                             paren_depth += text_str.count('（') + text_str.count('(')
                             paren_depth -= text_str.count('）') + text_str.count(')')
                             paren_depth = max(0, paren_depth) # マイナスにならないようガード
-                        
+
                         # aタグの場合
                         elif getattr(node, 'name', None) == 'a':
                             # 現在カッコに囲まれた階層（直通路線や列車線の補足など）にいる場合はスキップ
                             if paren_depth > 0:
                                 continue
-                            
+
                             # title属性（Wikipediaの正式な記事名）を取得
                             line_name = node.get('title')
-                            
+
                             # title属性が存在しないリンクはスキップ
                             if not line_name:
                                 continue
-                                
+
                             # 路線名の重複を防ぎつつリストに追加
                             if line_name not in data["lines"]:
                                 data["lines"].append(line_name)
@@ -374,12 +412,21 @@ def fetch_station_details(url):
 
     return data
 
+  
+
 def extract_and_count_stations():
     stations_list = []
 
     headers = {
         "User-Agent": "EkiDleBot/1.0"
     }
+
+    # ★ 処理の一番最初、ループに入る前に市区町村リストを取得します！
+    # muni_list = fetch_all_municipalities()
+    # if muni_list:
+    #     print(f"取得完了：合計 {len(muni_list)} 件の市区町村データを例外リストとして使用します。")
+    # else:
+    #     print("市区町村リストの取得に失敗したため、例外判定なしで続行します。")
 
     print("Wikipediaからの駅名抽出（全文字数・例外対応版）を開始します...")
 
@@ -509,25 +556,25 @@ def extract_and_count_stations():
         try:
             with open("stations.json", "r", encoding="utf-8") as f:
                 data = json.load(f)
-                
+
                 # ① 最大のIDを特定
                 for item in data:
                     if item.get("id") is not None and item["id"] > max_id:
                         max_id = item["id"]
-                
+
                 # ② データを辞書に登録しつつ、足りないデータを一括で初期化する
                 for item in data:
                     # まだIDを持たない古い駅にIDを割り振る
                     if item.get("id") is None:
                         max_id += 1
                         item["id"] = max_id
-                    
+
                     # ★【ここが追加部分】既存の駅に startDay / endDay が無ければ 0 と 999999 で補完！
                     if "startDay" not in item:
                         item["startDay"] = 0
                     if "endDay" not in item:
                         item["endDay"] = 999999
-                    
+
                     existing_stations[item["url"]] = item
         except json.JSONDecodeError:
             pass
@@ -537,14 +584,14 @@ def extract_and_count_stations():
     # 2. 今回取得したデータを既存データと統合（新駅検知＆復活駅の完全安全化）
     for v in stations_list:
         url = v["url"]
-        
+
         if url in existing_stations:
             # 既存のデータを取得
             old_item = existing_stations[url]
-            
+
             # --- 【超安全化】もし「過去に完全に廃止された駅」だった場合 ---
             if old_item.get("endDay", 999999) < current_day_index:
-                
+
 
                 # すでに「_archived_day」が付いている場合は、そこから前（元のURL）だけを切り出す
                 base_url = url.split("_archived_day")[0]
@@ -553,7 +600,7 @@ def extract_and_count_stations():
                 #（URLの後ろに履歴用の文字を付けて、過去の遺物としてJSONに残す）
                 archived_url = url + f"_archived_day{old_item['endDay']}"
                 existing_stations[archived_url] = old_item
-                
+
                 # そして、今回復活した駅は「完全な新しい駅」として、新しいIDを振って新規登録する！
                 max_id += 1
                 v["id"] = max_id
@@ -575,7 +622,7 @@ def extract_and_count_stations():
             existing_stations[url]["id"] = preserved_id
             existing_stations[url]["startDay"] = preserved_start
             existing_stations[url]["endDay"] = preserved_end
-            existing_stations[url]["missingCount"] = 0 
+            existing_stations[url]["missingCount"] = 0
         else:
             # 純粋な新駅
             max_id += 1
@@ -592,10 +639,10 @@ def extract_and_count_stations():
             # すでに廃駅処理済みのものはスキップ
             if item.get("endDay", 999999) < 999999:
                 continue
-            
+
             sub_page = item.get("subPage")
             missing_count = item.get("missingCount", 0)
-            
+
             # --- パターンA: ページ名は健在なのに、駅から消えた場合（通常の廃駅） ---
             # これは言い訳のしようがないので、その日のうちに即座に廃駅にします。
             if sub_page in SUB_PAGES:
@@ -604,7 +651,7 @@ def extract_and_count_stations():
                     item["subPage"] = "廃止済"
                     print(f"  [廃駅検知] Wikipediaから消滅した駅を廃止に設定しました: {item['kanji']}")
                     continue
-            
+
             # --- パターンB: Wikipediaの仕様変更でページ自体が消え、駅が迷子になった場合 ---
             # すぐに廃駅にはせず、ステータスを「引っ越し調査中」に切り替えて1週間の猶予を与える
             if sub_page not in all_wikipedia_sub_pages and sub_page != "引っ越し調査中":
@@ -612,7 +659,7 @@ def extract_and_count_stations():
                 item["missingCount"] = 1
                 print(f"  [仕様変更検知] ページ消滅につき、駅を引っ越し調査中に設定しました: {item['kanji']}")
                 continue
-                
+
             # --- パターンC: 「引っ越し調査中」の駅の、その後の生存確認 ---
             if sub_page == "引っ越し調査中":
                 # もし今日引っ越し先で見つかっていれば、上の「ステップ2」の処理を通過した時点で
@@ -621,9 +668,9 @@ def extract_and_count_stations():
                 if url not in fetched_urls:
                     missing_count += 1
                     item["missingCount"] = missing_count
-                    
-                    # 7日間（＝全曜日を1周）どこからも見つからなかったら、本当にこの世から消えたとみなす
-                    if missing_count >= 7:
+
+                    # 14日間（＝全曜日を2周）どこからも見つからなかったら、本当にこの世から消えたとみなす
+                    if missing_count >= 14:
                         item["endDay"] = current_day_index
                         item["subPage"] = "廃止済"
                         print(f"  [廃駅確定] 1週間どこからも発見されなかったため、廃駅と判定しました: {item['kanji']}")
