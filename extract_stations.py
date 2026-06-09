@@ -206,7 +206,7 @@ def get_todays_sub_pages():
         chunks[weekday] = ["あ"]
 
     # ★テスト用に「あ」のページだけを強制的に指定します
-    # return ["う"], weekday
+    return ["お"], weekday
 
     return chunks[weekday], weekday
 
@@ -617,6 +617,23 @@ def extract_and_count_stations():
             preserved_id = old_item.get("id")
             preserved_start = old_item.get("startDay", 0)
             preserved_end = old_item.get("endDay", 999999)
+
+            # 【究極安全化】もし「読みがな(文字数)」が変更されていたら、過去のプールを壊さないよう別駅として世代交代させる
+            if old_item.get("yomi") != v["yomi"]:
+                # 古いデータを「今日で廃止」としてアーカイブ化
+                archived_url = url + f"_archived_yomi{current_day_index}"
+                old_item["endDay"] = current_day_index
+                existing_stations[archived_url] = old_item
+                
+                # 新しい読みがなのデータを、新しいIDで今日からの新駅として登録
+                max_id += 1
+                v["id"] = max_id
+                v["startDay"] = current_day_index
+                v["endDay"] = 999999
+                v["missingCount"] = 0
+                existing_stations[url] = v
+                print(f"  [読みがな変更検知] {v['kanji']} の読みが変更されたため、新ID({max_id})で世代交代しました。({old_item.get('yomi')} -> {v['yomi']})")
+                continue
 
             existing_stations[url] = v
             existing_stations[url]["id"] = preserved_id
