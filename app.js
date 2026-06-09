@@ -397,36 +397,60 @@ function saveGameState() {
 
 //今日出題する駅を、日付をもとにした乱数シードにより1つ決定
 function selectTodayStation(){
-const modeStations=stations.filter(s=>s.yomi.length===currentMode);
-if(modeStations.length===0){
-alert(`エラー: ${currentMode}文字の駅データが見つかりません。`);
-todayStation={kanji:"えらー",yomi:"えらー"}; return;
-}
-//2024年1月1日を基準に、世界中どこからアクセスしても強制的に「日本時間（JST）」で今日が何日目かを決定する
-const t=new Date();
-const jstMs = t.getTime() + (t.getTimezoneOffset() * 60000) + (9 * 3600000);
-const jstObj = new Date(jstMs);
-const todayUTC = Date.UTC(jstObj.getFullYear(), jstObj.getMonth(), jstObj.getDate());
-const baseUTC = Date.UTC(2024, 0, 1);
-currentDayIndex=Math.round((todayUTC - baseUTC) / 86400000)+debugOffset;
-loadGameState(currentDayIndex);
-//直近で出題された駅とできるだけ被らないようにしながら今日の正解駅を1つ決定
-let uniqueYomiCount=new Set(modeStations.map(s=>s.yomi)).size;
-let lookback=Math.min(1000,Math.floor(uniqueYomiCount*0.7));
-let history=[];
-for(let d=0;d<=currentDayIndex;d++){
-let recentSet=new Set(history.slice(-lookback));
-let pool=modeStations.filter(s=>!recentSet.has(s.yomi));
-let seed=d*12345+currentMode*6789;
-let hash=Math.imul(seed^(seed>>>15),2246822507);
-hash=Math.imul(hash^(hash>>>13),3266489909);
-hash=(hash^(hash>>>16))>>>0;
-let candidate=pool[hash%pool.length];
-history.push(candidate.yomi);
-if(d===currentDayIndex)todayStation=candidate;
-}
-//デバッグ時、ブラウザのコンソールに答えを出力
-//console.log(`※${currentMode}文字の答え:`,todayStation.kanji,todayStation.yomi);
+  const modeStations = stations.filter(s => s.yomi.length === currentMode);
+  if(modeStations.length === 0){
+    alert(`エラー: ${currentMode}文字の駅データが見つかりません。`);
+    todayStation = {kanji:"えらー", yomi:"えらー"}; 
+    return;
+  }
+  
+  //2024年1月1日を基準に、世界中どこからアクセスしても強制的に「日本時間（JST）」で今日が何日目かを決定する
+  const t=new Date();
+  const jstMs = t.getTime() + (t.getTimezoneOffset() * 60000) + (9 * 3600000);
+  const jstObj = new Date(jstMs);
+  const todayUTC = Date.UTC(jstObj.getFullYear(), jstObj.getMonth(), jstObj.getDate());
+  const baseUTC = Date.UTC(2024, 0, 1);
+  currentDayIndex=Math.round((todayUTC - baseUTC) / 86400000)+debugOffset;
+  loadGameState(currentDayIndex);
+  
+  let uniqueYomiCount = new Set(modeStations.map(s => s.yomi)).size;
+  let lookback = Math.min(1000, Math.floor(uniqueYomiCount * 0.7));
+  
+  // 各駅の「次回出禁解除日」を記録する箱
+  let nextAvailableDay = {}; 
+  
+  for(let d = 0; d <= currentDayIndex; d++){
+    
+    // その日（d）時点で、すでに登場しており、かつまだ廃止されていない駅を絞り込む
+    let activeStations = modeStations.filter(s => 
+      s.startDay !== undefined && s.startDay <= d && (s.endDay === undefined || s.endDay > d || s.endDay === 999999)
+    );
+    
+    //【超安全装置】もしその日の現役駅が0件なら、データ未設定とみなして全駅を対象にする！
+    if (activeStations.length === 0) {
+      activeStations = modeStations;
+    }
+    
+    // その日現役の駅の中から、さらに「ロック期間中ではない駅」を絞り込んでプールを作る
+    let pool = activeStations.filter(s => !nextAvailableDay[s.yomi] || nextAvailableDay[s.yomi] <= d);
+    
+    // 万が一プールが空になった場合の安全装置も、その日現役の駅にする
+    if(pool.length === 0) pool = activeStations; 
+    
+    let seed = d * 12345 + currentMode * 6789;
+    let hash = Math.imul(seed ^ (seed >>> 15), 2246822507);
+    hash = Math.imul(hash ^ (hash >>> 13), 3266489909);
+    hash = (hash ^ (hash >>> 16)) >>> 0;
+    
+    let candidate = pool[hash % pool.length];
+    
+    nextAvailableDay[candidate.yomi] = d + lookback + 1;
+    
+    if(d === currentDayIndex) todayStation = candidate;
+  }
+  
+  //公開時には絶対消す！！
+  console.log(`※${currentMode}文字の答え:`, todayStation.kanji, todayStation.yomi);
 }
 
 
