@@ -892,10 +892,10 @@ function showResultModal(isWin,isRestore){
   let areaKeyword = isRural ? safePref : muniMuni;
   let searchKw = typeof isAprilFoolMode!=="undefined"&&isAprilFoolMode ? safePref : areaKeyword;
   
-  // ポップアップ内のPR用バナー文言（キーワードを「特産品」へ変更）
+  // ポップアップ内のPR用バナー文言（トラベル用に修正）
   let prText = typeof isAprilFoolMode!=="undefined"&&isAprilFoolMode 
     ? `＼ 聖地のある「${safePref}」へ巡礼して指の疲れを癒やす ／` 
-    : `＼ この駅のある「${muniMuni}」の特別な特産品をチェック！ ／`;
+    : `＼ この駅のある「${muniMuni}」へ聖地巡礼に行こう！ ／`;
 
   // 1段目：宿・ホテル予約（既存のトラベルURL）
   let encodedStation=encodeURIComponent(encodeURIComponent(encodeURIComponent(searchKw)));
@@ -905,7 +905,7 @@ function showResultModal(isWin,isRestore){
   let rakutenUrl=`https://af.moshimo.com/af/c/click?a_id=5616621&p_id=55&pc_id=55&pl_id=624&url=https%3A%2F%2Fkw.travel.rakuten.co.jp%2Fkeyword%2FSearch.do%3Fcharset%3Dutf-8%26f_max%3D30%26l-id%3DtopC_search_keyword%26f_query%3D${rakutenKeyword}`;
   let rakutenImp='<img src="//i.moshimo.com/af/i/impression?a_id=5616621&p_id=55&pc_id=55&pl_id=624" width="1" height="1" style="border:none;" alt="" loading="lazy">';
 
-  // 2段目：通常のお取り寄せ（もしもアフィリエイトのYahoo!ショッピング正しいパス型URL仕様へ変更）
+  // 2段目：通常のお取り寄せ
   let yahooGiftKw = encodeURIComponent(muniMuni + " 特産品");
   let yahooShoppingDest = `https://shopping.yahoo.co.jp/search/${yahooGiftKw}/0/?area=13&first=1&ss_first=1&ts=1780965121&mcr=a50de90c7f9059dfb652acb37a54e919&tab_ex=commerce&sretry=1&sc_i=shopping-pc-web-result-suggest-h_srch-srchbtn-sgstfrom-result-item-h_srch-srchbox`;
   let yahooShoppingUrl = `https://af.moshimo.com/af/c/click?a_id=5626583&p_id=1225&pc_id=1925&pl_id=18502&url=${encodeURIComponent(yahooShoppingDest)}`;
@@ -922,14 +922,16 @@ function showResultModal(isWin,isRestore){
   let rakutenFurusatoDest = `https://search.rakuten.co.jp/search/mall/${encodeURIComponent(muniMuni + " ふるさと納税")}/`;
   let rakutenFurusatoUrl = `https://af.moshimo.com/af/c/click?a_id=5616620&p_id=54&pc_id=54&pl_id=616&url=${encodeURIComponent(rakutenFurusatoDest)}`;
 
-  // 結果画面のHTML書き換え（スクロール化とボタン画像化）
+  // 結果画面のHTML書き換え
   document.getElementById("wiki-link-container").innerHTML=`
 <div style="max-height:40vh; overflow-y:auto; padding-right:4px;">
 <div style="margin-bottom:12px;">
 <a href="${todayStation.url}" target="_blank" style="display:inline-block; padding:8px 12px; background-color:#e0e0e0; color:#333; text-decoration:none; border-radius:4px; font-weight:bold; font-size:12px;">Wikipediaで見る</a>
 </div>
 <div style="background-color:#fff3e0; border:1px solid #ffcc80; border-radius:6px; padding:10px; margin-bottom:5px; position:relative;">
-<div style="font-size:10px; color:#aaa; text-align:left; margin-bottom:4px; font-weight:bold;">※本ページはアフィリエイト広告を利用しています</div>
+<div style="text-align:center; margin-bottom:8px;">
+<span style="display:inline-block; border:1px solid #aaa; border-radius:4px; padding:1px 6px; font-size:10px; color:#aaa; font-weight:bold;">PR</span>
+</div>
 <div style="font-size:12px; font-weight:bold; color:#e65100; margin-bottom:8px;">${prText}</div>
 <div style="display:flex; justify-content:center; gap:8px; align-items:center; flex-wrap:wrap;">
 <a href="${yahooUrl}" target="_blank" style="display:flex; justify-content:center; align-items:center; padding:8px 0; background-color:#ffffff; border:1px solid #ff0033; color:#333; text-decoration:none; border-radius:4px; font-weight:bold; font-size:11px; width:45%;">
@@ -941,15 +943,16 @@ function showResultModal(isWin,isRestore){
 <div style="width:100%; border-top:1px dashed #ffcc80; margin:6px 0;"></div>
 <div style="width:100%; font-size:11px; font-weight:bold; color:#e65100; margin-bottom:4px; text-align:left; padding-left:5%;">🎁 この土地の名産品をお取り寄せ（通常購入）</div>
 <a href="${yahooShoppingUrl}" target="_blank" style="display:flex; justify-content:center; align-items:center; padding:8px 0; background-color:#ffffff; border:1px solid #ff0033; color:#333; text-decoration:none; border-radius:4px; font-weight:bold; font-size:11px; width:45%;">
-<img src="./yahoo_japan_icon_64.svg" alt="Y!" style="height:14px; margin-right:4px; border:none;">Yahoo!ショッピング
+<img src="./yahoo_japan_icon_64.svg" alt="Y!" style="height:14px; margin-right:4px; border:none;">ショッピング
 </a>
 <a href="${rakutenMarketUrl}" target="_blank" style="display:flex; justify-content:center; align-items:center; padding:8px 0; background-color:#bf0000; color:#ffffff; border:none; border-radius:4px; font-weight:bold; font-size:11px; width:45%;">
 楽天市場で探す
 </a>
 <div style="width:100%; border-top:1px dashed #ffcc80; margin:6px 0;"></div>
 <div style="width:100%; font-size:11px; font-weight:bold; color:#e65100; margin-bottom:4px; text-align:left; padding-left:5%;">値 地域を応援して名産品を貰う（ふるさと納税）</div>
-<a href="${satofullUrl}" target="_blank" style="display:flex; justify-content:center; align-items:center; padding:0; background-color:#ffffff; border:1px solid #cccccc; border-radius:4px; width:45%; height:32px; overflow:hidden;">
-<img src="https://www.satofull.jp/static/packages/default/images/linksetting/bnr-satofull-120_60_b.jpg" alt="さとふる" style="height:100%; object-fit:contain; border:none;">
+<a href="${satofullUrl}" target="_blank" style="display:flex; justify-content:center; align-items:center; background-color:#ffffff; border:1px solid #cccccc; border-radius:4px; width:45%; height:32px; overflow:hidden; position:relative; text-decoration:none;">
+<span style="font-size:11px; font-weight:bold; color:#33aaff;">さとふるで探す</span>
+<img src="https://www.satofull.jp/static/packages/default/images/linksetting/bnr-satofull-728_90_b.jpg" alt="さとふる" style="position:absolute; top:0; left:0; width:100%; height:100%; object-fit:contain; background-color:#ffffff; border:none;" onerror="this.style.display='none';">
 </a>
 <a href="${rakutenFurusatoUrl}" target="_blank" style="display:flex; justify-content:center; align-items:center; padding:8px 0; background-color:#7a0000; color:#ffffff; border:none; border-radius:4px; font-weight:bold; font-size:11px; width:45%;">
 楽天ふるさと納税
