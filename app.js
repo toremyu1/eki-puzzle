@@ -365,6 +365,18 @@ function saveStats(isWin,actualGuesses){
     st.won++; st.currentStreak++;
     if(st.currentStreak>st.maxStreak)st.maxStreak=st.currentStreak;
     st.dist[actualGuesses]=(st.dist[actualGuesses]||0)+1;
+    // 【ここから追加】
+    // プレイ状態を取得し、最後までハードモードを維持していたか判定する
+    let currentState = savedState[isPlayingRandom ? "random" : currentMode];
+    
+    if (currentState && currentState.isHardMode) {
+      
+      // ハードモードでのクリア回数（hardWon）をカウントアップする
+      // データが存在しない場合は0からスタートさせる
+      st.hardWon = (st.hardWon || 0) + 1;
+      
+    }
+    // 【ここまで追加】
   }else{ st.currentStreak=0; }
   
   userStats[targetMode]=st;
@@ -1420,9 +1432,30 @@ function incrementClearAchievements(actualGuesses, clearTimeMs) {
   //    if (!ach.unlockedSets.lines.includes(l)) ach.unlockedSets.lines.push(l);
   //  });
   //}
+  
   if (!ach.unlockedSets.clearedStationNames.includes(todayStation.kanji)) {
     ach.unlockedSets.clearedStationNames.push(todayStation.kanji); // 駅名（新幹線全制覇などの判定用）
   }
+
+  // 【ここから追加】
+  // 現在の文字数モードのプレイ状態を取得する
+  let currentState = savedState[currentMode];
+  
+  // 1手目から最後までハードモードを維持してクリアした場合の処理
+  if (currentState && currentState.isHardMode) {
+    
+    // ハードでクリアした駅名を保存する配列がまだ無ければ作成する
+    if (!ach.unlockedSets.hardClearedStationNames) {
+      ach.unlockedSets.hardClearedStationNames = [];
+    }
+    
+    // まだ記録されていない駅名であれば、配列の末尾に追加する
+    if (!ach.unlockedSets.hardClearedStationNames.includes(todayStation.kanji)) {
+      ach.unlockedSets.hardClearedStationNames.push(todayStation.kanji);
+    }
+    
+  }
+  // 【ここまで追加】
   
   // 毎月1日や周年記念などの判定用に、月日のスタンプ（例：06-05）を保存します
   const monthDayStr = String(now.getMonth() + 1).padStart(2, '0') + "-" + String(now.getDate()).padStart(2, '0');
