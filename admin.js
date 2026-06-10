@@ -47,7 +47,10 @@ adminPanel.innerHTML=`
 </select>
 <button id="admin-event-btn">演出テスト</button>
 <button id="admin-user-anni-btn" style="background:#e8f5e9; border:1px solid #4caf50; margin-left:10px;">個人の周年をテスト(初回日を1年前の今日にする)</button>
+<br>
+<button id="admin-offline-banner-btn" style="background:#fff3e0; border:1px solid #ff9800; margin-top:10px; padding:4px 8px;">⚠️ オフライン警告バナーをテスト表示 (ON/OFF)</button>
 </div>
+`;
 `;
 document.querySelector('header').insertAdjacentElement('afterend',adminPanel);
 const getList=()=>window.stations||window.stationsList||window.allStations||(typeof stations!=='undefined'?stations:null);
@@ -142,6 +145,27 @@ document.getElementById('admin-user-anni-btn').addEventListener('click', () => {
   localStorage.setItem("ekiZukanMeta", JSON.stringify(meta));
   alert("初回プレイ日を「1年前の今日」に書き換えました。ページを再読み込みします。");
   location.reload();
+});
+
+// オフライン警告バナーのテスト（ON/OFFトグル）
+document.getElementById('admin-offline-banner-btn').addEventListener('click', () => {
+  const existingBanner = document.getElementById("offline-warning-banner");
+  // 既に表示されている場合は消す（非表示）
+  if (existingBanner) {
+    existingBanner.remove();
+  } else {
+    // 表示されていない場合は、ヘッダーの直下にバナーを差し込む
+    const header = document.querySelector(".game-header");
+    if (header) {
+      header.insertAdjacentHTML("afterend", `
+        <div id="offline-warning-banner" style="background-color: #fff3e0; color: #e65100; font-size: 11px; font-weight: bold; text-align: center; padding: 6px; border-bottom: 1px solid #ffcc80; width: 100%; box-sizing: border-box;">
+          ⚠️ バックアップデータで運行中。通常の出題と答えが異なる場合があります。
+        </div>
+      `);
+    } else {
+      alert("エラー：ヘッダー（.game-header）が見つからないため表示できません。");
+    }
+  }
 });
 
 // 全データ一覧と直接編集
