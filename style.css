@@ -75,10 +75,18 @@ position: absolute; top: 30%; background-color: var(--correct-color); color: whi
 .hidden { display: none !important; }
 .modal-content {
   position: relative;
-  background-color: white;
+  /* background-color: white; */ 
+
   
-  /* 行事日の明るい文字色が引き継がれて白と同化するのを防ぐため、文字色を黒（#333）に固定します */
-  color: #333;
+  /* 【ここを修正】白固定をやめ、画面全体のテーマ背景色をそのまま引き継ぎます */
+  background-color: inherit; 
+  
+  /* 【ここを修正】黒固定をやめ、画面全体のテーマ文字色をそのまま引き継ぎます */
+  color: inherit; 
+  
+  /* 背景と同化してしまわないよう、クッキリとした影と、駅ドルカラー（緑）の枠線でおしゃれに装飾します */
+  border: 3px solid var(--correct-color);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
   
   padding: 20px 15px;
   border-radius: 8px;
