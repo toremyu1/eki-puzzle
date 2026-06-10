@@ -355,7 +355,7 @@ function loadStats(){
 function saveStats(isWin,actualGuesses){
   // ランダムモード中は「random」の枠に集計する
   let currentState = savedState[isPlayingRandom ? "random" : currentMode];
-  let targetMode = isPlayingRandom ? "random" : (currentMode + (currentState.isHardMode ? "_hard" : ""));
+  let targetMode = isPlayingRandom ? "random" : currentMode;
   let st=userStats[targetMode];
   if(!st) st={played:0,won:0,currentStreak:0,maxStreak:0,dist:[0,0,0,0,0,0,0,0,0,0]};
   if(!st.dist) st.dist=[0,0,0,0,0,0,0,0,0,0];
@@ -937,7 +937,7 @@ clearTimeout(msgTimeout); msgTimeout=setTimeout(()=>box.classList.add("hidden"),
 function showResultModal(isWin,isRestore){
   // 難易度ごとに戦績グラフや勝率を別々に集計・表示するための切り替え
   let currentState = savedState[isPlayingRandom ? "random" : currentMode];
-  let targetMode = isPlayingRandom ? "random" : (currentMode + (ekiSettings.hardMode ? "_hard" : ""));
+  let targetMode = isPlayingRandom ? "random" : currentMode;
   let st = userStats[targetMode];
   if(!st) st = {played:0,won:0,currentStreak:0,maxStreak:0,dist:[0,0,0,0,0,0,0,0,0,0]};
   if(!st.dist) st.dist=[0,0,0,0,0,0,0,0,0,0];
