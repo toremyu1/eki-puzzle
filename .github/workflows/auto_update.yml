@@ -52,3 +52,16 @@ jobs:
           
           # 最後にリポジトリへプッシュ（反映）します
           git push origin main
+
+          # 【ここから追加】作成された最新データをdevelopmentにも同期する
+      - name: Sync stations.json to development
+        run: |
+          git fetch origin development
+          git checkout development
+          
+          # mainブランチにある最新のstations.jsonだけを引っ張ってくる
+          git checkout main -- stations.json
+          
+          # developmentブランチへコミットしてプッシュする
+          git commit -m "Sync stations.json from main" || echo "No changes to sync"
+          git push origin development
