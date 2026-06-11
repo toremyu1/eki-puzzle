@@ -531,7 +531,7 @@ def fetch_station_details(url):
                                 data["transfer_stations"].append({"name": txt, "link": full_link})
                 # ↑↑↑ ここまで追加 ↑↑↑
 
-        except Exception as e:
+    except Exception as e:
         # 何のエラーで失敗したか分かるように表示する
         print(f"      [警告] データ抽出中にエラーが発生しました: {e}")
         pass
