@@ -14,12 +14,15 @@ def zero_fill_right_shift(val, n):
 
 def generate_answers():
     # 1. 最新の駅データをインターネット経由で直接読み込む
-    stations_url = "https://eki-puzzle.pages.dev/ekidle/" # ←★ここに実際のstations.jsonのURLを入れます
-    
+    # stations_url = "https://eki-puzzle.pages.dev/ekidle/" # ←★ここに実際のstations.jsonのURLを入れます
     try:
-        response = requests.get(stations_url, timeout=10)
-        response.raise_for_status() # 通信エラーがないかチェック
-        raw_stations = response.json()
+        with open('../stations.json', 'r', encoding='utf-8') as f:
+            raw_stations = json.load(f)
+    
+    # try:
+        # response = requests.get(stations_url, timeout=10)
+        # response.raise_for_status() # 通信エラーがないかチェック
+        # raw_stations = response.json()
     except Exception as e:
         print(f"駅データの取得に失敗しました: {e}")
         return # 取得失敗時は安全のため処理を中止する
