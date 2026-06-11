@@ -531,11 +531,14 @@ def fetch_station_details(url):
                                 data["transfer_stations"].append({"name": txt, "link": full_link})
                 # ↑↑↑ ここまで追加 ↑↑↑
 
-        if data["min_km"] == float('inf'):
-            data["min_km"] = None
-
-    except Exception:
+        except Exception as e:
+        # 何のエラーで失敗したか分かるように表示する
+        print(f"      [警告] データ抽出中にエラーが発生しました: {e}")
         pass
+
+    # try-except の外に安全装置を置くことで、エラー発生時でも確実に変換させる
+    if data["min_km"] == float('inf'):
+        data["min_km"] = 999999
 
     return data
 
@@ -636,8 +639,8 @@ def extract_and_count_stations():
                 details.update({"kanji": display_name, "yomi": yomi, "url": wiki_url, "subPage": page})
                 stations_list.append(details)
 
-                # サーバー負担軽減のための待機時間を0.5秒に短縮
-                time.sleep(0.5)
+                # サーバー負担軽減のための待機時間を2秒に設定
+                time.sleep(2)
 
         except Exception as e:
             print(f"エラーが発生しました: {e}")
@@ -772,6 +775,15 @@ def extract_and_count_stations():
             existing_stations[unique_key]["startDay"] = preserved_start
             existing_stations[unique_key]["endDay"] = preserved_end
             existing_stations[unique_key]["missingCount"] = 0
+
+            # 【追加】データ保護機構：今回の距離取得に失敗し、かつ過去に正常なデータがあった場合は復元する
+            if v["min_km"] == 999999 and old_item.get("min_km", 999999) != 999999:
+                existing_stations[unique_key]["min_km"] = old_item["min_km"]
+                print(f"  [データ保護] {v['kanji']} の距離データを過去の記録から復元しました。")
+            
+            # ついでに都道府県データが欠落した時の保護も入れておきます
+            if not v["pref"] and old_item.get("pref"):
+                existing_stations[unique_key]["pref"] = old_item["pref"]
         else:
             # 純粋な新駅
             max_id += 1
