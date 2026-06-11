@@ -472,68 +472,112 @@ function selectTodayStation(){
     todayStation = {kanji:"えらー", yomi:"えらー"}; 
     return;
   }
-  
-  //2024年1月1日を基準に、世界中どこからアクセスしても強制的に「日本時間（JST）」で今日が何日目かを決定する
-  const t=new Date();
+
+  // 1. 日本時間（JST）ベースの今日の日付と、今年の西暦（ファイル名用）を取得
+  const t = new Date();
   const jstMs = t.getTime() + (t.getTimezoneOffset() * 60000) + (9 * 3600000);
   const jstObj = new Date(jstMs);
+  const yearStr = jstObj.getFullYear(); // 例: 2026
+  let todayStr = jstObj.getFullYear() + "-" + String(jstObj.getMonth() + 1).padStart(2, '0') + "-" + String(jstObj.getDate()).padStart(2, '0'); // 例: "2026-06-11"
+
+  // 従来のセーブデータ管理（何日目のパズルか）のためにインデックスは計算しておく
   const todayUTC = Date.UTC(jstObj.getFullYear(), jstObj.getMonth(), jstObj.getDate());
-  const baseUTC = Date.UTC(2024, 0, 1);
-  currentDayIndex=Math.round((todayUTC - baseUTC) / 86400000)+debugOffset;
+  const baseUTC = Date.UTC(2024, 0, 1);      //2024年1月1日を基準とする
+  currentDayIndex = Math.round((todayUTC - baseUTC) / 86400000) + debugOffset;
+
+  // デバッグ機能で日付がずらされている場合は、検索する日付文字列も再計算
+  if (debugOffset !== 0) {
+    const debugDate = new Date(baseUTC + currentDayIndex * 86400000);
+    todayStr = debugDate.getUTCFullYear() + "-" + String(debugDate.getUTCMonth() + 1).padStart(2, '0') + "-" + String(debugDate.getUTCDate()).padStart(2, '0');
+  }
+  
   loadGameState(currentDayIndex);
 
-  // ↓ここから追加（安全なキャッシュ確認）
-  // すでに記憶があり、かつ記憶した「日にち」が「今日」と同じ場合のみキャッシュを使う
+  // すでにキャッシュがあり、かつ記憶した「日にち」が「今日」と同じ場合のみキャッシュを使う（文字数切り替え時の負荷軽減）
   if (todayStationCache[currentMode] && todayStationCache[currentMode].dayIndex === currentDayIndex) {
     todayStation = todayStationCache[currentMode].station;
-    return; // 計算をサボって終了する
-  }
-  // ↑ここまで追加
-  
-  let uniqueYomiCount = new Set(modeStations.map(s => s.yomi)).size;
-  let lookback = Math.min(1000, Math.floor(uniqueYomiCount * 0.7));
-  
-  // 各駅の「次回出禁解除日」を記録する箱
-  let nextAvailableDay = {}; 
-  
-  for(let d = 0; d <= currentDayIndex; d++){
-    
-    // その日（d）時点で、すでに登場しており、かつまだ廃止されていない駅を絞り込む
-    let activeStations = modeStations.filter(s => 
-      s.startDay !== undefined && s.startDay <= d && (s.endDay === undefined || s.endDay > d || s.endDay === 999999)
-    );
-    
-    //【超安全装置】もしその日の現役駅が0件なら、データ未設定とみなして全駅を対象にする！
-    if (activeStations.length === 0) {
-      activeStations = modeStations;
-    }
-    
-    // その日現役の駅の中から、さらに「ロック期間中ではない駅」を絞り込んでプールを作る
-    let pool = activeStations.filter(s => !nextAvailableDay[s.yomi] || nextAvailableDay[s.yomi] <= d);
-    
-    // 万が一プールが空になった場合の安全装置も、その日現役の駅にする
-    if(pool.length === 0) pool = activeStations; 
-    
-    let seed = d * 12345 + currentMode * 6789;
-    let hash = Math.imul(seed ^ (seed >>> 15), 2246822507);
-    hash = Math.imul(hash ^ (hash >>> 13), 3266489909);
-    hash = (hash ^ (hash >>> 16)) >>> 0;
-    
-    let candidate = pool[hash % pool.length];
-    
-    nextAvailableDay[candidate.yomi] = d + lookback + 1;
-    
-    if(d === currentDayIndex) todayStation = candidate;
+    return; 
   }
 
-  // ↓ここから追加
+  try {
+    // 2. 事前生成された今年の答えJSON（例: /answers/2026.json）を読み込む
+    const res = await fetch(`/answers/${yearStr}.json`, { cache: "no-store" });
+    if (!res.ok) throw new Error("答えファイルの取得に失敗");
+    const answersData = await res.json();
+
+    // 3. 今日・この文字数モードに対応する「正解のハッシュ値」を取得
+    const targetHash = answersData[todayStr]?.[currentMode];
+    if (!targetHash) throw new Error("本日の答えデータがファイル内にありません");
+
+    // JS側で文字を暗号化（SHA-256）するためのヘルパー処理
+    const calcSha256 = async (str) => {
+      const buf = new TextEncoder().encode(str);
+      const hashBuf = await crypto.subtle.digest('SHA-256', buf);
+      return Array.from(new Uint8Array(hashBuf)).map(b => b.toString(16).padStart(2, '0')).join('');
+    };
+
+    // 4. 駅リストの中から、読み（yomi）をハッシュ化して合致する駅を逆引き検索する
+    let foundStation = null;
+    for (const s of modeStations) {
+      const sHash = await calcSha256(s.yomi);
+      if (sHash === targetHash) {
+        foundStation = s;
+        break;
+      }
+    }
+
+    if (foundStation) {
+      todayStation = foundStation;
+    } else {
+      throw new Error("ハッシュが一致する駅がDB内に見つかりません");
+    }
+
+  } catch (err) {
+    console.warn("⚠️ サーバーの答えファイル読み込み失敗。従来のロジックで自動計算します:", err);
+
+    // 【安全装置】万が一通信エラーやJSON破損があった場合は、ゲームが止まらないよう元の計算ロジックで動かす
+    let uniqueYomiCount = new Set(modeStations.map(s => s.yomi)).size;
+    let lookback = Math.min(1000, Math.floor(uniqueYomiCount * 0.7));
+  
+    // 各駅の「次回出禁解除日」を記録する箱
+    let nextAvailableDay = {}; 
+  
+    for(let d = 0; d <= currentDayIndex; d++){
+    
+      // その日（d）時点で、すでに登場しており、かつまだ廃止されていない駅を絞り込む
+      let activeStations = modeStations.filter(s => 
+        s.startDay !== undefined && s.startDay <= d && (s.endDay === undefined || s.endDay > d || s.endDay === 999999)
+      );
+    
+      //【超安全装置】もしその日の現役駅が0件なら、データ未設定とみなして全駅を対象にする！
+      if (activeStations.length === 0) {
+        activeStations = modeStations;
+      }
+    
+      // その日現役の駅の中から、さらに「ロック期間中ではない駅」を絞り込んでプールを作る
+      let pool = activeStations.filter(s => !nextAvailableDay[s.yomi] || nextAvailableDay[s.yomi] <= d);
+    
+      // 万が一プールが空になった場合の安全装置も、その日現役の駅にする
+      if(pool.length === 0) pool = activeStations; 
+    
+      let seed = d * 12345 + currentMode * 6789;
+      let hash = Math.imul(seed ^ (seed >>> 15), 2246822507);
+      hash = Math.imul(hash ^ (hash >>> 13), 3266489909);
+      hash = (hash ^ (hash >>> 16)) >>> 0;
+    
+      let candidate = pool[hash % pool.length];
+    
+      nextAvailableDay[candidate.yomi] = d + lookback + 1;
+    
+      if(d === currentDayIndex) todayStation = candidate;
+    } 
+  }
+
   // 計算し終わった駅データと、その日のインデックス（日数）をセットで記憶させる
   todayStationCache[currentMode] = {
     station: todayStation,
     dayIndex: currentDayIndex
-  };
-  // ↑ここまで追加
-  
+  };  
   //公開時には絶対消す！！
   //console.log(`※${currentMode}文字の答え:`, todayStation.kanji, todayStation.yomi);
 }
