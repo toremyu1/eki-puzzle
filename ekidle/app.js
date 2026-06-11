@@ -731,7 +731,9 @@ localStorage.setItem("ekiZukanData",JSON.stringify(zukan));
 // プレイヤーが「回答」ボタンを押したときに、実際の答え合わせと画面への色付けを行う
 // 回答を送信したときの処理とゲームの勝敗判定
 function submitGuess(isRestore=false){
-  const isValid=stations.filter(s=>s.yomi.length===currentMode).some(s=>s.yomi===currentGuess);
+  // 【修正前】const isValid=stations.filter(s=>s.yomi.length===currentMode).some(s=>s.yomi===currentGuess);
+  // 【修正後】無駄なリスト作りをやめ、見つかった瞬間に検索を終えるスマートな書き方に変更します
+  const isValid=stations.some(s=> s.yomi.length===currentMode && s.yomi===currentGuess);
   if(!isValid){ if(!isRestore)showMessage("実在しない駅名です"); return; }
   
   // ランダムモード（周年モード）でもハードモードの縛りを適用する。
