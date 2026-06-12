@@ -14,12 +14,15 @@ def zero_fill_right_shift(val, n):
 
 def generate_answers():
     # 1. 最新の駅データをインターネット経由で直接読み込む
-    stations_url = "https://development.eki-puzzle.pages.dev/stations.json" # ←★ここに実際のstations.jsonのURLを入れます
-    
+    # stations_url = "https://eki-puzzle.pages.dev/ekidle/" # ←★ここに実際のstations.jsonのURLを入れます
     try:
-        response = requests.get(stations_url, timeout=10)
-        response.raise_for_status() # 通信エラーがないかチェック
-        raw_stations = response.json()
+        with open('../stations.json', 'r', encoding='utf-8') as f:
+            raw_stations = json.load(f)
+    
+    # try:
+        # response = requests.get(stations_url, timeout=10)
+        # response.raise_for_status() # 通信エラーがないかチェック
+        # raw_stations = response.json()
     except Exception as e:
         print(f"駅データの取得に失敗しました: {e}")
         return # 取得失敗時は安全のため処理を中止する
@@ -30,6 +33,11 @@ def generate_answers():
         companies = s.get('companies', [])
         if companies and len(companies) == 1 and companies[0] == "日本貨物鉄道":
             continue
+            
+        # 【強化版フィルター】都道府県、事業者、住所、営業キロのいずれかが欠けているゴースト駅を除外
+        if not s.get('pref') or not companies or not s.get('address') or s.get('min_km') is None:
+            continue
+            
         stations.append(s)
     
     base_date = datetime(2024, 1, 1, tzinfo=timezone.utc)
@@ -146,7 +154,7 @@ def generate_answers():
             with open(filepath_admin, 'r', encoding='utf-8') as f:
                 existing_admin = json.load(f)
                 
-        if d <= today_index:
+        if d <= today_index + 3:
             if date_str not in existing_admin:
                 existing_admin[date_str] = generated_admin[date_str]
         else:
