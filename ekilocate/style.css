@@ -5,6 +5,7 @@ body {
     font-family: "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif;
     background-color: #f5f7fa;
     color: #2c3e50;
+    /* フレックスボックスを使って要素を配置します */
     display: flex;
     flex-direction: column;
     align-items: center;
