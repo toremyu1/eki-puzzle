@@ -201,3 +201,35 @@ h1 {
         font-size: 24px;
     }
 }
+
+
+/* ==========================================
+   難易度選択画面のスタイル
+========================================== */
+
+/* 画面全体の余白と文字の配置を整えます */
+.difficulty-screen {
+    text-align: center;
+    padding: 40px 20px;
+}
+
+/* 難易度を選択するボタンのデザインです */
+.difficulty-screen button {
+    display: block;
+    width: 200px;
+    margin: 15px auto;
+    padding: 15px;
+    font-size: 18px;
+    font-weight: bold;
+    color: #ffffff;
+    background-color: #3498db;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+/* マウスを乗せた時にボタンの色を少し濃くします */
+.difficulty-screen button:hover {
+    background-color: #2980b9;
+}
