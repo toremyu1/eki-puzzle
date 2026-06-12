@@ -27,8 +27,8 @@ header {
 h1 {
     font-size: 28px;
     margin: 0 0 10px 0;
-    color: #2c3e50;
     letter-spacing: 2px;
+    color: var(--theme-accent, #3498db); /* テーマカラーに連動させます */
 }
 
 .game-description {
@@ -236,36 +236,47 @@ h1 {
 
 
 
-/* ボタンの基本デザイン */
-.btn {
-    background-color: #e3e3e1; border: none; padding: 8px 12px; border-radius: 4px;
-    font-weight: bold; cursor: pointer; color: #1a1a1b; font-size: 14px;
-}
-.btn:hover { background-color: #d3d6da; }
-
-/* ポップアップの装飾 */
+/* ==========================================
+   モーダルウィンドウ（枠線とスクロールバー）
+========================================== */
 .modal-content {
     background-image: linear-gradient(135deg, rgba(255, 255, 255, 0.12) 0%, rgba(0, 0, 0, 0.06) 100%);
     box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5), inset 0 0 12px rgba(255, 255, 255, 0.15);
+    
+    /* テーマカラーに連動する太めの枠線をつけます */
+    border: 3px solid var(--theme-accent, #3498db);
+}
+
+/* 駅ドル方式のカスタムスクロールバー（水色） */
+.modal-content::-webkit-scrollbar {
+    width: 8px;
+}
+.modal-content::-webkit-scrollbar-track {
+    background: transparent;
+    margin: 12px 0;
+}
+.modal-content::-webkit-scrollbar-thumb {
+    background-color: #3498db; /* ロゴと同じ水色 */
+    border-radius: 10px;
 }
 
 /* ==========================================
-   テーマカラーの切り替え設定
+   テーマカラーの切り替え設定（アクセント色定義）
 ========================================== */
-body.theme-dark { background-color: #121212; color: #ffffff; }
+:root { --theme-accent: #3498db; } /* デフォルトの水色 */
+
+body.theme-dark { background-color: #121212; color: #ffffff; --theme-accent: #777777; }
 body.theme-dark .results-container { background-color: #222; }
 body.theme-dark th { background-color: #333; color: #ddd; }
 body.theme-dark .modal-content { background-color: #222; color: #fff; }
 
-body.theme-sakura { background-color: #fff0f5; color: #5d4037; }
-body.theme-ocean { background-color: #e0f7fa; color: #004d40; }
-body.theme-blue { background-color: #e3f2fd; color: #0d47a1; }
-body.theme-green { background-color: #e8f5e9; color: #1b5e20; }
+body.theme-sakura { background-color: #fff0f5; color: #5d4037; --theme-accent: #f48fb1; }
+body.theme-ocean { background-color: #e0f7fa; color: #004d40; --theme-accent: #00bcd4; }
+body.theme-blue { background-color: #e3f2fd; color: #0d47a1; --theme-accent: #1976d2; }
+body.theme-green { background-color: #e8f5e9; color: #1b5e20; --theme-accent: #388e3c; }
 
-/* ==========================================
-   行事日エフェクト（背景・文字色のみ変化）
-========================================== */
-body.event-halloween { background-color: #2c1b18; color: #ff9800; }
-body.event-valentine { background-color: #3e2723; color: #ffcdd2; }
-body.event-christmas { background-color: #0f3024; color: #e8f5e9; }
-body.event-newyear { background-color: #fffaf0; color: #b71c1c; }
+/* 行事日エフェクト */
+body.event-halloween { background-color: #2c1b18; color: #ff9800; --theme-accent: #ff9800; }
+body.event-valentine { background-color: #3e2723; color: #ffcdd2; --theme-accent: #ffcdd2; }
+body.event-christmas { background-color: #0f3024; color: #e8f5e9; --theme-accent: #d32f2f; }
+body.event-newyear { background-color: #fffaf0; color: #b71c1c; --theme-accent: #e53935; }
