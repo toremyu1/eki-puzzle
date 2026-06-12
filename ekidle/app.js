@@ -241,17 +241,19 @@ try{
   //貨物専用駅を除外し、駅名の読みを全てひらがなに整えて保存
   stations=raw.filter(s=>!(s.companies&&s.companies.length===1&&s.companies[0]==="日本貨物鉄道")).map(s=>({...s,yomi:toHiragana(s.yomi)}));
   if(stations.length===0)return;
+
   // 【ここを追加：③ 画面UIの構築準備】
   updateLoadingProgress(60, "今日の答えを準備中...");
-//画面下部の「回答」「1字消す」「全削除」ボタンの動作
-document.getElementById("enter-btn").addEventListener("click",()=>handleKeyPress("ENTER"));
-document.getElementById("back-btn").addEventListener("click",()=>handleKeyPress("BACK"));
-document.getElementById("clear-btn").addEventListener("click",()=>handleKeyPress("CLEAR"));
-//メニューの三本線が押されたときにサイドメニューを出す
-document.getElementById("menu-btn").addEventListener("click",()=>{
-document.getElementById("side-menu-overlay").style.display="block";
-setTimeout(()=>document.getElementById("side-menu").style.right="0",10);
-});
+  
+  //画面下部の「回答」「1字消す」「全削除」ボタンの動作
+  document.getElementById("enter-btn").addEventListener("click",()=>handleKeyPress("ENTER"));
+  document.getElementById("back-btn").addEventListener("click",()=>handleKeyPress("BACK"));
+  document.getElementById("clear-btn").addEventListener("click",()=>handleKeyPress("CLEAR"));
+  //メニューの三本線が押されたときにサイドメニューを出す
+  document.getElementById("menu-btn").addEventListener("click",()=>{
+  document.getElementById("side-menu-overlay").style.display="block";
+  setTimeout(()=>document.getElementById("side-menu").style.right="0",10);
+  });
 //メニューの外側や閉じるボタンが押されたらメニューを右側に隠す
 const closeSideMenu=()=>{
 document.getElementById("side-menu").style.right="-250px";
@@ -335,23 +337,23 @@ document.getElementById("theme-btn").addEventListener("click",()=>{
   localStorage.setItem("ekiSettings",JSON.stringify(ekiSettings));
   // もし元がエイプリルフールだったなら、クラスを消された直後に強制的に再付与
   if (isAF) document.body.classList.add("event-aprilfool");
-});
-// ハードモード切り替えスイッチの制御ロジック
-const hardSwitch = document.getElementById("hardmode-switch");
-if (ekiSettings.hardMode) {
-  hardSwitch.checked = true;
-}
+  });
+  // ハードモード切り替えスイッチの制御ロジック
+  const hardSwitch = document.getElementById("hardmode-switch");
+  if (ekiSettings.hardMode) {
+    hardSwitch.checked = true;
+  }
 updateHelpContent(); // 起動時に説明文を現在の設定に合わせる
 
-hardSwitch.addEventListener("change", (e) => {
-  let st = savedState[isPlayingRandom ? "random" : currentMode];
+  hardSwitch.addEventListener("change", (e) => {
+    let st = savedState[isPlayingRandom ? "random" : currentMode];
 
-  // 【追加】すでにゲームクリア・ゲームオーバーになっている場合は変更をブロック
-  if (st && st.isOver) {
-    e.target.checked = !e.target.checked; // スイッチの見た目を強制的に戻す
-    showMessage("ゲーム終了後は変更できません");
-    return;
-}
+    // 【追加】すでにゲームクリア・ゲームオーバーになっている場合は変更をブロック
+    if (st && st.isOver) {
+      e.target.checked = !e.target.checked; // スイッチの見た目を強制的に戻す
+      showMessage("ゲーム終了後は変更できません");
+      return;
+  }
 
   // プレイ途中（1手以上入力済み）に「通常→ハード」へ変更しようとした場合はブロック
   if (e.target.checked && st && st.guesses && st.guesses.length > 0) {
@@ -369,12 +371,14 @@ hardSwitch.addEventListener("change", (e) => {
 
   localStorage.setItem("ekiSettings", JSON.stringify(ekiSettings));
   updateHelpContent();
-});
+  });
+  
   // 【ここを追加：④ 最終準備】
   updateLoadingProgress(80, "ゲーム盤を構築中...");
+  
   //最後に、今日の正解駅を選び、ゲーム盤を作り、行事日かどうかを調べる
   await selectTodayStation(); restoreBoard(); checkSpecialEvent();
-  
+
   // 【ここを追加：⑤ 完了・画面を閉じる】
   updateLoadingProgress(100, "出発進行！");
   setTimeout(hideLoadingScreen, 600); // 100%を見せるために0.6秒待ってから消す
@@ -509,128 +513,114 @@ function saveGameState() {
 // ==========================================
 
 //今日出題する駅を、日付をもとにした乱数シードにより1つ決定
-async function selectTodayStation(){
-  const modeStations = stations.filter(s => s.yomi.length === currentMode);
-  if(modeStations.length === 0){
-    alert(`エラー: ${currentMode}文字の駅データが見つかりません。`);
-    todayStation = {kanji:"えらー", yomi:"えらー"}; 
-    return;
-  }
-
-  // Python側と完全に一致させる秘密の合言葉（ソルト）
+async function selectTodayStation() {
   const SECRET_SALT = "EkiDoru_Secret_2026!";
 
-  // 1. 日本時間（JST）ベースの今日の日付と、今年の西暦（ファイル名用）を取得
+  // 1. 日付とインデックスの計算（全ルートで必須）
   const t = new Date();
   const jstMs = t.getTime() + (t.getTimezoneOffset() * 60000) + (9 * 3600000);
   const jstObj = new Date(jstMs);
-  const yearStr = jstObj.getFullYear(); // 例: 2026
-  let todayStr = jstObj.getFullYear() + "-" + String(jstObj.getMonth() + 1).padStart(2, '0') + "-" + String(jstObj.getDate()).padStart(2, '0'); // 例: "2026-06-11"
+  const yearStr = jstObj.getFullYear();
+  let todayStr = jstObj.getFullYear() + "-" + String(jstObj.getMonth() + 1).padStart(2, '0') + "-" + String(jstObj.getDate()).padStart(2, '0');
 
-  // 従来のセーブデータ管理（何日目のパズルか）のためにインデックスは計算しておく
   const todayUTC = Date.UTC(jstObj.getFullYear(), jstObj.getMonth(), jstObj.getDate());
-  const baseUTC = Date.UTC(2024, 0, 1);      //2024年1月1日を基準とする
+  const baseUTC = Date.UTC(2024, 0, 1);
   currentDayIndex = Math.round((todayUTC - baseUTC) / 86400000) + debugOffset;
 
-  // デバッグ機能で日付がずらされている場合は、検索する日付文字列も再計算
   if (debugOffset !== 0) {
     const debugDate = new Date(baseUTC + currentDayIndex * 86400000);
     todayStr = debugDate.getUTCFullYear() + "-" + String(debugDate.getUTCMonth() + 1).padStart(2, '0') + "-" + String(debugDate.getUTCDate()).padStart(2, '0');
   }
-  
+
   loadGameState(currentDayIndex);
 
-  // すでにキャッシュがあり、かつ記憶した「日にち」が「今日」と同じ場合のみキャッシュを使う（文字数切り替え時の負荷軽減）
+  // 2. 【最優先】キャッシュ確認（計算・フィルター前に実施して負荷をゼロにする）
   if (todayStationCache[currentMode] && todayStationCache[currentMode].dayIndex === currentDayIndex) {
     todayStation = todayStationCache[currentMode].station;
-    return; 
+    return;
   }
 
+  // 3. 【共通】Pythonと完全一致する「安全な駅プール」の作成
+  // （JSON逆引き時の「同名ゴースト駅の誤認」を防ぐため、全ルートで共通使用する）
+  const strictModeStations = stations.filter(s => 
+    s.yomi.length === currentMode && 
+    s.pref !== "" && 
+    s.companies && s.companies.length > 0 &&
+    !(s.companies.length === 1 && s.companies[0] === "日本貨物鉄道") &&
+    s.address !== "" &&
+    s.min_km !== null
+  );
+
+  if (strictModeStations.length === 0) {
+    alert(`エラー: ${currentMode}文字の有効な駅データが見つかりません。`);
+    todayStation = {kanji:"えらー", yomi:"えらー"}; 
+    return;
+  }
+
+  // 4. 【メインルート】answers.jsonの取得と逆引き
   try {
-    // 2. 事前生成された今年の答えJSON（例: answers/2026.json）を読み込む
     const res = await fetch(`answers/${yearStr}.json`, { cache: "no-store" });
     if (!res.ok) throw new Error("答えファイルの取得に失敗");
     const answersData = await res.json();
 
-    // 3. 今日・この文字数モードに対応する「正解のハッシュ値」を取得
     const targetHash = answersData[todayStr]?.[currentMode];
     if (!targetHash) throw new Error("本日の答えデータがファイル内にありません");
 
-    // JS側で文字を暗号化（SHA-256）するためのヘルパー処理
     const calcSha256 = async (str) => {
       const buf = new TextEncoder().encode(str);
       const hashBuf = await crypto.subtle.digest('SHA-256', buf);
       return Array.from(new Uint8Array(hashBuf)).map(b => b.toString(16).padStart(2, '0')).join('');
     };
 
-    // 4. 駅リストの中から、読み（yomi）をハッシュ化して合致する駅を逆引き検索する
-    
-    // modeStationsにあるすべての駅のハッシュ計算を「同時」に開始する
-    const hashPromises = modeStations.map(async (s) => {
+    const hashPromises = strictModeStations.map(async (s) => {
       const sHash = await calcSha256(SECRET_SALT + s.yomi);
       return { station: s, hash: sHash };
     });
 
-    // 並列処理されたすべての駅の計算結果が出そろうまで一括で待機する
     const hashedStations = await Promise.all(hashPromises);
-
-    // 計算済みのリストの中から、ターゲットのハッシュと一致する駅を一瞬で探し出す
     const foundItem = hashedStations.find(item => item.hash === targetHash);
 
     if (foundItem) {
       todayStation = foundItem.station;
     } else {
-      throw new Error("ハッシュが一致する駅がDB内に見つかりません");
+      throw new Error("ハッシュが一致する駅が見つかりません");
     }
 
+  // 5. 【フォールバックルート】通信エラー時はJS側でシミュレーション計算
   } catch (err) {
     console.warn("⚠️ サーバーの答えファイル読み込み失敗。従来のロジックで自動計算します:", err);
 
-    // 【安全装置】万が一通信エラーやJSON破損があった場合は、ゲームが止まらないよう元の計算ロジックで動かす
-    let uniqueYomiCount = new Set(modeStations.map(s => s.yomi)).size;
+    let uniqueYomiCount = new Set(strictModeStations.map(s => s.yomi)).size;
     let lookback = Math.min(1000, Math.floor(uniqueYomiCount * 0.7));
-  
-    // 各駅の「次回出禁解除日」を記録する箱
     let nextAvailableDay = {}; 
-  
+
     for(let d = 0; d <= currentDayIndex; d++){
-    
-      // その日（d）時点で、すでに登場しており、かつまだ廃止されていない駅を絞り込む
-      let activeStations = modeStations.filter(s => 
+      let activeStations = strictModeStations.filter(s => 
         s.startDay !== undefined && s.startDay <= d && (s.endDay === undefined || s.endDay > d || s.endDay === 999999)
       );
-    
-      //【超安全装置】もしその日の現役駅が0件なら、データ未設定とみなして全駅を対象にする！
-      if (activeStations.length === 0) {
-        activeStations = modeStations;
-      }
-    
-      // その日現役の駅の中から、さらに「ロック期間中ではない駅」を絞り込んでプールを作る
+
+      if (activeStations.length === 0) activeStations = strictModeStations;
+
       let pool = activeStations.filter(s => !nextAvailableDay[s.yomi] || nextAvailableDay[s.yomi] <= d);
-    
-      // 万が一プールが空になった場合の安全装置も、その日現役の駅にする
       if(pool.length === 0) pool = activeStations; 
-    
+
       let seed = d * 12345 + currentMode * 6789;
       let hash = Math.imul(seed ^ (seed >>> 15), 2246822507);
       hash = Math.imul(hash ^ (hash >>> 13), 3266489909);
       hash = (hash ^ (hash >>> 16)) >>> 0;
-    
+
       let candidate = pool[hash % pool.length];
-    
       nextAvailableDay[candidate.yomi] = d + lookback + 1;
-    
+
       if(d === currentDayIndex) todayStation = candidate;
     } 
   }
 
-  // 計算し終わった駅データと、その日のインデックス（日数）をセットで記憶させる
+  // 6. 計算結果をキャッシュに保存して完了
   todayStationCache[currentMode] = {
     station: todayStation,
     dayIndex: currentDayIndex
   };  
-  //公開時には絶対消す！！
-  //console.log(`※${currentMode}文字の答え:`, todayStation.kanji, todayStation.yomi);
 }
 
 
