@@ -621,41 +621,64 @@ function checkLocaEvent() {
 
 
 // ==========================================
-// 毎日の正解駅を生成するロジック（難易度別）
+// 毎日の正解駅を生成するロジック（難易度別・被り防止・駅ドル方式準拠）
 // ==========================================
 function selectTodayLocaStation() {
-  // 日付インデックスの計算
-  const t = new Date();
-  const jstMs = t.getTime() + (t.getTimezoneOffset() * 60000) + (9 * 3600000);
-  const jstObj = new Date(jstMs);
-  const todayUTC = Date.UTC(jstObj.getFullYear(), jstObj.getMonth(), jstObj.getDate());
-  const baseUTC = Date.UTC(2024, 0, 1);
-  currentDayIndex = Math.round((todayUTC - baseUTC) / 86400000);
-
-  // 出題可能な駅だけを絞り込み
+  // 正解候補となる駅を大まかに絞り込みます
   const validStations = locaStations.filter(s => 
     s.pref !== "" && 
     s.address !== "" && 
     s.min_km !== null &&
     s.companies && s.companies.length > 0 &&
-    !(s.companies.length === 1 && s.companies[0] === "日本貨物鉄道") &&
-    (s.startDay === undefined || s.startDay <= currentDayIndex) && 
-    (s.endDay === undefined || s.endDay > (currentDayIndex - 32) || s.endDay === 999999)
+    !(s.companies.length === 1 && s.companies[0] === "日本貨物鉄道") // 貨物駅は除外します
   );
 
-  // 通常モード用の正解駅を生成（計算の種：12345）
-  let seedNormal = currentDayIndex * 77777 + 12345;
-  let hashNormal = Math.imul(seedNormal ^ (seedNormal >>> 15), 2246822507);
-  hashNormal = Math.imul(hashNormal ^ (hashNormal >>> 13), 3266489909);
-  hashNormal = (hashNormal ^ (hashNormal >>> 16)) >>> 0;
-  todayLocaStationNormal = validStations[hashNormal % validStations.length];
+  // 駅ドルと同じ「クールダウンタイム（再出現までの日数）」を管理する方式の関数です
+  function generateDailyTarget(upToDay, pool, seedBase) {
+    let lookback = 1000; // 1000日間は同じ座標の駅を出題しないようにします
+    let nextAvailableDay = {}; // 座標ごとの「次に出題可能になる日」を記憶する箱です
+    let target = null;
+    
+    // 同じ座標の駅を同一視するための「キー」を作る処理です
+    const getCoordKey = (s) => (s.latitude && s.longitude) ? `${s.latitude},${s.longitude}` : s.url;
 
-  // ハードモード用の正解駅を生成（計算の種を99999に変えて別の駅にします）
-  let seedHard = currentDayIndex * 77777 + 99999;
-  let hashHard = Math.imul(seedHard ^ (seedHard >>> 15), 2246822507);
-  hashHard = Math.imul(hashHard ^ (hashHard >>> 13), 3266489909);
-  hashHard = (hashHard ^ (hashHard >>> 16)) >>> 0;
-  todayLocaStationHard = validStations[hashHard % validStations.length];
+    // 基準日から今日まで、1日ずつシミュレーションを進めます
+    for (let d = 0; d <= upToDay; d++) {
+      // その日（d）の時点で現役で稼働している駅だけを絞り込みます
+      let activeStations = pool.filter(s => 
+        (s.startDay === undefined || s.startDay <= d) && 
+        (s.endDay === undefined || s.endDay > d || s.endDay === 999999)
+      );
+      if (activeStations.length === 0) activeStations = pool;
+
+      // クールダウンが明けている（出題可能日が来ている）駅だけに絞り込みます
+      let availablePool = activeStations.filter(s => {
+        const key = getCoordKey(s);
+        return !nextAvailableDay[key] || nextAvailableDay[key] <= d;
+      });
+      // 万が一候補が枯渇した場合は、クールダウンを無視して全駅を候補に戻します（安全装置）
+      if (availablePool.length === 0) availablePool = activeStations;
+
+      // シード値を使ってランダムに1つ選びます
+      let seed = d * 33333 + seedBase;
+      let hash = Math.imul(seed ^ (seed >>> 15), 2246822507);
+      hash = Math.imul(hash ^ (hash >>> 13), 3266489909);
+      hash = (hash ^ (hash >>> 16)) >>> 0;
+
+      let candidate = availablePool[hash % availablePool.length];
+      
+      // 選ばれた駅の座標について、「次の出題可能日」を1000日後に設定します
+      nextAvailableDay[getCoordKey(candidate)] = d + lookback + 1;
+
+      // シミュレーションが「今日」に到達したら、その駅を最終的な正解として記憶します
+      if (d === upToDay) target = candidate;
+    }
+    return target;
+  }
+
+  // 通常モードとハードモードで別々のシード値（12345と99999）を渡し、異なる正解駅を生成します
+  todayLocaStationNormal = generateDailyTarget(currentDayIndex, validStations, 54321);
+  todayLocaStationHard = generateDailyTarget(currentDayIndex, validStations, 99999);
 }
 
 
@@ -711,11 +734,24 @@ function restoreLocaGameState() {
 async function initLocaGame() {
   try {
     // 駅データを読み込む
-    const res = await fetch('../stations.json'); // 前作と同じJSONファイルを読み込みます
+    const res = await fetch('../stations.json'); // ルートのJSONファイルを読み込みます
     const rawStations = await res.json();
     
-    // 貨物駅を除外してデータプールにセット
-    locaStations = rawStations.filter(s => !(s.companies && s.companies.length === 1 && s.companies[0] === "日本貨物鉄道"));
+    // JST基準で現在の日付インデックス（2024年1月1日を0とする）を計算します
+    const t = new Date();
+    const jstMs = t.getTime() + (t.getTimezoneOffset() * 60000) + (9 * 3600000);
+    const jstObj = new Date(jstMs);
+    const todayUTC = Date.UTC(jstObj.getFullYear(), jstObj.getMonth(), jstObj.getDate());
+    const baseUTC = Date.UTC(2024, 0, 1);
+    currentDayIndex = Math.round((todayUTC - baseUTC) / 86400000);
+
+    // 貨物駅、未来の駅（未開業）、廃止から33日以上経過した駅を除外してデータプールにセットします
+    locaStations = rawStations.filter(s => {
+      const isFreight = s.companies && s.companies.length === 1 && s.companies[0] === "日本貨物鉄道";
+      const isFuture = s.startDay !== undefined && s.startDay > currentDayIndex;
+      const isAbolishedOld = s.endDay !== undefined && s.endDay !== 999999 && s.endDay <= currentDayIndex - 33;
+      return !isFreight && !isFuture && !isAbolishedOld;
+    });
     
     // サジェスト機能を有効化
     setupSuggest();
@@ -733,10 +769,10 @@ async function initLocaGame() {
     //console.log("【デバッグ用】今日の正解駅:", todayLocaStation.kanji); // F12ツールで答えを確認できます
 
     // 送信ボタンにイベントを紐付け
-    document.getElementById("submit-guess-btn").addEventListener("click", submitLocaGuess);
+    //document.getElementById("submit-guess-btn").addEventListener("click", submitLocaGuess);
     
     // サンプル行（HTMLにあったモック）を消去する
-    document.getElementById("results-tbody").innerHTML = "";
+    //document.getElementById("results-tbody").innerHTML = "";
 
   } catch (e) {
     console.error("データの読み込みに失敗しました:", e);
