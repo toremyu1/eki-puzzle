@@ -132,12 +132,44 @@ function toHiragana(str){ return str.replace(/[ァ-ン]/g,m=>String.fromCharCode
 
 
 // ==========================================
+// ロード画面（プログレスバー）制御処理
+// ==========================================
+
+// 画面上の進捗バーの長さ（％）と、状況を知らせるテキストを更新する関数
+function updateLoadingProgress(percent, text) {
+  const progressBar = document.getElementById('progress-bar');
+  const trainIcon = document.getElementById('train-icon');
+  const loadingText = document.getElementById('loading-text');
+  
+  if (progressBar && trainIcon && loadingText) {
+    progressBar.style.width = percent + '%';
+    trainIcon.style.left = percent + '%';
+    loadingText.innerText = text;
+  }
+}
+
+// 読み込みが100%になった後、ロード画面全体をふわっと非表示にして削除する関数
+function hideLoadingScreen() {
+  const loadingScreen = document.getElementById('loading-screen');
+  if (loadingScreen) {
+    loadingScreen.classList.add('hidden');
+    // CSSのアニメーション（0.5秒）を待ってから、裏側でも完全に非表示にする
+    setTimeout(() => {
+      loadingScreen.style.display = 'none';
+    }, 500);
+  }
+}
+
+
+// ==========================================
 // ゲーム初期化処理
 // ==========================================
 
 //画面読み込み時に最初に実行され、データ準備やボタン登録などを行う
 async function initGame(){
 try{
+  // 【ここを追加：① 最初のシステム起動】
+  updateLoadingProgress(10, "システムを起動中...");
   // 現在のデータ構造のバージョンを記録（将来のバグ防止用）
   if (!localStorage.getItem("ekiSystemVersion")) localStorage.setItem("ekiSystemVersion", "1.0");
   // URLの末尾に「?emergency_reset=true」がついている場合の処理
@@ -151,6 +183,9 @@ try{
   }
   loadStats();
   updateLoginStreak();
+
+  // 【ここを追加：② データのダウンロード開始】
+  updateLoadingProgress(30, "駅データをダウンロード中...");
 
   // 【究極版】データ取得失敗時の安全装置（Cache APIを使った非同期の大容量バックアップ）
   let raw = [];
@@ -206,6 +241,8 @@ try{
   //貨物専用駅を除外し、駅名の読みを全てひらがなに整えて保存
   stations=raw.filter(s=>!(s.companies&&s.companies.length===1&&s.companies[0]==="日本貨物鉄道")).map(s=>({...s,yomi:toHiragana(s.yomi)}));
   if(stations.length===0)return;
+  // 【ここを追加：③ 画面UIの構築準備】
+  updateLoadingProgress(60, "今日の答えを準備中...");
 //画面下部の「回答」「1字消す」「全削除」ボタンの動作
 document.getElementById("enter-btn").addEventListener("click",()=>handleKeyPress("ENTER"));
 document.getElementById("back-btn").addEventListener("click",()=>handleKeyPress("BACK"));
@@ -333,8 +370,15 @@ hardSwitch.addEventListener("change", (e) => {
   localStorage.setItem("ekiSettings", JSON.stringify(ekiSettings));
   updateHelpContent();
 });
+  // 【ここを追加：④ 最終準備】
+  updateLoadingProgress(80, "ゲーム盤を構築中...");
   //最後に、今日の正解駅を選び、ゲーム盤を作り、行事日かどうかを調べる
   await selectTodayStation(); restoreBoard(); checkSpecialEvent();
+  
+  // 【ここを追加：⑤ 完了・画面を閉じる】
+  updateLoadingProgress(100, "出発進行！");
+  setTimeout(hideLoadingScreen, 600); // 100%を見せるために0.6秒待ってから消す
+  
 }catch(e){ console.error("データエラー:",e); }
 }
 
