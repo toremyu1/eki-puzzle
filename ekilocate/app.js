@@ -204,6 +204,26 @@ function updateSuggestSelection(items) {
 let todayLocaStation = null; // 今日の正解駅
 let locaGuessesCount = 0;    // 現在の回答回数
 const MAX_LOCA_GUESSES = 10; // 最大回答回数
+let currentDifficulty = 'normal';  // 今回のプレイの難易度を記憶しておく変数（初期値は通常）
+
+
+
+// ==========================================
+// 難易度選択とゲーム開始のロジック
+// ==========================================
+
+// 難易度ボタンが押された時に実行される関数です
+function startGame(difficulty) {
+
+  // 引数で受け取った難易度（'normal' か 'hard'）を変数に保存します
+  currentDifficulty = difficulty;
+  
+  // 難易度選択画面を隠し、メインのゲーム画面を表示させます
+  document.getElementById('difficulty-screen').style.display = 'none';
+  document.getElementById('main-game-screen').style.display = 'block';
+
+}
+
 
 // 属性（事業者や路線）の配列を比較し、緑・黄・黒のステータスを返す関数
 function checkArrayMatch(guessArr, targetArr) {
@@ -287,9 +307,23 @@ function renderResultRow(guess, distance, direction, regionStatus, compStatus, l
   const tbody = document.getElementById("results-tbody");
   const tr = document.createElement("tr");
 
-  // 事業者と路線の表示テキストを作る（長すぎる場合は「〇〇 他」と省略する工夫）
-  const compText = (guess.companies && guess.companies.length > 0) ? guess.companies[0] + (guess.companies.length > 1 ? " 他" : "") : "不明";
-  const lineText = (guess.lines && guess.lines.length > 0) ? guess.lines[0] + (guess.lines.length > 1 ? " 他" : "") : "不明";
+  // 事業者と路線の表示テキストを作ります（長すぎる場合は「〇〇 他」と省略）
+  // 後の処理で書き換える可能性があるため、constではなくletで宣言します
+  let compText = (guess.companies && guess.companies.length > 0) ? guess.companies[0] + (guess.companies.length > 1 ? " 他" : "") : "不明";
+  let lineText = (guess.lines && guess.lines.length > 0) ? guess.lines[0] + (guess.lines.length > 1 ? " 他" : "") : "不明";
+
+  // もし難易度が「ハード」で、かつ完全正解（isWin）ではない場合のみ発動する処理
+  if (currentDifficulty === 'hard' && !isWin) {
+
+    // テキストを「???」で上書きして見えなくします
+    compText = "???";
+    lineText = "???";
+
+    // セルの色もヒントになってしまうため、強制的にグレー（不一致扱い）にします
+    compStatus = "cell-absent";
+    lineStatus = "cell-absent";
+
+  }
 
   // セルのHTMLを組み立てる
   tr.innerHTML = `
