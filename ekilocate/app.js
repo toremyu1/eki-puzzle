@@ -621,64 +621,87 @@ function checkLocaEvent() {
 
 
 // ==========================================
-// 毎日の正解駅を生成するロジック（難易度別・被り防止・駅ドル方式準拠）
+// 毎日の正解駅を生成するロジック（通常・ハード共通の被り防止機能）
 // ==========================================
 function selectTodayLocaStation() {
-  // 正解候補となる駅を大まかに絞り込みます
+  // 正解候補となる駅を大まかに絞り込みます（貨物駅は除外）
   const validStations = locaStations.filter(s => 
     s.pref !== "" && 
     s.address !== "" && 
     s.min_km !== null &&
     s.companies && s.companies.length > 0 &&
-    !(s.companies.length === 1 && s.companies[0] === "日本貨物鉄道") // 貨物駅は除外します
+    !(s.companies.length === 1 && s.companies[0] === "日本貨物鉄道") 
   );
 
-  // 駅ドルと同じ「クールダウンタイム（再出現までの日数）」を管理する方式の関数です
-  function generateDailyTarget(upToDay, pool, seedBase) {
-    let lookback = 1000; // 1000日間は同じ座標の駅を出題しないようにします
-    let nextAvailableDay = {}; // 座標ごとの「次に出題可能になる日」を記憶する箱です
-    let target = null;
+  let lookback = 1000; // 共通で1000日間は同じ座標の駅を出題しません
+  let nextAvailableDay = {}; // 共通のクールダウン記憶箱
+  let targetNormal = null;
+  let targetHard = null;
+  
+  // 座標から同一駅判定用のキーを作ります
+  const getCoordKey = (s) => (s.latitude && s.longitude) ? `${s.latitude},${s.longitude}` : s.url;
+
+  // 基準日（Day 0）から今日まで、1つの時間軸でシミュレーションを進めます
+  for (let d = 0; d <= currentDayIndex; d++) {
     
-    // 同じ座標の駅を同一視するための「キー」を作る処理です
-    const getCoordKey = (s) => (s.latitude && s.longitude) ? `${s.latitude},${s.longitude}` : s.url;
+    // その日時点で現役の駅を抽出します
+    let activeStations = validStations.filter(s => 
+      (s.startDay === undefined || s.startDay <= d) && 
+      (s.endDay === undefined || s.endDay > d || s.endDay === 999999)
+    );
+    if (activeStations.length === 0) activeStations = validStations;
 
-    // 基準日から今日まで、1日ずつシミュレーションを進めます
-    for (let d = 0; d <= upToDay; d++) {
-      // その日（d）の時点で現役で稼働している駅だけを絞り込みます
-      let activeStations = pool.filter(s => 
-        (s.startDay === undefined || s.startDay <= d) && 
-        (s.endDay === undefined || s.endDay > d || s.endDay === 999999)
-      );
-      if (activeStations.length === 0) activeStations = pool;
+    // ----------------------------------------------------
+    // ① まず、通常モードの駅を抽選します
+    // ----------------------------------------------------
+    let poolNormal = activeStations.filter(s => {
+      const key = getCoordKey(s);
+      return !nextAvailableDay[key] || nextAvailableDay[key] <= d;
+    });
+    if (poolNormal.length === 0) poolNormal = activeStations; // 枯渇時の安全装置
 
-      // クールダウンが明けている（出題可能日が来ている）駅だけに絞り込みます
-      let availablePool = activeStations.filter(s => {
-        const key = getCoordKey(s);
-        return !nextAvailableDay[key] || nextAvailableDay[key] <= d;
-      });
-      // 万が一候補が枯渇した場合は、クールダウンを無視して全駅を候補に戻します（安全装置）
-      if (availablePool.length === 0) availablePool = activeStations;
+    // 通常モード専用の計算の種で抽選します
+    let seedN = d * 33333 + 54321;
+    let hashN = Math.imul(seedN ^ (seedN >>> 15), 2246822507);
+    hashN = Math.imul(hashN ^ (hashN >>> 13), 3266489909);
+    hashN = (hashN ^ (hashN >>> 16)) >>> 0;
 
-      // シード値を使ってランダムに1つ選びます
-      let seed = d * 33333 + seedBase;
-      let hash = Math.imul(seed ^ (seed >>> 15), 2246822507);
-      hash = Math.imul(hash ^ (hash >>> 13), 3266489909);
-      hash = (hash ^ (hash >>> 16)) >>> 0;
+    let candidateNormal = poolNormal[hashN % poolNormal.length];
+    
+    // 通常モードで選ばれた駅を、即座にクールダウンに登録します
+    nextAvailableDay[getCoordKey(candidateNormal)] = d + lookback + 1;
 
-      let candidate = availablePool[hash % availablePool.length];
-      
-      // 選ばれた駅の座標について、「次の出題可能日」を1000日後に設定します
-      nextAvailableDay[getCoordKey(candidate)] = d + lookback + 1;
+    // ----------------------------------------------------
+    // ② 次に、ハードモードの駅を抽選します
+    // ----------------------------------------------------
+    // たった今「通常モード」で選ばれたばかりの駅が省かれるよう、候補を再確認します
+    let poolHard = activeStations.filter(s => {
+      const key = getCoordKey(s);
+      return !nextAvailableDay[key] || nextAvailableDay[key] <= d;
+    });
+    if (poolHard.length === 0) poolHard = activeStations; // 枯渇時の安全装置
 
-      // シミュレーションが「今日」に到達したら、その駅を最終的な正解として記憶します
-      if (d === upToDay) target = candidate;
+    // ハードモード専用の計算の種で抽選します
+    let seedH = d * 33333 + 99999;
+    let hashH = Math.imul(seedH ^ (seedH >>> 15), 2246822507);
+    hashH = Math.imul(hashH ^ (hashH >>> 13), 3266489909);
+    hashH = (hashH ^ (hashH >>> 16)) >>> 0;
+
+    let candidateHard = poolHard[hashH % poolHard.length];
+    
+    // ハードモードで選ばれた駅も、クールダウンに登録します
+    nextAvailableDay[getCoordKey(candidateHard)] = d + lookback + 1;
+
+    // シミュレーションが「今日」に到達したら、それぞれの答えとして記憶します
+    if (d === currentDayIndex) {
+      targetNormal = candidateNormal;
+      targetHard = candidateHard;
     }
-    return target;
   }
 
-  // 通常モードとハードモードで別々のシード値（12345と99999）を渡し、異なる正解駅を生成します
-  todayLocaStationNormal = generateDailyTarget(currentDayIndex, validStations, 54321);
-  todayLocaStationHard = generateDailyTarget(currentDayIndex, validStations, 99999);
+  // 決定した駅をゲーム用の変数にセットします
+  todayLocaStationNormal = targetNormal;
+  todayLocaStationHard = targetHard;
 }
 
 
