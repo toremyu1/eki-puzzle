@@ -44,7 +44,7 @@ jobs:
       # 駅データが完成した直後に、そのデータを使って答えを生成する
       - name: 駅ドル 答え生成
         working-directory: ./ekidle
-        run: python loca_generate_answers.py
+        run: python generate_answers.py
 
         # ③ekilocateフォルダに移動して駅ロケの答えを生成
       - name: 駅ロケ 答え生成
