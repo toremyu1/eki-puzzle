@@ -311,7 +311,7 @@ function renderResultRow(guess, distance, direction, regionStatus, compStatus, l
 async function initLocaGame() {
   try {
     // 駅データを読み込む
-    const res = await fetch('stations.json'); // 前作と同じJSONファイルを読み込みます
+    const res = await fetch('../stations.json'); // 前作と同じJSONファイルを読み込みます
     const rawStations = await res.json();
     
     // 貨物駅を除外してデータプールにセット
