@@ -11,11 +11,14 @@ function startGame(difficulty) {
   locaGridHistory = [];
   locaGuessesCount = 0;
   
-  // 開始時に設定を保存します
+  // 復元バグ対策：画面に残っている古い表をまっさらにします
+  document.getElementById("results-tbody").innerHTML = "";
+  
   saveLocaGameState();
 
   document.getElementById('difficulty-screen').style.display = 'none';
   document.getElementById('main-game-screen').style.display = 'block';
+  document.getElementById('back-to-diff-btn').style.display = 'block';
   updateRemainingGuesses();
 }
 
@@ -110,45 +113,45 @@ function setupSuggest() {
     for (let i = 0; i < locaStations.length; i++) {
       const s = locaStations[i];
       let matchReason = "";
-      let score = 0; // スコアが高いほどリストの上に表示されます
+      let score = 0;
 
-      // ① 駅名の完全一致（最強スコア）
+      // 1. 完全一致（漢字・読み）を最優先
       if (s.kanji === query || s.yomi === query) {
         matchReason = `${s.pref}${s.municipality}`;
-        score = 3;
-      }
-      // ② 駅名の部分一致
+        score = 1000;
+      } 
+      // 2. 頭文字からの前方一致（短い駅名ほどスコアを高くして上に出す）
+      else if (s.kanji.startsWith(query) || s.yomi.startsWith(query)) {
+        matchReason = `${s.pref}${s.municipality}`;
+        score = 500 - s.kanji.length;
+      } 
+      // 3. 文字の部分一致
       else if (s.kanji.includes(query) || s.yomi.includes(query)) {
         matchReason = `${s.pref}${s.municipality}`;
-        score = 2;
-      }
-      // ③ 住所・路線・事業者での一致
+        score = 100 - s.kanji.length;
+      } 
+      // 4. 地域、路線、事業者
       else if ((s.pref + s.municipality + (s.ward || "")).includes(query)) {
         matchReason = `📍 ${s.pref}${s.municipality}`;
-        score = 1;
-      }
-      else if (s.lines && s.lines.some(l => l.includes(query) || toHiragana(l).includes(query))) {
+        score = 50;
+      } else if (s.lines && s.lines.some(l => l.includes(query) || toHiragana(l).includes(query))) {
         const matchedLine = s.lines.find(l => l.includes(query) || toHiragana(l).includes(query));
         matchReason = `🚃 ${matchedLine}`;
-        score = 1;
-      }
-      else if (s.companies && s.companies.some(c => c.includes(query) || toHiragana(c).includes(query))) {
+        score = 30;
+      } else if (s.companies && s.companies.some(c => c.includes(query) || toHiragana(c).includes(query))) {
         const matchedComp = s.companies.find(c => c.includes(query) || toHiragana(c).includes(query));
         matchReason = `🏢 ${matchedComp}`;
-        score = 1;
+        score = 10;
       }
 
-      // 何らかの条件にヒットした場合、結果リストに追加
       if (score > 0) {
         results.push({ station: s, reason: matchReason, score: score });
       }
     }
 
-    // スコアの高い順に並び替え、動作を軽くするため最大50件でカット
     results.sort((a, b) => b.score - a.score);
     results = results.slice(0, 50);
 
-    // HTMLの生成
     renderSuggestList(results);
   });
 
@@ -325,12 +328,9 @@ function submitLocaGuess() {
 
   // ⑤ 結果をHTMLの表に1行追加する
   renderResultRow(guess, distance, direction, regionStatus, compStatus, lineStatus, isWin);
-
-  locaGuessesCount++;
   
   // 入力欄をリセット
-  // 過去の回答の色の結果を、シェア用に記憶しておく
-  // 過去の回答の色の結果を、シェアと復元用に記憶しておく
+  // 過去の回答の色の結果と、駅の全データを復元・シェア用に記憶しておく
   locaGridHistory.push({
     guess: guess,
     distance: isWin ? "🎯" : distance + "km",
@@ -342,18 +342,28 @@ function submitLocaGuess() {
     isWin: isWin
   });
 
+  // ここでカウントを増やすのは「1回だけ」にします
   locaGuessesCount++;
-  updateRemainingGuesses(); // 残り回数の表示を減らす
+  updateRemainingGuesses();
   
   input.value = "";
   currentSelectedStation = null;
   document.getElementById("suggest-list").style.display = "none";
 
-  // 勝敗のチェック（アラートの代わりに結果画面を呼び出す）
+  // 勝敗のチェックとセーブデータの保存
   if (isWin) {
+    saveLocaStats(true);
+    saveLocaGameState();
+    document.getElementById("submit-guess-btn").disabled = true; // ボタン無効化
     setTimeout(() => showLocaResultModal(true), 500);
   } else if (locaGuessesCount >= MAX_LOCA_GUESSES) {
+    saveLocaStats(false);
+    saveLocaGameState();
+    document.getElementById("submit-guess-btn").disabled = true; // ボタン無効化
     setTimeout(() => showLocaResultModal(false), 500);
+  } else {
+    // 途中経過も保存する
+    saveLocaGameState();
   }
 }
 
@@ -383,7 +393,9 @@ function renderResultRow(guess, distance, direction, regionStatus, compStatus, l
   // セルのHTMLを組み立てる
   tr.innerHTML = `
     <td class="cell-station-name">${guess.kanji}</td>
-    <td class="${isWin ? 'cell-correct' : 'cell-distance'}">${isWin ? '🎯' : distance + ' km'}</td>
+    <td class="${isWin ? 'cell-correct' : 'cell-distance'}">
+      <span style="display:inline-block; width:55px; text-align:left;">${isWin ? '🎯' : distance + ' km'}</span>
+    </td>
     <td class="${isWin ? 'cell-correct' : 'cell-direction'}">${isWin ? '🎯' : direction}</td>
     <td class="${regionStatus}">${guess.pref}<br><span style="font-size:10px;font-weight:normal;">${guess.municipality}</span></td>
     <td class="${compStatus}">${compText}</td>
@@ -402,6 +414,23 @@ function setupUI() {
   // ヘルプ画面
   document.getElementById("help-btn").addEventListener("click", () => document.getElementById("help-modal").style.display = "flex");
   document.getElementById("close-help-btn").addEventListener("click", () => document.getElementById("help-modal").style.display = "none");
+
+  // 戻るボタンの機能
+  document.getElementById("back-to-diff-btn").addEventListener("click", () => {
+    document.getElementById("main-game-screen").style.display = "none";
+    document.getElementById("difficulty-screen").style.display = "block";
+    document.getElementById("back-to-diff-btn").style.display = "none";
+  });
+
+  // グラフ（戦績）ボタンの機能
+  document.getElementById("stats-btn").addEventListener("click", () => {
+    if (locaSavedState && locaSavedState.isOver) {
+      const isWin = locaSavedState.history.length > 0 && locaSavedState.history[locaSavedState.history.length - 1].isWin;
+      showLocaResultModal(isWin);
+    } else {
+      alert("ゲームクリア後に見ることができます");
+    }
+  });
   
   // サイドメニュー
   const closeSideMenu = () => {
@@ -429,6 +458,8 @@ function setupUI() {
   
   // シェアボタン
   document.getElementById("share-btn").addEventListener("click", () => shareLocaResult("twitter"));
+  document.getElementById("line-btn").addEventListener("click", () => shareLocaResult("line"));
+  document.getElementById("fb-btn").addEventListener("click", () => shareLocaResult("facebook"));
   document.getElementById("copy-btn").addEventListener("click", () => shareLocaResult("copy"));
 }
 
@@ -442,26 +473,42 @@ function showLocaResultModal(isWin) {
   // 駅ドルと同じロジックでアフィリエイトの地域キーワードを作成
   let safePref = todayLocaStation.pref || "東京都";
   let searchMuni = todayLocaStation.municipality || "";
-  let searchWard = todayLocaStation.ward || "";
-  let muniMuni = safePref + searchMuni + searchWard;
+  let muniMuni = safePref + searchMuni;
   
   let isRural = todayLocaStation.muni_type === "町" || todayLocaStation.muni_type === "村" || (todayLocaStation.population && todayLocaStation.population < 30000);
   let areaKeyword = isRural ? safePref : muniMuni;
 
   let prText = `＼ この駅のある「${muniMuni}」へ聖地巡礼に行こう！ ／`;
 
-  // トラベル用リンク
   let encodedStation = encodeURIComponent(encodeURIComponent(encodeURIComponent(areaKeyword)));
   let yahooUrl = `https://px.a8.net/svt/ejp?a8mat=4B5NW1+DE94S2+4ZCO+BW8O2&a8ejpredirect=https%3A%2F%2Ftravel.yahoo.co.jp%2FikCo.ashx%3Fcosid%3Dy_a8net%26surl%3Dhttps%253A%252F%252Ftravel.yahoo.co.jp%252Fsearch%253Fadc%253D1%2526discsort%253D1%2526kwd%253D${encodedStation}%2526lc%253D1%2526ppc%253D2%2526rc%253D1%2526si%253D6`;
   let rakutenKeyword = encodeURIComponent(encodeURIComponent(areaKeyword));
   let rakutenUrl = `https://af.moshimo.com/af/c/click?a_id=5616621&p_id=55&pc_id=55&pl_id=624&url=https%3A%2F%2Fkw.travel.rakuten.co.jp%2Fkeyword%2FSearch.do%3Fcharset%3Dutf-8%26f_max%3D30%26l-id%3DtopC_search_keyword%26f_query%3D${rakutenKeyword}`;
+  
+  let yahooShoppingDest = `https://shopping.yahoo.co.jp/search/${encodeURIComponent(muniMuni)}+${encodeURIComponent("特産品")}/0/?area=13&first=1&ss_first=1&sretry=0&tab_ex=commerce`;
+  let yahooShoppingUrl = `https://af.moshimo.com/af/c/click?a_id=5626583&p_id=1225&pc_id=1925&pl_id=18502&url=${encodeURIComponent(yahooShoppingDest)}`;
+  let rakutenMarketDest = `https://search.rakuten.co.jp/search/mall/${encodeURIComponent(muniMuni)}+${encodeURIComponent("特産品")}/`;
+  let rakutenMarketUrl = `https://af.moshimo.com/af/c/click?a_id=5616620&p_id=54&pc_id=54&pl_id=616&url=${encodeURIComponent(rakutenMarketDest)}`;
+  
+  let yahooFurusatoDest = `https://shopping.yahoo.co.jp/search/${encodeURIComponent(muniMuni)}+${encodeURIComponent("ふるさと納税")}/0/?first=1&ss_first=1&sretry=0&tab_ex=commerce`;
+  let yahooFurusatoUrl = `https://af.moshimo.com/af/c/click?a_id=5626583&p_id=1225&pc_id=1925&pl_id=18502&url=${encodeURIComponent(yahooFurusatoDest)}`;
+  let rakutenFurusatoDest = `https://search.rakuten.co.jp/search/mall/${encodeURIComponent(muniMuni)}+${encodeURIComponent("ふるさと納税")}/`;
+  let rakutenFurusatoUrl = `https://af.moshimo.com/af/c/click?a_id=5616620&p_id=54&pc_id=54&pl_id=616&url=${encodeURIComponent(rakutenFurusatoDest)}`;
 
   document.getElementById("affiliate-container").innerHTML = `
-    <div style="background-color:#fff3e0; border:1px solid #ffcc80; border-radius:6px; padding:10px; font-size:11px;">
-      <div style="font-weight:bold; color:#e65100; margin-bottom:8px;">${prText}</div>
-      <div style="display:flex; justify-content:center; gap:8px;">
-        <a href="${yahooUrl}" target="_blank" style="padding:8px 0; border:1px solid #ff0033; color:#333; text-decoration:none; border-radius:4px; width:45%; font-weight:bold;">Y!トラベル</a>
-        <a href="${rakutenUrl}" target="_blank" style="padding:8px 0; background-color:#00B900; color:#fff; text-decoration:none; border-radius:4px; width:45%; font-weight:bold;">楽天トラベル</a>
+    <div style="background-color:#fff3e0; border:1px solid #ffcc80; border-radius:6px; padding:10px; margin-bottom:5px;">
+      <div style="font-size:11px; font-weight:bold; color:#e65100; margin-bottom:8px;">${prText}</div>
+      <div style="display:flex; justify-content:center; gap:8px; align-items:center; flex-wrap:wrap;">
+        <a href="${yahooUrl}" target="_blank" style="padding:8px 0; border:1px solid #ff0033; color:#333; text-decoration:none; border-radius:4px; font-weight:bold; font-size:11px; width:45%;">Y!トラベル</a>
+        <a href="${rakutenUrl}" target="_blank" style="padding:8px 0; background-color:#00B900; color:#fff; text-decoration:none; border-radius:4px; font-weight:bold; font-size:11px; width:45%;">楽天トラベル</a>
+        <div style="width:100%; border-top:1px dashed #ffcc80; margin:6px 0;"></div>
+        <div style="width:100%; font-size:11px; font-weight:bold; color:#e65100; margin-bottom:4px; text-align:left; padding-left:5%;">🎁 名産品をお取り寄せ</div>
+        <a href="${yahooShoppingUrl}" target="_blank" style="padding:8px 0; border:1px solid #ff0033; color:#333; text-decoration:none; border-radius:4px; font-weight:bold; font-size:11px; width:45%;">Y!ショッピング</a>
+        <a href="${rakutenMarketUrl}" target="_blank" style="padding:8px 0; background-color:#bf0000; color:#fff; text-decoration:none; border-radius:4px; font-weight:bold; font-size:11px; width:45%;">楽天市場</a>
+        <div style="width:100%; border-top:1px dashed #ffcc80; margin:6px 0;"></div>
+        <div style="width:100%; font-size:11px; font-weight:bold; color:#e65100; margin-bottom:4px; text-align:left; padding-left:5%;">🗾 ふるさと納税</div>
+        <a href="${yahooFurusatoUrl}" target="_blank" style="padding:8px 0; border:1px solid #ff0033; color:#333; text-decoration:none; border-radius:4px; font-weight:bold; font-size:11px; width:45%;">Y!ふるさと納税</a>
+        <a href="${rakutenFurusatoUrl}" target="_blank" style="padding:8px 0; background-color:#7a0000; color:#fff; text-decoration:none; border-radius:4px; font-weight:bold; font-size:11px; width:45%;">楽天ふるさと納税</a>
       </div>
     </div>
   `;
@@ -481,15 +528,15 @@ function showLocaResultModal(isWin) {
 // ==========================================
 function shareLocaResult(type) {
   const colorToEmoji = {"cell-correct":"🟩", "cell-present":"🟨", "cell-absent":"⬛"};
-  const isWin = locaGridHistory.length > 0 && locaGridHistory[locaGridHistory.length - 1].region === "cell-correct";
+  const isWin = locaGridHistory.length > 0 && locaGridHistory[locaGridHistory.length - 1].isWin;
   const scoreStr = isWin ? `${locaGridHistory.length}/${MAX_LOCA_GUESSES}` : `X/${MAX_LOCA_GUESSES}`;
   const gameTitle = currentDifficulty === 'hard' ? "駅ロケHard" : "駅ロケ";
   const currentUrl = window.location.href.split('?')[0];
 
   let text = `${gameTitle} ${scoreStr}\n\n`;
   text += locaGridHistory.map((row, i) => {
-    let r = `${row.distance} ${row.direction} ${colorToEmoji[row.region]}${colorToEmoji[row.comp]}${colorToEmoji[row.line]}`;
-    return (isWin && i === locaGridHistory.length - 1) ? r + "💮" : r;
+    // 指定の順番（地域→事業者→路線→方角→距離）でテキスト化します
+    return `${colorToEmoji[row.region]}${colorToEmoji[row.comp]}${colorToEmoji[row.line]}${row.direction}${row.distance}`;
   }).join("\n");
 
   const hashtagStr = currentDifficulty === 'hard' ? `#駅ロケ\n#駅ロケHard\n` : `#駅ロケ\n`;
@@ -497,6 +544,10 @@ function shareLocaResult(type) {
 
   if (type === "twitter") {
     window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`, "_blank");
+  } else if (type === "line") {
+    window.open(`https://line.me/R/msg/text/?${encodeURIComponent(text)}`, "_blank");
+  } else if (type === "facebook") {
+    window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(currentUrl)}`, "_blank");
   } else if (type === "copy") {
     navigator.clipboard.writeText(text).then(() => alert("クリップボードにコピーしました"));
   }
@@ -615,9 +666,12 @@ function restoreLocaGameState() {
     // 難易度選択画面を飛ばしてメイン画面を出します
     document.getElementById('difficulty-screen').style.display = 'none';
     document.getElementById('main-game-screen').style.display = 'block';
+    document.getElementById('back-to-diff-btn').style.display = 'block';
     updateRemainingGuesses();
 
     // テーブルの行を復元します（履歴の中身を描画）
+    // 復元バグ対策：画面に残っている古い表をまっさらにしてから書き直す
+    document.getElementById("results-tbody").innerHTML = "";
     locaGridHistory.forEach(h => {
       renderResultRow(h.guess, h.distanceNum, h.direction, h.region, h.comp, h.line, h.isWin);
     });
