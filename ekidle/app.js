@@ -132,6 +132,36 @@ function toHiragana(str){ return str.replace(/[ァ-ン]/g,m=>String.fromCharCode
 
 
 // ==========================================
+// ロード画面（プログレスバー）制御処理
+// ==========================================
+
+// 画面上の進捗バーの長さ（％）と、状況を知らせるテキストを更新する関数
+function updateLoadingProgress(percent, text) {
+  const progressBar = document.getElementById('progress-bar');
+  const trainIcon = document.getElementById('train-icon');
+  const loadingText = document.getElementById('loading-text');
+  
+  if (progressBar && trainIcon && loadingText) {
+    progressBar.style.width = percent + '%';
+    trainIcon.style.left = percent + '%';
+    loadingText.innerText = text;
+  }
+}
+
+// 読み込みが100%になった後、ロード画面全体をふわっと非表示にして削除する関数
+function hideLoadingScreen() {
+  const loadingScreen = document.getElementById('loading-screen');
+  if (loadingScreen) {
+    loadingScreen.classList.add('hidden');
+    // CSSのアニメーション（0.5秒）を待ってから、裏側でも完全に非表示にする
+    setTimeout(() => {
+      loadingScreen.style.display = 'none';
+    }, 500);
+  }
+}
+
+
+// ==========================================
 // ゲーム初期化処理
 // ==========================================
 
