@@ -2,24 +2,49 @@
 // 駅ロケ専用の共通変数とセーブデータ
 // ==========================================
 let currentDayIndex = 0;
-let locaStats = JSON.parse(localStorage.getItem("ekiLocateStats") || '{"played":0,"won":0,"currentStreak":0,"maxStreak":0,"dist":[0,0,0,0,0,0,0,0,0,0,0]}');
-let locaSavedState = JSON.parse(localStorage.getItem("ekiLocateState") || '{"date":-1,"guessesCount":0,"history":[],"difficulty":"normal","isOver":false}');
+let todayLocaStationNormal = null; // 通常モード用の正解駅
+let todayLocaStationHard = null;   // ハードモード用の正解駅
 
-// エラー対策：HTMLから直接呼び出される関数は、必ず一番外側（グローバル）に配置します
+let locaStats = JSON.parse(localStorage.getItem("ekiLocateStats") || '{"played":0,"won":0,"currentStreak":0,"maxStreak":0,"dist":[0,0,0,0,0,0,0,0,0,0,0]}');
+//セーブデータを難易度ごとに分ける
+let locaSavedState = JSON.parse(localStorage.getItem("ekiLocateStateV2") || '{"date":-1, "normal": {"guessesCount":0, "history":[], "isOver":false}, "hard": {"guessesCount":0, "history":[], "isOver":false}}');
+
+
+// ==========================================
+// ゲーム開始と再開の処理
+// ==========================================
 function startGame(difficulty) {
   currentDifficulty = difficulty;
-  locaGridHistory = [];
-  locaGuessesCount = 0;
   
-  // 復元バグ対策：画面に残っている古い表をまっさらにします
-  document.getElementById("results-tbody").innerHTML = "";
-  
-  saveLocaGameState();
+  // 選ばれた難易度に応じて、今日の正解駅をセットします
+  todayLocaStation = currentDifficulty === 'hard' ? todayLocaStationHard : todayLocaStationNormal;
 
+  // 該当する難易度のセーブデータを読み込みます
+  const state = locaSavedState[currentDifficulty];
+  locaGridHistory = state.history || [];
+  locaGuessesCount = state.guessesCount || 0;
+  
+  // 画面をゲーム画面に切り替え、戻るボタンを表示します
   document.getElementById('difficulty-screen').style.display = 'none';
   document.getElementById('main-game-screen').style.display = 'block';
   document.getElementById('back-to-diff-btn').style.display = 'block';
+  
   updateRemainingGuesses();
+
+  // 画面に残っている古い表をまっさらにしてから、履歴を描画し直して完全に復元します
+  document.getElementById("results-tbody").innerHTML = "";
+  locaGridHistory.forEach(h => {
+    renderResultRow(h.guess, h.distanceNum, h.direction, h.region, h.comp, h.line, h.isWin);
+  });
+
+  // すでにゲームが終わっている場合は、ボタン等の入力を無効化します
+  if (state.isOver) {
+    document.getElementById("submit-guess-btn").disabled = true;
+    document.getElementById("station-search-input").disabled = true;
+  } else {
+    document.getElementById("submit-guess-btn").disabled = false;
+    document.getElementById("station-search-input").disabled = false;
+  }
 }
 
 
@@ -514,9 +539,10 @@ function showLocaResultModal(isWin) {
   `;
 
   // シェア用の絵文字グリッドを表示
+  // シェア時と同じ絵文字の順番（地域→事業者→路線→方角→距離）でグリッドを表示します
   const colorToEmoji = {"cell-correct":"🟩", "cell-present":"🟨", "cell-absent":"⬛"};
   const gridHTML = locaGridHistory.map(row => {
-    return `${row.distance} ${row.direction} ${colorToEmoji[row.region]}${colorToEmoji[row.comp]}${colorToEmoji[row.line]}`;
+    return `${colorToEmoji[row.region]}${colorToEmoji[row.comp]}${colorToEmoji[row.line]} ${row.direction} ${row.distance}`;
   }).join("<br>");
   document.getElementById("modal-grid").innerHTML = gridHTML;
 
@@ -590,10 +616,10 @@ function checkLocaEvent() {
 
 
 // ==========================================
-// 毎日の正解駅を生成するロジック
+// 毎日の正解駅を生成するロジック（難易度別）
 // ==========================================
 function selectTodayLocaStation() {
-  // JST基準で現在の日付インデックス（2024年1月1日を0とする）を計算します
+  // 日付インデックスの計算
   const t = new Date();
   const jstMs = t.getTime() + (t.getTimezoneOffset() * 60000) + (9 * 3600000);
   const jstObj = new Date(jstMs);
@@ -601,7 +627,7 @@ function selectTodayLocaStation() {
   const baseUTC = Date.UTC(2024, 0, 1);
   currentDayIndex = Math.round((todayUTC - baseUTC) / 86400000);
 
-  // 駅ドルと同じ条件で、出題可能な駅だけを絞り込みます（文字数制限は除外）
+  // 出題可能な駅だけを絞り込み
   const validStations = locaStations.filter(s => 
     s.pref !== "" && 
     s.address !== "" && 
@@ -612,28 +638,34 @@ function selectTodayLocaStation() {
     (s.endDay === undefined || s.endDay > (currentDayIndex - 32) || s.endDay === 999999)
   );
 
-  // 駅ロケ専用のシード値を使って、毎日異なる駅をランダムに1つ選びます
-  let seed = currentDayIndex * 77777 + 12345;
-  let hash = Math.imul(seed ^ (seed >>> 15), 2246822507);
-  hash = Math.imul(hash ^ (hash >>> 13), 3266489909);
-  hash = (hash ^ (hash >>> 16)) >>> 0;
+  // 通常モード用の正解駅を生成（計算の種：12345）
+  let seedNormal = currentDayIndex * 77777 + 12345;
+  let hashNormal = Math.imul(seedNormal ^ (seedNormal >>> 15), 2246822507);
+  hashNormal = Math.imul(hashNormal ^ (hashNormal >>> 13), 3266489909);
+  hashNormal = (hashNormal ^ (hashNormal >>> 16)) >>> 0;
+  todayLocaStationNormal = validStations[hashNormal % validStations.length];
 
-  todayLocaStation = validStations[hash % validStations.length];
+  // ハードモード用の正解駅を生成（計算の種を99999に変えて別の駅にします）
+  let seedHard = currentDayIndex * 77777 + 99999;
+  let hashHard = Math.imul(seedHard ^ (seedHard >>> 15), 2246822507);
+  hashHard = Math.imul(hashHard ^ (hashHard >>> 13), 3266489909);
+  hashHard = (hashHard ^ (hashHard >>> 16)) >>> 0;
+  todayLocaStationHard = validStations[hashHard % validStations.length];
 }
 
 
 // ==========================================
-// セーブデータの保存と復元、戦績集計
+// セーブデータの保存と復元
 // ==========================================
 function saveLocaGameState() {
-  locaSavedState = {
-    date: currentDayIndex,
+  // 現在遊んでいる難易度のデータだけをピンポイントで上書き保存します
+  locaSavedState[currentDifficulty] = {
     guessesCount: locaGuessesCount,
     history: locaGridHistory,
-    difficulty: currentDifficulty,
     isOver: locaGuessesCount >= MAX_LOCA_GUESSES || (locaGridHistory.length > 0 && locaGridHistory[locaGridHistory.length - 1].region === "cell-correct")
   };
-  localStorage.setItem("ekiLocateState", JSON.stringify(locaSavedState));
+  locaSavedState.date = currentDayIndex;
+  localStorage.setItem("ekiLocateStateV2", JSON.stringify(locaSavedState));
 }
 
 function saveLocaStats(isWin) {
@@ -650,37 +682,17 @@ function saveLocaStats(isWin) {
 }
 
 function restoreLocaGameState() {
-  // 日付が変わっている場合はセーブデータを初期化します
+  // 日付が変わっている場合は、セーブデータをリセットして新しい日の枠を作ります
   if (locaSavedState.date !== currentDayIndex) {
-    locaSavedState = {date: currentDayIndex, guessesCount: 0, history: [], difficulty: "normal", isOver: false};
-    localStorage.setItem("ekiLocateState", JSON.stringify(locaSavedState));
-    return;
+    locaSavedState = {
+      date: currentDayIndex, 
+      normal: {guessesCount: 0, history: [], isOver: false}, 
+      hard: {guessesCount: 0, history: [], isOver: false}
+    };
+    localStorage.setItem("ekiLocateStateV2", JSON.stringify(locaSavedState));
   }
-
-  // 過去のプレイ履歴がある場合は画面を復元します
-  if (locaSavedState.guessesCount > 0) {
-    currentDifficulty = locaSavedState.difficulty;
-    locaGuessesCount = locaSavedState.guessesCount;
-    locaGridHistory = locaSavedState.history;
-    
-    // 難易度選択画面を飛ばしてメイン画面を出します
-    document.getElementById('difficulty-screen').style.display = 'none';
-    document.getElementById('main-game-screen').style.display = 'block';
-    document.getElementById('back-to-diff-btn').style.display = 'block';
-    updateRemainingGuesses();
-
-    // テーブルの行を復元します（履歴の中身を描画）
-    // 復元バグ対策：画面に残っている古い表をまっさらにしてから書き直す
-    document.getElementById("results-tbody").innerHTML = "";
-    locaGridHistory.forEach(h => {
-      renderResultRow(h.guess, h.distanceNum, h.direction, h.region, h.comp, h.line, h.isWin);
-    });
-
-    if (locaSavedState.isOver) {
-      document.getElementById("submit-guess-btn").disabled = true;
-      document.getElementById("station-search-input").disabled = true;
-    }
-  }
+  // 初回読み込み時は必ず難易度選択画面を見せるため、ここでは画面の切り替えを行いません。
+  // ユーザーがボタンを押した時点で startGame() が呼ばれ、復元処理が走ります。
 }
 
 
