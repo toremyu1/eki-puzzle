@@ -527,13 +527,21 @@ function saveGameState() {
 async function selectTodayStation() {
   const SECRET_SALT = "EkiDoru_Secret_2026!";
 
-  // 1. 日付とインデックスの計算（全ルートで必須）
+  // 1. 日本時間（JST）ベースの日付とインデックスの計算
+  const t = new Date();
+  const jstMs = t.getTime() + (t.getTimezoneOffset() * 60000) + (9 * 3600000);
+  const jstObj = new Date(jstMs); // 後続の計算で使い回すため、この行は残します
+  const yearStr = jstObj.getFullYear(); // 今年の西暦を取得
+  
+  // 先ほど作成した共通関数をここで安全に適用します
   let todayStr = getJSTDateString();
 
+  // 基準日（2024年1月1日）から数えて今日が何日目かを計算
   const todayUTC = Date.UTC(jstObj.getFullYear(), jstObj.getMonth(), jstObj.getDate());
   const baseUTC = Date.UTC(2024, 0, 1);
   currentDayIndex = Math.round((todayUTC - baseUTC) / 86400000) + debugOffset;
 
+  // デバッグ機能で日付がずらされている場合の処理
   if (debugOffset !== 0) {
     const debugDate = new Date(baseUTC + currentDayIndex * 86400000);
     todayStr = debugDate.getUTCFullYear() + "-" + String(debugDate.getUTCMonth() + 1).padStart(2, '0') + "-" + String(debugDate.getUTCDate()).padStart(2, '0');
