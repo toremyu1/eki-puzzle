@@ -206,7 +206,7 @@ def get_todays_sub_pages():
         chunks[weekday] = ["あ"]
 
     # ★テスト用に「あ」のページだけを強制的に指定します
-    # return ["ち-て"], weekday
+    return ["は"], weekday
 
     return chunks[weekday], weekday
 
@@ -531,7 +531,7 @@ def fetch_station_details(url):
                                 data["transfer_stations"].append({"name": txt, "link": full_link})
                 # ↑↑↑ ここまで追加 ↑↑↑
 
-        except Exception as e:
+    except Exception as e:
         # 何のエラーで失敗したか分かるように表示する
         print(f"      [警告] データ抽出中にエラーが発生しました: {e}")
         pass
@@ -607,17 +607,22 @@ def extract_and_count_stations():
                         inner_text = match.group(1)
 
                         # ▼▼▼ ここから差し替え ▼▼▼
-                        # 「・」で分割して、後ろの要素が補足情報（路線名など）か、駅名の続きかを判定
+                        # 1. リンクの表示名（実際の駅名）に含まれる「・」の数を数える
+                        # 例：東京駅 -> 0個、 栂・美木多駅 -> 1個、 羽田第1・第2 -> 1個
+                        dot_count = display_name.count('・')
+                        
+                        # 2. カッコの中身を「・」で分割する
                         parts = inner_text.split('・')
                         
-                        # 最後のパーツが「えき」「ていりゅうじょう」「しんごうじょう」で終わっているかチェック
-                        if len(parts) > 1 and re.search(r"(えき|ていりゅうじょう|しんごうじょう)$", parts[-1]):
-                            # パターンA（駅名の続き）：全体の末尾の接尾辞だけを削除し、途中の「えき」や「・」は残す
-                            combined = "・".join(parts)
-                            yomi_raw = re.sub(r"(えき|ていりゅうじょう|しんごうじょう)$", "", combined)
-                        else:
-                            # パターンB（補足情報、または通常の駅）：最初のパーツのみを対象に接尾辞を削除
-                            yomi_raw = re.sub(r"(えき|ていりゅうじょう|しんごうじょう)$", "", parts[0])
+                        # 3. 表示名に含まれる「・」の数 ＋ 1 個分のパーツだけを採用する
+                        # 例（1個の場合）: [:2] となり、最初と次のパーツの合計2つが取得される
+                        valid_parts = parts[:dot_count + 1]
+                        
+                        # 4. 採用したパーツを再び「・」で繋ぐ
+                        yomi_raw = "・".join(valid_parts)
+                        
+                        # 5. 最後に末尾の「えき」等を削除
+                        yomi_raw = re.sub(r"(えき|ていりゅうじょう|しんごうじょう|停留場)$", "", yomi_raw)
                         # ▲▲▲ ここまで差し替え ▲▲▲
 
                         # 記号やスペース、アルファベット等をすべて排除し、純粋な「かな」にする（※ここは残す！）
@@ -774,7 +779,7 @@ def extract_and_count_stations():
             # 【追加】完全データ保護ロジック（一括復元）
             # =========================================================================
             # 距離がエラー値であり、かつ住所も空っぽなら「明らかな通信エラー」と判定する
-            is_fetch_failed = (v["min_km"] == 999999 and not v["address"])
+            is_fetch_failed = (v["min_km"] is None and not v["address"])
 
             if is_fetch_failed:
                 # 取得失敗時は、新しい空っぽのデータ(v)を捨てて、過去のデータ(old_item)をそのまま残す
