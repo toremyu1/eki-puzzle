@@ -84,36 +84,48 @@ function setupSuggest() {
 
     // 絞り込み処理（for文で高速に回す）
     const results = [];
+    // 絞り込み処理（スコア制で駅名の一致を最優先にする）
+    let results = [];
     for (let i = 0; i < locaStations.length; i++) {
       const s = locaStations[i];
       let matchReason = "";
+      let score = 0; // スコアが高いほどリストの上に表示されます
 
-      // ① 駅名（漢字・ひらがな）での一致
-      if (s.kanji.includes(query) || s.yomi.includes(query)) {
-        matchReason = `${s.pref}${s.municipality}`; // 駅名ヒット時は住所を添える
+      // ① 駅名の完全一致（最強スコア）
+      if (s.kanji === query || s.yomi === query) {
+        matchReason = `${s.pref}${s.municipality}`;
+        score = 3;
       }
-      // ② 住所（市区町村）での一致
+      // ② 駅名の部分一致
+      else if (s.kanji.includes(query) || s.yomi.includes(query)) {
+        matchReason = `${s.pref}${s.municipality}`;
+        score = 2;
+      }
+      // ③ 住所・路線・事業者での一致
       else if ((s.pref + s.municipality + (s.ward || "")).includes(query)) {
         matchReason = `📍 ${s.pref}${s.municipality}`;
+        score = 1;
       }
-      // ③ 路線名での一致
       else if (s.lines && s.lines.some(l => l.includes(query) || toHiragana(l).includes(query))) {
         const matchedLine = s.lines.find(l => l.includes(query) || toHiragana(l).includes(query));
         matchReason = `🚃 ${matchedLine}`;
+        score = 1;
       }
-      // ④ 事業者名での一致
       else if (s.companies && s.companies.some(c => c.includes(query) || toHiragana(c).includes(query))) {
         const matchedComp = s.companies.find(c => c.includes(query) || toHiragana(c).includes(query));
         matchReason = `🏢 ${matchedComp}`;
+        score = 1;
       }
 
       // 何らかの条件にヒットした場合、結果リストに追加
-      if (matchReason !== "") {
-        results.push({ station: s, reason: matchReason });
-        // 動作を限界まで軽くするため、候補は最大50件でストップ
-        if (results.length >= 50) break; 
+      if (score > 0) {
+        results.push({ station: s, reason: matchReason, score: score });
       }
     }
+
+    // スコアの高い順に並び替え、動作を軽くするため最大50件でカット
+    results.sort((a, b) => b.score - a.score);
+    results = results.slice(0, 50);
 
     // HTMLの生成
     renderSuggestList(results);
@@ -205,23 +217,29 @@ let todayLocaStation = null; // 今日の正解駅
 let locaGuessesCount = 0;    // 現在の回答回数
 const MAX_LOCA_GUESSES = 10; // 最大回答回数
 let currentDifficulty = 'normal';  // 今回のプレイの難易度を記憶しておく変数（初期値は通常）
-
+let locaGridHistory = []; // シェア用の結果絵文字を保存する箱を追加
 
 
 // ==========================================
 // 難易度選択とゲーム開始のロジック
 // ==========================================
 
-// 難易度ボタンが押された時に実行される関数です
-function startGame(difficulty) {
+// 画面の「残り回答可能数」のテキストを更新する関数
+function updateRemainingGuesses() {
+  const remain = MAX_LOCA_GUESSES - locaGuessesCount;
+  const display = document.getElementById("remaining-guesses-display");
+  if (display) display.textContent = `残り回答可能数：${remain} 回`;
+}
 
-  // 引数で受け取った難易度（'normal' か 'hard'）を変数に保存します
+// 難易度ボタンが押された時に実行される関数
+function startGame(difficulty) {
   currentDifficulty = difficulty;
+  locaGridHistory = []; // 履歴をリセット
   
-  // 難易度選択画面を隠し、メインのゲーム画面を表示させます
   document.getElementById('difficulty-screen').style.display = 'none';
   document.getElementById('main-game-screen').style.display = 'block';
-
+  
+  updateRemainingGuesses(); // 開始時に残り回数を表示
 }
 
 
@@ -290,15 +308,27 @@ function submitLocaGuess() {
   locaGuessesCount++;
   
   // 入力欄をリセット
+  // 過去の回答の色の結果を、シェア用に記憶しておく
+  locaGridHistory.push({
+    distance: isWin ? "🎯" : distance + "km",
+    direction: isWin ? "🎯" : direction,
+    region: regionStatus,
+    comp: compStatus,
+    line: lineStatus
+  });
+
+  locaGuessesCount++;
+  updateRemainingGuesses(); // 残り回数の表示を減らす
+  
   input.value = "";
   currentSelectedStation = null;
   document.getElementById("suggest-list").style.display = "none";
 
-  // 勝敗のチェック
+  // 勝敗のチェック（アラートの代わりに結果画面を呼び出す）
   if (isWin) {
-    setTimeout(() => alert(`正解！🎉 ${locaGuessesCount}手目で「${target.kanji}」を探し当てました！`), 300);
+    setTimeout(() => showLocaResultModal(true), 500);
   } else if (locaGuessesCount >= MAX_LOCA_GUESSES) {
-    setTimeout(() => alert(`ゲームオーバー… 正解は「${target.kanji}」でした。`), 300);
+    setTimeout(() => showLocaResultModal(false), 500);
   }
 }
 
@@ -339,6 +369,145 @@ function renderResultRow(guess, distance, direction, regionStatus, compStatus, l
   tbody.insertBefore(tr, tbody.firstChild);
 }
 
+
+// ==========================================
+// 各種ボタンとメニューの紐付け
+// ==========================================
+function setupUI() {
+  // ヘルプ画面
+  document.getElementById("help-btn").addEventListener("click", () => document.getElementById("help-modal").style.display = "flex");
+  document.getElementById("close-help-btn").addEventListener("click", () => document.getElementById("help-modal").style.display = "none");
+  
+  // サイドメニュー
+  const closeSideMenu = () => {
+    document.getElementById("side-menu").style.right = "-250px";
+    setTimeout(() => document.getElementById("side-menu-overlay").style.display = "none", 300);
+  };
+  document.getElementById("menu-btn").addEventListener("click", () => {
+    document.getElementById("side-menu-overlay").style.display = "block";
+    setTimeout(() => document.getElementById("side-menu").style.right = "0", 10);
+  });
+  document.getElementById("close-menu-btn").addEventListener("click", closeSideMenu);
+  document.getElementById("side-menu-overlay").addEventListener("click", closeSideMenu);
+
+  // テーマ切り替え
+  const themes = ["", "theme-dark", "theme-sakura", "theme-ocean", "theme-green", "theme-blue"];
+  let themeIdx = 0;
+  document.getElementById("theme-btn").addEventListener("click", () => {
+    if (themes[themeIdx] !== "") document.body.classList.remove(themes[themeIdx]);
+    themeIdx = (themeIdx + 1) % themes.length;
+    if (themes[themeIdx] !== "") document.body.classList.add(themes[themeIdx]);
+  });
+
+  // 結果画面の閉じるボタン
+  document.getElementById("close-modal-btn").addEventListener("click", () => document.getElementById("result-modal").style.display = "none");
+  
+  // シェアボタン
+  document.getElementById("share-btn").addEventListener("click", () => shareLocaResult("twitter"));
+  document.getElementById("copy-btn").addEventListener("click", () => shareLocaResult("copy"));
+}
+
+// ==========================================
+// 結果画面とアフィリエイトリンクの生成
+// ==========================================
+function showLocaResultModal(isWin) {
+  document.getElementById("modal-title").textContent = isWin ? "正解！おめでとう！" : "ゲームオーバー";
+  document.getElementById("modal-desc").textContent = `${todayLocaStation.kanji} (${todayLocaStation.pref}${todayLocaStation.municipality})`;
+
+  // 駅ドルと同じロジックでアフィリエイトの地域キーワードを作成
+  let safePref = todayLocaStation.pref || "東京都";
+  let searchMuni = todayLocaStation.municipality || "";
+  let searchWard = todayLocaStation.ward || "";
+  let muniMuni = safePref + searchMuni + searchWard;
+  
+  let isRural = todayLocaStation.muni_type === "町" || todayLocaStation.muni_type === "村" || (todayLocaStation.population && todayLocaStation.population < 30000);
+  let areaKeyword = isRural ? safePref : muniMuni;
+
+  let prText = `＼ この駅のある「${muniMuni}」へ聖地巡礼に行こう！ ／`;
+
+  // トラベル用リンク
+  let encodedStation = encodeURIComponent(encodeURIComponent(encodeURIComponent(areaKeyword)));
+  let yahooUrl = `https://px.a8.net/svt/ejp?a8mat=4B5NW1+DE94S2+4ZCO+BW8O2&a8ejpredirect=https%3A%2F%2Ftravel.yahoo.co.jp%2FikCo.ashx%3Fcosid%3Dy_a8net%26surl%3Dhttps%253A%252F%252Ftravel.yahoo.co.jp%252Fsearch%253Fadc%253D1%2526discsort%253D1%2526kwd%253D${encodedStation}%2526lc%253D1%2526ppc%253D2%2526rc%253D1%2526si%253D6`;
+  let rakutenKeyword = encodeURIComponent(encodeURIComponent(areaKeyword));
+  let rakutenUrl = `https://af.moshimo.com/af/c/click?a_id=5616621&p_id=55&pc_id=55&pl_id=624&url=https%3A%2F%2Fkw.travel.rakuten.co.jp%2Fkeyword%2FSearch.do%3Fcharset%3Dutf-8%26f_max%3D30%26l-id%3DtopC_search_keyword%26f_query%3D${rakutenKeyword}`;
+
+  document.getElementById("affiliate-container").innerHTML = `
+    <div style="background-color:#fff3e0; border:1px solid #ffcc80; border-radius:6px; padding:10px; font-size:11px;">
+      <div style="font-weight:bold; color:#e65100; margin-bottom:8px;">${prText}</div>
+      <div style="display:flex; justify-content:center; gap:8px;">
+        <a href="${yahooUrl}" target="_blank" style="padding:8px 0; border:1px solid #ff0033; color:#333; text-decoration:none; border-radius:4px; width:45%; font-weight:bold;">Y!トラベル</a>
+        <a href="${rakutenUrl}" target="_blank" style="padding:8px 0; background-color:#00B900; color:#fff; text-decoration:none; border-radius:4px; width:45%; font-weight:bold;">楽天トラベル</a>
+      </div>
+    </div>
+  `;
+
+  // シェア用の絵文字グリッドを表示
+  const colorToEmoji = {"cell-correct":"🟩", "cell-present":"🟨", "cell-absent":"⬛"};
+  const gridHTML = locaGridHistory.map(row => {
+    return `${row.distance} ${row.direction} ${colorToEmoji[row.region]}${colorToEmoji[row.comp]}${colorToEmoji[row.line]}`;
+  }).join("<br>");
+  document.getElementById("modal-grid").innerHTML = gridHTML;
+
+  document.getElementById("result-modal").style.display = "flex";
+}
+
+// ==========================================
+// シェア機能（専用のハッシュタグ設定）
+// ==========================================
+function shareLocaResult(type) {
+  const colorToEmoji = {"cell-correct":"🟩", "cell-present":"🟨", "cell-absent":"⬛"};
+  const isWin = locaGridHistory.length > 0 && locaGridHistory[locaGridHistory.length - 1].region === "cell-correct";
+  const scoreStr = isWin ? `${locaGridHistory.length}/${MAX_LOCA_GUESSES}` : `X/${MAX_LOCA_GUESSES}`;
+  const gameTitle = currentDifficulty === 'hard' ? "駅ロケHard" : "駅ロケ";
+  const currentUrl = window.location.href.split('?')[0];
+
+  let text = `${gameTitle} ${scoreStr}\n\n`;
+  text += locaGridHistory.map((row, i) => {
+    let r = `${row.distance} ${row.direction} ${colorToEmoji[row.region]}${colorToEmoji[row.comp]}${colorToEmoji[row.line]}`;
+    return (isWin && i === locaGridHistory.length - 1) ? r + "💮" : r;
+  }).join("\n");
+
+  const hashtagStr = currentDifficulty === 'hard' ? `#駅ロケ\n#駅ロケHard\n` : `#駅ロケ\n`;
+  text += `\n\n${hashtagStr}${currentUrl}`;
+
+  if (type === "twitter") {
+    window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`, "_blank");
+  } else if (type === "copy") {
+    navigator.clipboard.writeText(text).then(() => alert("クリップボードにコピーしました"));
+  }
+}
+
+// ==========================================
+// 行事日エフェクト（背景色とタイルの文字変更）
+// ==========================================
+function triggerLocaEvent(ev) {
+  document.body.className = document.body.className.replace(/event-\w+/g, "");
+  if (!ev) return;
+  document.body.classList.add("event-" + ev);
+
+  const titleEl = document.getElementById("game-title");
+  const iconHtml = '<img src="/ekilocate-icon.svg" alt="駅ロケアイコン" style="width:36px; height:36px; margin-right:10px; border-radius:8px;">';
+  
+  if (ev === "christmas") {
+    titleEl.innerHTML = iconHtml + "駅ロケ 🎄 メリークリスマス！";
+  } else if (ev === "halloween") {
+    titleEl.innerHTML = iconHtml + "駅ロケ 🎃 ハッピーハロウィン！";
+  } else if (ev === "newyear") {
+    titleEl.innerHTML = iconHtml + "駅ロケ 🎍 謹賀新年！";
+  }
+}
+
+function checkLocaEvent() {
+  const d = new Date(); const m = d.getMonth() + 1; const day = d.getDate();
+  let ev = "";
+  if (m === 1 && day <= 3) ev = "newyear";
+  else if (m === 2 && day === 14) ev = "valentine";
+  else if (m === 10 && day === 31) ev = "halloween";
+  else if (m === 12 && (day === 24 || day === 25)) ev = "christmas";
+  triggerLocaEvent(ev);
+}
+
+
 // ==========================================
 // 初期化処理（ページを開いた時に実行）
 // ==========================================
@@ -353,6 +522,10 @@ async function initLocaGame() {
     
     // サジェスト機能を有効化
     setupSuggest();
+
+    // UIボタンの有効化とイベント判定の呼び出しを追加
+    setupUI();
+    checkLocaEvent();
 
     // 【仮】とりあえず今はランダムで正解駅を1つ決める（後で日付ベースのロジックに差し替えます）
     todayLocaStation = locaStations[Math.floor(Math.random() * locaStations.length)];
