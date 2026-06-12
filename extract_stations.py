@@ -222,7 +222,7 @@ def fetch_station_details(url):
         "muni_url": "",            # 自治体ページのURL
         "platforms": 0,            # 面数
         "tracks": 0,               # 線路数
-        "min_km": None        ,    # 最小営業キロ
+        "min_km": float('inf'),    # 最小営業キロ
         "open_year": None,         # 開業年
         "open_month": None,        # 開業月
         "open_day": None,          # 開業日
