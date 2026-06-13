@@ -24,15 +24,6 @@
 </div>
 
 <div class="game-container">
-
-<div id="difficulty-screen" class="difficulty-screen" style="display: none;">
-<h2>難易度を選択してください</h2>
-<button onclick="startGame('normal')">通常モード</button>
-<button onclick="startGame('hard')">ハードモード<br>（事業者・路線ヒントなし）</button>
-<button disabled style="background-color: #bdc3c7; cursor: not-allowed; box-shadow: none;">追加モード（準備中）</button>
-</div>
-
-<div id="main-game-screen" style="display: none;">
 <header>
 <div style="display:flex; justify-content:space-between; width:100%; margin-bottom:5px;">
 <div style="display:flex; gap:8px;">
@@ -46,15 +37,24 @@
 <img src="/ekilocate-icon.svg" alt="駅ロケアイコン" style="width: 36px; height: 36px; margin-right: 10px; border-radius: 8px;">
 駅ロケ 🗺️
 </h1>
-
 <div id="mode-badge-container" style="text-align: center; margin-top: 5px; margin-bottom: 5px; height: 20px;">
-  <span id="hard-mode-badge" style="display:none; background-color: #e74c3c; color: white; font-size: 11px; padding: 2px 8px; border-radius: 10px; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">🔥 ハードモード実行中</span>
+  <span id="hard-mode-badge" style="display:none; background-color: #e74c3c; color: white; font-size: 11px; padding: 2px 8px; border-radius: 10px; font-weight: bold;">🔥 ハードモード実行中</span>
+</div>
+<p class="game-description">全国の駅から「今日の正解駅」を推理しよう！</p>
+</header>
+
+<div id="difficulty-screen" class="difficulty-screen" style="display: none;">
+<h2 style="font-size:18px; text-align:center; color:#2c3e50; margin-top:0;">難易度を選択してください</h2>
+<button class="diff-btn" onclick="startGame('normal')" style="background-color:#3498db; border-bottom-color:#2980b9;">通常（ヒントあり）</button>
+<button class="diff-btn" onclick="startGame('hard')" style="background-color:#e74c3c; border-bottom-color:#c0392b;">ハード（事業者・路線ヒントなし）</button>
+<button class="diff-btn" disabled style="background-color:#bdc3c7; color:#fff; border-bottom-color:#95a5a6; cursor:not-allowed;">追加モード（準備中）</button>
 </div>
 
-<p class="game-description">全国の駅から「今日の正解駅」を推理しよう！</p>
-<div id="remaining-guesses-display" style="font-weight:bold; color:#e74c3c; margin-top:10px; font-size:16px;">残り回答可能数：10 回</div>
-<button id="back-to-diff-btn" style="margin-top:15px; padding:8px 15px; background-color:#7f8c8d; color:#fff; border:none; border-radius:6px; cursor:pointer; font-weight:bold; box-shadow:0 3px 0 #34495e; transition:transform 0.1s, box-shadow 0.1s;">← モード選択に戻る</button>
-</header>
+<div id="main-game-screen" style="display: none;">
+<div style="text-align:center; margin-bottom: 15px;">
+  <div id="remaining-guesses-display" style="font-weight:bold; color:#e74c3c; font-size:16px;">残り回答可能数：10 回</div>
+  <button id="back-to-diff-btn" class="diff-btn" style="margin-top:15px; padding:8px 15px; background-color:#7f8c8d; border-bottom-color:#34495e; width:auto; height:auto; display:none; margin-left:auto; margin-right:auto;">← モード選択に戻る</button>
+</div>
   
 <main>
 <div class="search-area">
@@ -128,6 +128,16 @@
 <strong>▶ 片瀬江ノ島駅と入力</strong><br>
 【地域 🟨】【事業者 ⬛】【路線 ⬛】<br>
 神奈川県藤沢市なので、都道府県（神奈川県）だけが一致するため地域は🟨。事業者（小田急電鉄）と路線は共通なし（⬛）。
+<hr style="border:none; border-top:1px solid #eee; margin:15px 0;">
+<div style="font-size:11px; color:#888; line-height:1.5;">
+※当ゲームはWikipedia「日本の鉄道駅一覧」のデータを基準としています。<br>
+※駅データの更新には最大で1カ月程度かかります。<br>
+※深夜0時以降にページを再読み込みすると、今日の新しい問題に切り替わります。
+</div>
+<div style="text-align:center; margin-top:20px; font-size:12px; font-weight:bold; color:#aaa; line-height:1.8;">
+Inspired by Wordle<br>
+<a href="https://forms.gle/Lx7FSbLxLa4B6o5n7" target="_blank" style="color:#03a9f4; text-decoration:none;">問い合わせフォーム</a>
+</div>
 </div>
 </div>
 </div>
@@ -145,8 +155,12 @@
 <button id="fb-btn" class="btn" style="background:#1877F2; color:#fff;">Facebook</button>
 <button id="copy-btn" class="btn" style="background:#ccc; color:#333;">コピー</button>
 </div>
+<div class="coffee-link" style="text-align:center; margin-top:15px;">
+<a href="https://buymeacoffee.com/nimuro_stationdle" target="_blank" style="color:#ff813f; font-weight:bold; text-decoration:none; font-size:14px;">☕ コーヒーをおごる (Buy Me a Coffee)</a>
 </div>
 </div>
+</div>
+  
 <div id="side-menu-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:900;"></div>
 <div id="side-menu" style="position:fixed; top:0; right:-250px; width:250px; height:100%; background:#fff; z-index:901; transition:right 0.3s ease; padding:20px; box-sizing:border-box;">
 <div style="font-weight:bold; border-bottom:2px solid #3498db; padding-bottom:10px; margin-bottom:15px; display:flex; justify-content:space-between;">
@@ -156,6 +170,7 @@
 <li style="border-bottom:1px solid #eee;"><a href="#" id="side-back-to-diff-btn" style="text-decoration:none; color:#e74c3c;">🔄 モード選択に戻る</a></li>
 <li style="border-bottom:1px solid #eee;"><a href="#" style="text-decoration:none; color:#333;" onclick="alert('鋭意開発中！お楽しみに！'); return false;">🏆 実績（準備中）</a></li>
 <li style="border-bottom:1px solid #eee;"><a href="https://forms.gle/Lx7FSbLxLa4B6o5n7" target="_blank" style="text-decoration:none; color:#333;">✉️ お問い合わせ</a></li>
+<li style="border-bottom:1px solid #eee;"><a href="https://buymeacoffee.com/nimuro_stationdle" target="_blank" style="text-decoration:none; color:#ff813f;">☕ コーヒーをおごる</a></li>
 </ul>
 </div>
 </body>
