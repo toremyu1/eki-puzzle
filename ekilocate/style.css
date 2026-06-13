@@ -663,6 +663,20 @@ body.event-nye #diff-title {
     color: #ffffff;
 }
 
+/* ボタン押し込み時に下の要素がガタッと上にズレるのを防ぐ修正 */
+.diff-btn:active, .btn:active {
+    /* ボーダーの太さを0にせず維持することで、物理的な高さを死守します */
+    border-bottom-width: 3px !important; 
+    
+    /* 色だけを透明にして、影（ボーダー）が消えたように見せます */
+    border-bottom-color: transparent !important; 
+    
+    /* 背景色が透明なボーダーの下に漏れるのを防ぎます */
+    background-clip: padding-box !important; 
+    
+    /* ボタン全体を下にスライドさせて「押し込んだ感」を出します */
+    transform: translateY(3px) !important; 
+}
 
 /* =================================== */
 /* エンドレスモード */
@@ -676,3 +690,6 @@ body.event-nye #diff-title {
 .anim-float {
   animation: floatUpFade 1.2s ease-out forwards;
 }
+
+
+
