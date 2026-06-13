@@ -815,10 +815,10 @@ function setupUI() {
 // 結果画面とアフィリエイトリンクの生成
 // ==========================================
 function showLocaResultModal(isWin) {
-  document.getElementById("modal-title").textContent = isWin ? "正解！おめでとう！" : "ゲームオーバー";
+  document.getElementById("modal-title").textContent = isWin ? "正解！おめでとう！" : "残念！ゲームオーバー";
   
-  // 正解駅名の下に、立体化されたWikipediaを見るボタンを動的に配置します
-  //let wikiUrl = todayLocaStation.url || "https://ja.wikipedia.org/";
+  // 正解駅名の下に、立体化されたWikipediaを見るボタンを動的に配置します ※廃止
+  // let wikiUrl = todayLocaStation.url || "https://ja.wikipedia.org/";
   document.getElementById("modal-desc").innerHTML = `
     <span style="font-size:18px; font-weight:bold;">${todayLocaStation.kanji}</span><br>
     <span style="font-size:14px; color:#7f8c8d;">(${todayLocaStation.pref}${todayLocaStation.municipality})</span><br>
@@ -830,8 +830,8 @@ function showLocaResultModal(isWin) {
   let searchWard = todayLocaStation.ward || "";
   let muniMuni = searchMuni // + searchWard; // 例：「島根県江津市」
 
-  // トラベル用の都会・田舎のキーワード分岐（宿泊施設の件数0を回避するためトラベル側のみ維持）
-  let isRural = todayLocaStation.muni_type === "町" || todayLocaStation.muni_type === "村" || todayLocaStation.population < 2000;
+  // トラベル用の都会・田舎のキーワード分岐（宿泊施設の件数0を回避するためトラベル側のみ維持）※廃止済み条件分岐
+  let isRural = todayLocaStation.population < 0; // todayLocaStation.muni_type === "町" || todayLocaStation.muni_type === "村" || ※廃止済み条件分岐
   let areaKeyword = isRural ? safePref : muniMuni;
   let searchKw = typeof isAprilFoolMode!=="undefined"&&isAprilFoolMode ? safePref : areaKeyword;
   
