@@ -1106,7 +1106,7 @@ function showResultModal(isWin,isRestore){
   let muniMuni = searchMuni // + searchWard; // 例：「島根県江津市」
 
   // トラベル用の都会・田舎のキーワード分岐（宿泊施設の件数0を回避するためトラベル側のみ維持）
-  let isRural = todayStationStation.population < 0; // todayStation.muni_type === "町" || todayStation.muni_type === "村" || ※廃止済み条件分岐
+  let isRural = todayStation.population < 0; // todayStation.muni_type === "町" || todayStation.muni_type === "村" || ※廃止済み条件分岐
   let areaKeyword = isRural ? safePref : muniMuni;
   let searchKw = typeof isAprilFoolMode!=="undefined"&&isAprilFoolMode ? safePref : areaKeyword;
   
