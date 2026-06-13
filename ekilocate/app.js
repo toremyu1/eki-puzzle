@@ -63,6 +63,29 @@ function updateLocaLoadingProgress(targetPercent, text) {
 // ==========================================
 async function initLocaGame() {
   try {
+    // 今日の日付を取得（YYYY-MM-DD形式）
+    const todayStrD = new Date().toLocaleDateString('sv-SE'); 
+    
+    // 初回ログイン日がなければ今日を記録する
+    if (!locaMeta.firstLoginDate) locaMeta.firstLoginDate = todayStrD;
+    
+    // 最終ログイン日が今日でなければ、連続ログイン日数を計算して更新する
+    if (locaMeta.lastLoginDate !== todayStrD) {
+      if (locaMeta.lastLoginDate) {
+        let yesterday = new Date(); 
+        yesterday.setDate(yesterday.getDate() - 1);
+        let yStr = yesterday.toLocaleDateString('sv-SE');
+        locaMeta.consecutiveLoginDays = (locaMeta.lastLoginDate === yStr) ? locaMeta.consecutiveLoginDays + 1 : 1;
+      } else {
+        locaMeta.consecutiveLoginDays = 1;
+      }
+      locaMeta.lastLoginDate = todayStrD;
+      localStorage.setItem("ekiLocateMeta", JSON.stringify(locaMeta));
+    }
+    
+    // ユーザーが設定していたテーマカラーを復元して適用する
+    if (locaSettings.theme) document.body.classList.add(locaSettings.theme);
+    
     // 【進捗10%】システム起動
     updateLocaLoadingProgress(10, "システムを起動中...");
     
@@ -220,6 +243,14 @@ function startGame(difficulty) {
 
   document.getElementById('difficulty-screen').style.display = 'none';
   document.getElementById('main-game-screen').style.display = 'block';
+
+  // ハードモード明示バッジの表示切り替え（ハードなら表示、通常なら非表示）
+  const badge = document.getElementById("hard-mode-badge");
+  if (badge) badge.style.display = currentDifficulty === 'hard' ? 'inline-block' : 'none';
+
+  // 左上の戻るボタンと、残り回答数をメイン画面に表示する
+  document.getElementById('top-back-btn').style.display = 'inline-flex';
+  document.getElementById('remaining-guesses-display').style.display = 'block';
   
   // ゲーム画面上部の「モード選択に戻る」ボタンを確実に表示させます
   const backBtn = document.getElementById('back-to-diff-btn');
@@ -684,6 +715,22 @@ function renderResultRow(guess, distance, direction, regionStatus, compStatus, l
 // 各種ボタンとメニューの紐付け
 // ==========================================
 function setupUI() {
+  
+  // 左上の「←」戻るボタンを押したときの処理（メイン画面を隠し、モード選択画面を出す）
+  const topBackBtn = document.getElementById("top-back-btn");
+  if (topBackBtn) {
+    topBackBtn.addEventListener("click", () => {
+      document.getElementById("main-game-screen").style.display = "none";
+      document.getElementById("difficulty-screen").style.display = "block";
+      
+      // モード選択画面に戻ったら、ハードモードのバッジや不要なボタンを確実に隠す
+      const badge = document.getElementById("hard-mode-badge");
+      if (badge) badge.style.display = "none";
+      topBackBtn.style.display = "none";
+      document.getElementById('remaining-guesses-display').style.display = 'none';
+    });
+  }
+  
   // ヘルプ画面
   document.getElementById("help-btn").addEventListener("click", () => document.getElementById("help-modal").style.display = "flex");
   document.getElementById("close-help-btn").addEventListener("click", () => document.getElementById("help-modal").style.display = "none");
@@ -884,6 +931,21 @@ function showLocaResultModal(isWin) {
     return `${colorToEmoji[row.region]}${colorToEmoji[row.comp]}${colorToEmoji[row.line]} ${row.direction} ${row.distance}`;
   }).join("<br>");
   document.getElementById("modal-grid").innerHTML = gridHTML;
+
+  // 現在のモードの戦績データを読み込む（データがなければ初期値をセット）
+  let st = locaStats[currentDifficulty];
+  if (!st) st = {played:0, won:0, currentStreak:0, maxStreak:0, dist:[0,0,0,0,0,0,0,0,0,0,0]};
+  
+  // HTMLの各項目（プレイ回数、勝率、連勝記録など）に計算した数値を書き込む
+  const elPlayed = document.getElementById("stat-played");
+  const elWinRate = document.getElementById("stat-winrate");
+  const elStreak = document.getElementById("stat-streak");
+  const elMaxStreak = document.getElementById("stat-maxstreak");
+  
+  if(elPlayed) elPlayed.textContent = st.played;
+  if(elWinRate) elWinRate.textContent = st.played > 0 ? Math.round((st.won / st.played) * 100) : 0;
+  if(elStreak) elStreak.textContent = st.currentStreak;
+  if(elMaxStreak) elMaxStreak.textContent = st.maxStreak;
 
   document.getElementById("result-modal").style.display = "flex";
 }
@@ -1143,18 +1205,18 @@ function restoreLocaGameState() {
 // ==========================================
 function saveLocaStats(isWin) {
   let st = locaStats[currentDifficulty];
-  st.played++;
+  st.played++; // プレイ回数を加算
   
   const todayStrD = new Date().toLocaleDateString('sv-SE');
 
   if (isWin) {
-    st.won++;
-    st.currentStreak++;
-    if (st.currentStreak > st.maxStreak) st.maxStreak = st.currentStreak;
-    st.dist[locaGuessesCount] = (st.dist[locaGuessesCount] || 0) + 1;
+    st.won++; // 勝利回数を加算
+    st.currentStreak++; // 現在の連勝記録を加算
+    if (st.currentStreak > st.maxStreak) st.maxStreak = st.currentStreak; // 最大連勝記録を更新
+    st.dist[locaGuessesCount] = (st.dist[locaGuessesCount] || 0) + 1; // クリアまでの手数を記録
     if (!st.clearedDates.includes(todayStrD)) st.clearedDates.push(todayStrD);
     
-    // 図鑑登録
+    // 駅図鑑に正解した駅を登録（重複なし）
     if (todayLocaStation && !locaMeta.unlockedStations.includes(todayLocaStation.kanji)) {
        locaMeta.unlockedStations.push(todayLocaStation.kanji);
     }
@@ -1171,13 +1233,14 @@ function saveLocaStats(isWin) {
       locaMeta.lastClearDate = todayStrD;
     }
   } else {
+    // 負けた場合は連勝記録をリセット
     st.currentStreak = 0;
   }
   
+  // 保存箱（ローカルストレージ）に最新データを書き込む
   localStorage.setItem("ekiLocateStatsV2", JSON.stringify(locaStats));
   localStorage.setItem("ekiLocateMeta", JSON.stringify(locaMeta));
 }
-
 
 
 // 画面の準備ができたらゲームスタート
