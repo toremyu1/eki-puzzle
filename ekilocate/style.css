@@ -266,9 +266,6 @@ body.event-newyear { background-color: #fffaf0; color: #b71c1c; --theme-accent: 
 .modal-content {
     background-image: linear-gradient(135deg, rgba(255, 255, 255, 0.12) 0%, rgba(0, 0, 0, 0.06) 100%);
     box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5), inset 0 0 12px rgba(255, 255, 255, 0.15);
-    
-    /* テーマカラーに連動する太めの枠線をつけます */
-    /* border: 3px solid var(--theme-accent, #3498db); */
 }
 
 /* 駅ドル方式のカスタムスクロールバー（水色） */
