@@ -730,6 +730,7 @@ function setupUI() {
       document.getElementById('remaining-guesses-display').style.display = 'none';
     });
   }
+
   
   // ヘルプ画面
   document.getElementById("help-btn").addEventListener("click", () => document.getElementById("help-modal").style.display = "flex");
@@ -755,17 +756,7 @@ function setupUI() {
     });
   }
 
-  // 【追加】ヘッダー左上の「←」戻るボタンの機能
-  const topBackBtn = document.getElementById("top-back-btn");
-  if (topBackBtn) {
-    topBackBtn.addEventListener("click", () => {
-      document.getElementById("main-game-screen").style.display = "none";
-      document.getElementById("difficulty-screen").style.display = "block";
-      // 戻った時は必ずハードモードバッジを隠す
-      const badge = document.getElementById("hard-mode-badge");
-      if (badge) badge.style.display = "none";
-    });
-  }
+  
 
   // 【修正】グラフボタンのバグ修正（クリア後のリロードでも確実に表示させる）
   document.getElementById("stats-btn").addEventListener("click", () => {
