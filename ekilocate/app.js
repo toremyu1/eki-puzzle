@@ -390,9 +390,12 @@ function normalizeKanjiForSearch(str) {
             .replace(/濱/g, "浜")
             .replace(/櫻/g, "桜")
             .replace(/眞/g, "真")
-            .replace(/鐵/g, "鉄")
             .replace(/ヶ/g, "ケ")
-            .replace(/驛/g, "駅");
+            .replace(/驛/g, "駅")
+            .replace(/鐡/g, "鉄")
+            .replace(/鐵/g, "鉄")
+            .replace(/竈/g, "釜")
+            .replace(/竃/g, "釜");
 }
 
 
