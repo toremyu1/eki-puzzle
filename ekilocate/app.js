@@ -1655,19 +1655,35 @@ function showEndlessResultModal() {
 let locaEndlessHighScore = parseInt(localStorage.getItem("ekiLocateEndlessHighScore") || "0", 10);
 let locaEndlessMaxComboAllTime = parseInt(localStorage.getItem("ekiLocateEndlessMaxCombo") || "0", 10);
 
-// ① エンドレスモードの説明ポップアップを開く
+
+// ==========================================
+// エンドレスモード：起動時のポップアップ制御
+// ==========================================
+
+// ① モード選択画面のボタンを押した時に呼ばれる関数（ポップアップを開く）
+function openEndlessIntroModal() {
+  const modal = document.getElementById("endless-intro-modal");
+  if (modal) {
+    modal.style.display = "flex";
+  } else {
+    alert("エラー：説明画面のHTMLが見つかりません。index.htmlに追加されているか確認してください。");
+  }
+}
+
+// ② ポップアップの「出発進行！」を押した時に呼ばれる関数（ゲーム開始）
 function closeEndlessIntroAndStart() {
   document.getElementById("endless-intro-modal").style.display = "none";
-
+  
   currentDifficulty = 'endless';
 
-  // 【重要：追加】モード選択画面を隠して、メインのゲーム画面を確実に表示する
+  // モード選択画面を隠して、メインのゲーム画面を表示する
   document.getElementById('difficulty-screen').style.display = 'none';
   document.getElementById('main-game-screen').style.display = 'block';
 
-  // 【重要：追加】左上の戻るボタンと、残り回数表示を復活させる
+  // 左上の戻るボタンと、残り回数表示を復活させる
   const topBackBtn = document.getElementById('top-back-btn');
   if (topBackBtn) topBackBtn.style.display = 'inline-flex';
+  
   const remainDisplay = document.getElementById('remaining-guesses-display');
   if (remainDisplay) remainDisplay.style.display = 'block';
 
