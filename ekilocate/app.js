@@ -455,7 +455,6 @@ function setupSuggest() {
       // 【双方向対応】辞書側の駅名データも、検索の判定時だけ新字体に変換して比較する
       const originalKanji = s.kanji || "";
       const kanji = normalizeKanjiForSearch(originalKanji);
-      const kanji = s.kanji || "";
       const yomi = s.yomi || s.hiragana || ""; 
       const pref = s.pref || "";
       const muni = s.municipality || "";
