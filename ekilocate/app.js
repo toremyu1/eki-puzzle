@@ -14,12 +14,17 @@ let locaStats = JSON.parse(localStorage.getItem("ekiLocateStatsV2") || JSON.stri
   hard:   { played:0, won:0, currentStreak:0, maxStreak:0, dist:[0,0,0,0,0,0,0,0,0,0,0], clearedDates:[], fastestTime: null }
 }));
 
-// エンドレスのセーブデータに history と currentStation を追加します
-let locaEndlessState = JSON.parse(localStorage.getItem("ekiLocateEndlessDeck") || JSON.stringify({
-  deck: [], currentIndex: 0, score: 0, combo: 0, maxCombo: 0, clearedCount: 0, remainingGuesses: 15,
-  lastAnswerStation: null,
-  history: [],          // 【追加】挑戦中の盤面履歴
-  currentStation: null  // 【追加】現在の正解駅
+
+// エンドレスモードのセーブデータ（山札の状態、スコア、コンボ、残り回数などを一括管理）
+locaEndlessState = JSON.parse(localStorage.getItem("ekiLocateEndlessDeck") || JSON.stringify({
+  deck: [],               // シャッフルされた駅インデックスの配列
+  currentIndex: 0,        // 現在山札の何枚目を引いているか
+  score: 0,               // 現在の総スコア
+  combo: 0,               // 現在の連勝数
+  maxCombo: 0,            // 今回のプレイでの最高連勝数
+  clearedCount: 0,        // 正解した駅の合計数
+  remainingGuesses: 15,   // 現在の残り回答可能数
+  lastAnswerStation: null // 前回クリア（またはスキップ）した駅のデータ
 }));
 
 // モード共通のメタデータ（ログイン日数、連続クリア、駅図鑑など）
@@ -1389,18 +1394,6 @@ function saveLocaStats(isWin) {
 // ==========================================
 // エンドレスモード専用ロジック（山札システムとセーブデータ）
 // ==========================================
-
-// エンドレスモードのセーブデータ（山札の状態、スコア、コンボ、残り回数などを一括管理）
-let locaEndlessState = JSON.parse(localStorage.getItem("ekiLocateEndlessDeck") || JSON.stringify({
-  deck: [],               // シャッフルされた駅インデックスの配列
-  currentIndex: 0,        // 現在山札の何枚目を引いているか
-  score: 0,               // 現在の総スコア
-  combo: 0,               // 現在の連勝数
-  maxCombo: 0,            // 今回のプレイでの最高連勝数
-  clearedCount: 0,        // 正解した駅の合計数
-  remainingGuesses: 15,   // 現在の残り回答可能数
-  lastAnswerStation: null // 前回クリア（またはスキップ）した駅のデータ
-}));
 
 // 配列の中身をランダムにシャッフルする関数
 function shuffleArray(array) {
