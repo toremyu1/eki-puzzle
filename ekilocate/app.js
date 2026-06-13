@@ -15,11 +15,29 @@ let locaSavedState = JSON.parse(localStorage.getItem("ekiLocateStateV2") || '{"d
 // ==========================================
 
 
+// ローディング画面の円形バーとテキストの進捗率を書き換える関数
+function updateLocaLoadingProgress(percent, text) {
+  const bar = document.getElementById("circular-progress-bar");
+  const textEl = document.getElementById("loading-text");
+  const percentEl = document.getElementById("loading-percentage");
+  
+  if (bar) {
+    // conic-gradientの割合を0〜360度に換算して円を描かせます
+    bar.style.background = `conic-gradient(#3498db ${percent}%, #e2e8f0 ${percent}%)`;
+  }
+  if (textEl && text) textEl.textContent = text;
+  if (percentEl) percentEl.textContent = `${percent}%`;
+}
+
+
 // ==========================================
 // 初期化処理（ページを開いた時に実行）
 // ==========================================
 async function initLocaGame() {
   try {
+    // 【進捗10%】システム起動
+    updateLocaLoadingProgress(10, "システムを起動中...");
+    
     // 1. 日本時間（JST）ベースの日付インデックスを計算します
     const t = new Date();
     const jstMs = t.getTime() + (t.getTimezoneOffset() * 60000) + (9 * 3600000);
@@ -27,6 +45,9 @@ async function initLocaGame() {
     const todayUTC = Date.UTC(jstObj.getFullYear(), jstObj.getMonth(), jstObj.getDate());
     const baseUTC = Date.UTC(2024, 0, 1);
     currentDayIndex = Math.round((todayUTC - baseUTC) / 86400000);
+
+    // 【進捗30%】ダウンロード開始
+    updateLocaLoadingProgress(30, "駅データをダウンロード中...");
 
     // 2. 駅データの読み込み（Cache APIによる大容量バックアップ機能付き）
     let rawStations = [];
@@ -43,6 +64,9 @@ async function initLocaGame() {
 
       // 問題がなければデータ（JSON）として変換します
       rawStations = JSON.parse(textData);
+
+      // 【進捗60%】保管完了
+      updateLocaLoadingProgress(60, "データを安全に保管中...");
 
       // Cache APIを使って、ブラウザの専用金庫に非同期で安全に保存します（13MBでもフリーズしません）
       if ('caches' in window) {
@@ -88,6 +112,9 @@ async function initLocaGame() {
       }
     }
 
+    // 【進捗80%】問題生成
+    updateLocaLoadingProgress(80, "今日の問題を構築中...");
+
     // 計算済みの currentDayIndex を使って、未来の駅や古い廃止駅を省きます
     locaStations = rawStations.filter(s => {
       const isFreight = s.companies && s.companies.length === 1 && s.companies[0] === "日本貨物鉄道";
@@ -104,6 +131,9 @@ async function initLocaGame() {
 
     restoreLocaGameState();
 
+    // 【進捗100%】完了
+    updateLocaLoadingProgress(100, "出発進行！");
+
     // UIボタンの有効化とイベント判定の呼び出し
     setupUI();
     checkLocaEvent();
@@ -117,6 +147,12 @@ async function initLocaGame() {
         if (e.key === "Enter") submitLocaGuess();
       });
     }
+
+    // 100%表示になってから、コンマ数秒の綺麗な余韻を持たせてロード画面を非表示にします
+    setTimeout(() => {
+      const loader = document.getElementById("loading-screen");
+      if (loader) loader.classList.add("hidden");
+    }, 400);
 
   } catch (e) {
     console.error("予期せぬエラーが発生しました:", e);
@@ -531,19 +567,25 @@ function submitLocaGuess() {
   currentSelectedStation = null;
   document.getElementById("suggest-list").style.display = "none";
 
-  // 勝敗のチェックとセーブデータの保存
+  // 勝敗の確定チェックと、結果ウィンドウの確実なタイマー起動
   if (isWin) {
     saveLocaStats(true);
     saveLocaGameState();
-    document.getElementById("submit-guess-btn").disabled = true; // ボタン無効化
-    setTimeout(() => showLocaResultModal(true), 500);
+    document.getElementById("submit-guess-btn").disabled = true;
+    document.getElementById("station-search-input").disabled = true;
+    
+    // 0.4秒の余韻の後に、結果ウィンドウを確実にポップアップさせます
+    setTimeout(() => { showLocaResultModal(true); }, 400);
   } else if (locaGuessesCount >= MAX_LOCA_GUESSES) {
     saveLocaStats(false);
     saveLocaGameState();
-    document.getElementById("submit-guess-btn").disabled = true; // ボタン無効化
-    setTimeout(() => showLocaResultModal(false), 500);
+    document.getElementById("submit-guess-btn").disabled = true;
+    document.getElementById("station-search-input").disabled = true;
+    
+    // ゲームオーバー時も同様に結果ウィンドウをポップアップさせます
+    setTimeout(() => { showLocaResultModal(false); }, 400);
   } else {
-    // 途中経過も保存する
+    //途中のプレイ状況保存
     saveLocaGameState();
   }
 }
@@ -560,15 +602,24 @@ function renderResultRow(guess, distance, direction, regionStatus, compStatus, l
 
   // もし難易度が「ハード」で、かつ完全正解（isWin）ではない場合のみ発動する処理
   if (currentDifficulty === 'hard' && !isWin) {
-
     // テキストを「???」で上書きして見えなくします
     compText = "???";
     lineText = "???";
-
     // セルの色もヒントになってしまうため、強制的にグレー（不一致扱い）にします
     compStatus = "cell-absent";
     lineStatus = "cell-absent";
+  }
 
+  // 【工夫】正解(isWin)ではない場合、ターゲットまでの残り距離に応じて色を4段階に変えます
+  let distClass = "dist-far"; 
+  if (!isWin) {
+    if (distance <= 10.0) {
+      distClass = "dist-closest";  // 10km以内：赤橙色
+    } else if (distance <= 50.0) {
+      distClass = "dist-closer";   // 50km以内：オレンジ
+    } else if (distance <= 200.0) {
+      distClass = "dist-close";    // 200km以内：黄色
+    }
   }
 
   // セルのHTMLを組み立てる
