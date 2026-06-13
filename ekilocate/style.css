@@ -654,4 +654,24 @@ body.event-nye #diff-title {
 }
 
 
+/* =================================== */
+/* 1手ごとのスコア加算アニメーション */
+/* =================================== */
+@keyframes floatScoreUp {
+    0% { opacity: 1; transform: translateY(0) scale(0.8); }
+    10% { transform: translateY(-5px) scale(1.1); }
+    100% { opacity: 0; transform: translateY(-35px) scale(1); }
+}
 
+.floating-score {
+    position: absolute;
+    right: 10px;
+    top: -25px;
+    color: #ff9800;
+    font-weight: 900;
+    font-size: 18px;
+    pointer-events: none;
+    animation: floatScoreUp 1.2s ease-out forwards;
+    z-index: 50;
+    text-shadow: 0 2px 4px rgba(255,255,255,0.9), 0 0 2px rgba(0,0,0,0.2);
+}
