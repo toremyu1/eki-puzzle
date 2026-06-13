@@ -223,24 +223,46 @@ h1 {
 }
 
 /* 難易度を選択するボタンのデザインです */
-.difficulty-screen button {
+/* 共通のベースデザイン（枠線や余白、文字サイズ、アニメーションなど） */
+.diff-btn {
     display: block;
-    width: 200px;
+    width: 240px;          /* 200pxから240pxに統一 */
     margin: 15px auto;
-    padding: 15px;
-    font-size: 18px;
+    padding: 14px;
+    font-size: 16px;
     font-weight: bold;
-    color: #ffffff;
-    background-color: #3498db;
+    color: #ffffff;        /* 文字色はすべて白で統一 */
     border: none;
-    border-radius: 8px;
+    border-radius: 6px;    /* 角丸を綺麗に統一 */
     cursor: pointer;
-    transition: background-color 0.2s;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: transform 0.1s, filter 0.2s; /* ホバー時の滑らかな変化 */
 }
 
-/* マウスを乗せた時にボタンの色を少し濃くします */
-.difficulty-screen button:hover {
-    background-color: #2980b9;
+/* ホバー（マウスを乗せた時）は、明るさを少し上げる（一括で設定できるので楽！） */
+.diff-btn:hover {
+    filter: brightness(1.1);
+}
+
+/* 難易度ごとの個別の色（HTMLから引っ越してきた部分） */
+.diff-btn.btn-normal {
+    background-color: #2ecc71; /* 緑 */
+    border-bottom: 3px solid #27ae60;
+}
+
+.diff-btn.btn-endless {
+    background-color: #f1c40f; /* 黄 */
+    border-bottom: 3px solid #d4ac0d;
+}
+
+.diff-btn.btn-hard {
+    background-color: #e74c3c; /* 赤 */
+    border-bottom: 3px solid #c0392b;
+}
+
+.diff-btn.btn-limited {
+    background-color: #9b59b6; /* 紫 */
+    border-bottom: 3px solid #8e44ad;
 }
 
 
