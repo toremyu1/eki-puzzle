@@ -16,7 +16,7 @@ let locaStats = JSON.parse(localStorage.getItem("ekiLocateStatsV2") || JSON.stri
 
 
 // エンドレスモードのセーブデータ（山札の状態、スコア、コンボ、残り回数などを一括管理）
-locaEndlessState = JSON.parse(localStorage.getItem("ekiLocateEndlessDeck") || JSON.stringify({
+let locaEndlessState = JSON.parse(localStorage.getItem("ekiLocateEndlessDeck") || JSON.stringify({
   deck: [],               // シャッフルされた駅インデックスの配列
   currentIndex: 0,        // 現在山札の何枚目を引いているか
   score: 0,               // 現在の総スコア
@@ -403,34 +403,6 @@ function setupSuggest() {
   const input = document.getElementById("station-search-input");
   const list = document.getElementById("suggest-list");
 
-  // 手打ちされた文字の末尾に「駅」が付いていたら、裏でこっそり消す（横浜駅 → 横浜）
-  //if (inputVal.endsWith("駅") && inputVal.length > 1) {
-  //  inputVal = inputVal.slice(0, -1);
-  //}
-
-  // サジェストをクリックせずに手打ちのまま送信ボタン（Enter）を押した場合の救済処理
-  if (!currentSelectedStation) {
-    // 辞書の中から、漢字かひらがなが完全に一致する駅を探し出す
-    const exactMatches = locaStations.filter(s => s.kanji === inputVal || (s.hiragana && s.hiragana === inputVal));
-    
-    if (exactMatches.length === 1) {
-      // 候補が1つだけなら、プレイヤーがサジェストをクリックしたのと同じ扱いにする
-      currentSelectedStation = exactMatches[0];
-    } else if (exactMatches.length > 1) {
-      // 例：「福島駅」（福島県と大阪府）のように複数ある場合は、選ばせる
-      alert("同名の駅が複数存在します。サジェストリストから該当する地域のものを選んでください。");
-      return;
-    } else {
-      alert("駅が見つかりません。リストから選択するか、正しい駅名を入力してください。");
-      return;
-    }
-  }
-
-  // 入力欄の文字を正式な駅名に綺麗に書き換える
-  inputEl.value = currentSelectedStation.kanji;
-  
-  const guess = currentSelectedStation;
-
   // 【1】文字が入力されるたびに実行される処理
   input.addEventListener("input", (e) => {
     // 全角・半角スペースを全て取り除き、ひらがなに統一する
@@ -638,14 +610,44 @@ function checkArrayMatch(guessArr, targetArr) {
   return "cell-absent";
 }
 
+
 // プレイヤーが「送信」ボタンを押したときの処理
 function submitLocaGuess() {
   const input = document.getElementById("station-search-input");
   
+  // サジェストから選ばれていない（手打ちされた）場合の救済処理
   if (!currentSelectedStation) {
-    alert("リストから駅を選択してください。");
-    return;
+    
+    // 入力欄の文字を取得します
+    let inputVal = input.value;
+    
+    // 手打ちされた文字の末尾に「駅」が付いていたら、裏でこっそり消します（横浜駅 → 横浜）
+    if (inputVal.endsWith("駅") && inputVal.length > 1) {
+      inputVal = inputVal.slice(0, -1);
+    }
+
+    // 辞書の中から、漢字かひらがなが完全に一致する駅を探し出します
+    const exactMatches = locaStations.filter(
+      s => s.kanji === inputVal || (s.hiragana && s.hiragana === inputVal)
+    );
+    
+    if (exactMatches.length === 1) {
+      // 候補が1つだけなら、選ばれた状態にします
+      currentSelectedStation = exactMatches[0];
+      
+      // 入力欄の文字を正式な駅名に綺麗に書き換えます（inputElエラーの修正箇所です）
+      input.value = currentSelectedStation.kanji;
+      
+    } else if (exactMatches.length > 1) {
+      alert("同名の駅が複数存在します。サジェストリストから該当する地域のものを選んでください。");
+      return;
+      
+    } else {
+      alert("駅が見つかりません。リストから選択するか、正しい駅名を入力してください。");
+      return;
+    }
   }
+
   if (locaGuessesCount >= MAX_LOCA_GUESSES) {
     alert("すでに規定の回数に達しています！");
     return;
