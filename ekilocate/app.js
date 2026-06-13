@@ -712,50 +712,41 @@ function renderResultRow(guess, distance, direction, regionStatus, compStatus, l
 // ==========================================
 function setupUI() {
   
-  // 左上の「←」戻るボタンを押したときの処理（メイン画面を隠し、モード選択画面を出す）
+  // 共通の「モード選択に戻る」処理をまとめた関数を作成します（コードの重複を防ぐためのメモ）
+  const returnToDiffScreen = () => {
+    document.getElementById("main-game-screen").style.display = "none";
+    document.getElementById("difficulty-screen").style.display = "block";
+    
+    // モード選択画面に戻ったら、ハードモードのバッジや不要なUIを確実に隠す
+    const badge = document.getElementById("hard-mode-badge");
+    if (badge) badge.style.display = "none";
+    
+    const topBackBtn = document.getElementById("top-back-btn");
+    if (topBackBtn) topBackBtn.style.display = "none";
+    
+    const remainDisplay = document.getElementById('remaining-guesses-display');
+    if (remainDisplay) remainDisplay.style.display = 'none';
+  };
+
+  // ① 左上の「←」戻るボタンを押したときの処理
   const topBackBtn = document.getElementById("top-back-btn");
   if (topBackBtn) {
-    topBackBtn.addEventListener("click", () => {
-      document.getElementById("main-game-screen").style.display = "none";
-      document.getElementById("difficulty-screen").style.display = "block";
-      
-      // モード選択画面に戻ったら、ハードモードのバッジや不要なボタンを確実に隠す
-      const badge = document.getElementById("hard-mode-badge");
-      if (badge) badge.style.display = "none";
-      topBackBtn.style.display = "none";
-      document.getElementById('remaining-guesses-display').style.display = 'none';
-    });
+    topBackBtn.addEventListener("click", returnToDiffScreen);
   }
 
-  
-  // ヘルプ画面
-  document.getElementById("help-btn").addEventListener("click", () => document.getElementById("help-modal").style.display = "flex");
-  document.getElementById("close-help-btn").addEventListener("click", () => document.getElementById("help-modal").style.display = "none");
-
-// 代わりに、サイドメニュー内の「モード選択に戻る」ボタンの処理を以下のように書き換えます。
+  // ② サイドメニュー内の「モード選択に戻る」ボタンを押したときの処理
   const sideBackBtn = document.getElementById("side-back-to-diff-btn");
   if (sideBackBtn) {
     sideBackBtn.addEventListener("click", (e) => {
       e.preventDefault();
-      closeSideMenu(); // メニューを閉じる
-      
-      // メイン画面を隠してモード選択画面を表示する
-      document.getElementById("main-game-screen").style.display = "none";
-      document.getElementById("difficulty-screen").style.display = "block";
-      
-      // ハードモードバッジや上部の←ボタンなど、不要なUIを確実に隠す処理を追加します
-      const badge = document.getElementById("hard-mode-badge");
-      if (badge) badge.style.display = "none";
-      
-      const topBackBtn = document.getElementById("top-back-btn");
-      if (topBackBtn) topBackBtn.style.display = "none";
-      
-      const remainDisplay = document.getElementById('remaining-guesses-display');
-      if (remainDisplay) remainDisplay.style.display = 'none';
+      closeSideMenu(); // サイドメニューを閉じる
+      returnToDiffScreen(); // 共通の戻る処理を呼び出す
     });
   }
-
   
+  // ヘルプ画面
+  document.getElementById("help-btn").addEventListener("click", () => document.getElementById("help-modal").style.display = "flex");
+  document.getElementById("close-help-btn").addEventListener("click", () => document.getElementById("help-modal").style.display = "none"); 
 
   // 【修正】グラフボタンのバグ修正（クリア後のリロードでも確実に表示させる）
   document.getElementById("stats-btn").addEventListener("click", () => {
