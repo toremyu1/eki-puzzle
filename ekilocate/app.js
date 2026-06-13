@@ -872,7 +872,7 @@ function showLocaResultModal(isWin) {
   let rakutenFurusatoImp = '<img src="//i.moshimo.com/af/i/impression?a_id=5616620&p_id=54&pc_id=54&pl_id=616" width="1" height="1" style="border:none;" alt="" loading="lazy">';
 
   // 結果画面のHTML書き換え
-  document.getElementById("wiki-link-container").innerHTML=`
+  document.getElementById("affiliate-container").innerHTML=`
     <div style="margin-bottom:12px;">
     <a href="${todayLocaStation.url}" target="_blank" style="display:inline-block; padding:8px 12px; background-color:#e0e0e0; color:#333; text-decoration:none; border-radius:4px; font-weight:bold; font-size:12px;">Wikipediaで見る</a>
     </div>
