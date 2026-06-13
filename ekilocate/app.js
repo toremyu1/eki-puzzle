@@ -932,6 +932,40 @@ function showLocaResultModal(isWin) {
   if(elStreak) elStreak.textContent = st.currentStreak;
   if(elMaxStreak) elMaxStreak.textContent = st.maxStreak;
 
+  // 回答数分布の簡易棒グラフを動的に生成するロジック
+  const graphBars = document.getElementById("stats-graph-bars");
+  if (graphBars && st.dist) {
+    graphBars.innerHTML = "";
+    
+    // 1手〜10手の中で、一番多かったクリア回数（最大値）を探して基準にします
+    let maxCount = 1;
+    for (let i = 1; i <= 10; i++) {
+      if ((st.dist[i] || 0) > maxCount) maxCount = st.dist[i];
+    }
+    
+    // 1手から10手までのグラフバーを1本ずつ組み立てます
+    for (let i = 1; i <= 10; i++) {
+      const count = st.dist[i] || 0;
+      const barWidth = Math.max(8, Math.round((count / maxCount) * 100)); // 最低でも8%の長さを保証
+      const barColor = (i === locaGuessesCount) ? "#3498db" : "#787c7e"; // 今回クリアした手数のバーだけ水色にする
+      
+      const barRow = document.createElement("div");
+      barRow.style.display = "flex";
+      barRow.style.alignItems = "center";
+      barRow.style.fontSize = "11px";
+      
+      barRow.innerHTML = `
+        <div style="width:25px; text-align:right; padding-right:6px; font-weight:bold; color:#64748b;">${i}</div>
+        <div style="flex:1; background:#f1f5f9; border-radius:3px; height:16px;">
+          <div style="background:${barColor}; width:${barWidth}%; height:100%; border-radius:3px; color:#fff; font-weight:bold; font-size:10px; display:flex; align-items:center; justify-content:flex-end; padding-right:4px; box-sizing:border-box;">
+            ${count > 0 ? count : ''}
+          </div>
+        </div>
+      `;
+      graphBars.appendChild(barRow);
+    }
+  }
+
   document.getElementById("result-modal").style.display = "flex";
 }
 
