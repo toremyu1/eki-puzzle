@@ -3,35 +3,46 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>駅ロケ - 距離と方角で駅を当てるゲーム</title>
+<title>駅ロケ - 地理学習・論理的駅名推論シミュレーション</title>
+<meta name="keywords" content="地理学習,駅名,推理,日本地図,交通,鉄道,クイズ,脳トレ,駅ロケ,タイピング,パズル,駅パズル,地図,日本地理,Worldle,Wordle">
+<meta name="description" content="全国に実在する鉄道駅を距離・方角・属性から論理的に導き出す、地理学習・推理シミュレーション「駅ロケ」。日本地図や交通網の知識が身につきます。朝の脳トレにも最適。">
 <link rel="stylesheet" href="style.css">
 </head>
+  
 <body>
 <div class="game-container">
-<div id="difficulty-screen" class="difficulty-screen">
+
+<div id="difficulty-screen" class="difficulty-screen" style="display: none;">
 <h2>難易度を選択してください</h2>
-<button onclick="startGame('normal')">通常（ヒントあり）</button>
-<button onclick="startGame('hard')">ハード（事業者・路線ヒントなし）</button>
-<button disabled style="background-color: #bdc3c7; cursor: not-allowed;">モード追加予定（準備中）</button>
+<button onclick="startGame('normal')">通常モード</button>
+<button onclick="startGame('hard')">ハードモード<br>（事業者・路線ヒントなし）</button>
+<button disabled style="background-color: #bdc3c7; cursor: not-allowed; box-shadow: none;">追加モード（準備中）</button>
 </div>
+
 <div id="main-game-screen" style="display: none;">
 <header>
 <div style="display:flex; justify-content:space-between; width:100%; margin-bottom:5px;">
-<div style="display:flex; gap:5px;">
-<button id="help-btn" class="btn">？</button>
-<button id="theme-btn" class="btn">🎨</button>
-<button id="stats-btn" class="btn">📊</button>
+<div style="display:flex; gap:8px;">
+<button id="help-btn" class="top-icon-btn">？</button>
+<button id="theme-btn" class="top-icon-btn">🎨</button>
+<button id="stats-btn" class="top-icon-btn">📊</button>
 </div>
-<button id="menu-btn" class="btn">☰</button>
+<button id="menu-btn" class="top-icon-btn">☰</button>
 </div>
-<h1 id="game-title" style="display: flex; justify-content: center; align-items: center; margin-bottom: 5px;">
+<h1 id="game-title" style="display: flex; justify-content: center; align-items: center; margin-bottom: 0;">
 <img src="/ekilocate-icon.svg" alt="駅ロケアイコン" style="width: 36px; height: 36px; margin-right: 10px; border-radius: 8px;">
-駅ロケ
+駅ロケ 🗺️
 </h1>
+
+<div id="mode-badge-container" style="text-align: center; margin-top: 5px; margin-bottom: 5px; height: 20px;">
+  <span id="hard-mode-badge" style="display:none; background-color: #e74c3c; color: white; font-size: 11px; padding: 2px 8px; border-radius: 10px; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">🔥 ハードモード実行中</span>
+</div>
+
 <p class="game-description">全国の駅から「今日の正解駅」を推理しよう！</p>
 <div id="remaining-guesses-display" style="font-weight:bold; color:#e74c3c; margin-top:10px; font-size:16px;">残り回答可能数：10 回</div>
-<button id="back-to-diff-btn" class="btn" style="margin-top:10px; width:auto; height:auto; padding:8px 15px; display:none;">← モード選択に戻る</button>
+<button id="back-to-diff-btn" style="margin-top:15px; padding:8px 15px; background-color:#7f8c8d; color:#fff; border:none; border-radius:6px; cursor:pointer; font-weight:bold; box-shadow:0 3px 0 #34495e; transition:transform 0.1s, box-shadow 0.1s;">← モード選択に戻る</button>
 </header>
+  
 <main>
 <div class="search-area">
 <div class="input-wrapper">
@@ -84,6 +95,7 @@
 <span id="close-help-btn" style="position:absolute; top:10px; right:15px; cursor:pointer; font-size:24px;">&times;</span>
 <h2 style="text-align:center; margin-top:0;">遊び方</h2>
 <p style="font-size:14px;">距離と方角のヒントから、今日の「正解駅」を推理してください。</p>
+<p style="font-size:12px; color:#e65100; font-weight:bold;">💡 駅名だけでなく、「路線名（例：山手線）」や「市区町村名（例：横浜市）」を入力しても候補が表示されます。</p>
 <ul style="padding-left:20px; font-size:13px; line-height:1.6; text-align:left;">
 <li><strong style="color:#6aaa64;">🟩 緑（完全一致）</strong>：地域（市区町村まで）、事業者、路線が完全に一致しています。</li>
 <li><strong style="color:#c9b458;">🟨 黄（部分一致）</strong>：都道府県だけが同じ場合や、駅に乗り入れる複数の事業者・路線のうち「一部だけ」が共通している場合です（例：入力駅が「JR・私鉄」、正解駅が「JR・地下鉄」なら、JRが共通するため黄色になります）。</li>
