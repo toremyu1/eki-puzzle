@@ -14,6 +14,14 @@ let locaStats = JSON.parse(localStorage.getItem("ekiLocateStatsV2") || JSON.stri
   hard:   { played:0, won:0, currentStreak:0, maxStreak:0, dist:[0,0,0,0,0,0,0,0,0,0,0], clearedDates:[], fastestTime: null }
 }));
 
+// エンドレスのセーブデータに history と currentStation を追加します
+let locaEndlessState = JSON.parse(localStorage.getItem("ekiLocateEndlessDeck") || JSON.stringify({
+  deck: [], currentIndex: 0, score: 0, combo: 0, maxCombo: 0, clearedCount: 0, remainingGuesses: 15,
+  lastAnswerStation: null,
+  history: [],          // 【追加】挑戦中の盤面履歴
+  currentStation: null  // 【追加】現在の正解駅
+}));
+
 // モード共通のメタデータ（ログイン日数、連続クリア、駅図鑑など）
 let locaMeta = JSON.parse(localStorage.getItem("ekiLocateMeta") || JSON.stringify({
   firstLoginDate: "", lastLoginDate: "", consecutiveLoginDays: 0, 
@@ -365,15 +373,17 @@ function toHiragana(str) {
   return str.replace(/[ァ-ン]/g, m => String.fromCharCode(m.charCodeAt(0) - 0x60));
 }
 
-// サジェスト機能の初期設定（画面読み込み時に1回だけ実行します）
+// ==========================================
+// 入力サジェスト（候補リスト）機能の設定
+// ==========================================
 function setupSuggest() {
   const input = document.getElementById("station-search-input");
   const list = document.getElementById("suggest-list");
 
   // 【1】文字が入力されるたびに実行される処理
   input.addEventListener("input", (e) => {
-    // 入力された文字の空白を消し、ひらがなに統一する
-    const query = toHiragana(e.target.value.trim());
+    // 【バグ修正】全角・半角スペースを全て取り除き、ひらがなに統一する（検索ヒット率を上げるため）
+    const query = toHiragana(e.target.value.replace(/[\s ]+/g, ""));
     selectedSuggestIndex = -1; 
     currentSelectedStation = null;
 
@@ -383,7 +393,6 @@ function setupSuggest() {
       return;
     }
 
-    
     // 絞り込み処理（スコア制で駅名の一致を最優先にする）
     let results = [];
     for (let i = 0; i < locaStations.length; i++) {
@@ -391,45 +400,65 @@ function setupSuggest() {
       let matchReason = "";
       let score = 0;
 
+      // エラー防止のため、データがない場合は空文字を代入して安全に比較する
+      const kanji = s.kanji || "";
+      const yomi = s.yomi || s.hiragana || ""; 
+      const pref = s.pref || "";
+      const muni = s.municipality || "";
+      const ward = s.ward || "";
+
       // 1. 完全一致（漢字・読み）を最優先
-      if (s.kanji === query || s.yomi === query) {
-        matchReason = `${s.pref}${s.municipality}`;
+      if (kanji === query || yomi === query) {
+        matchReason = `${pref}${muni}${ward}`;
         score = 1000;
       } 
       // 2. 頭文字からの前方一致（短い駅名ほどスコアを高くして上に出す）
-      else if (s.kanji.startsWith(query) || s.yomi.startsWith(query)) {
-        matchReason = `${s.pref}${s.municipality}`;
-        score = 500 - s.kanji.length;
+      else if (kanji.startsWith(query) || yomi.startsWith(query)) {
+        matchReason = `${pref}${muni}${ward}`;
+        score = 500 - kanji.length;
       } 
       // 3. 文字の部分一致
-      else if (s.kanji.includes(query) || s.yomi.includes(query)) {
-        matchReason = `${s.pref}${s.municipality}`;
-        score = 100 - s.kanji.length;
+      else if (kanji.includes(query) || yomi.includes(query)) {
+        matchReason = `${pref}${muni}${ward}`;
+        score = 100 - kanji.length;
       } 
-      // 4. 地域、路線、事業者
-      else if ((s.pref + s.municipality + (s.ward || "")).includes(query)) {
-        matchReason = `📍 ${s.pref}${s.municipality}`;
+      // 4. 地域（都道府県＋市区町村、または市区町村単体の検索でもヒットさせる）
+      else if ((pref + muni + ward).includes(query) || muni.includes(query) || ward.includes(query)) {
+        matchReason = `📍 ${pref}${muni}${ward}`;
         score = 50;
-      } else if (s.lines && s.lines.some(l => l.includes(query) || toHiragana(l).includes(query))) {
+      } 
+      // 5. 路線
+      else if (s.lines && s.lines.some(l => l.includes(query) || toHiragana(l).includes(query))) {
         const matchedLine = s.lines.find(l => l.includes(query) || toHiragana(l).includes(query));
         matchReason = `🚃 ${matchedLine}`;
         score = 30;
-      } else if (s.companies && s.companies.some(c => c.includes(query) || toHiragana(c).includes(query))) {
+      } 
+      // 6. 事業者
+      else if (s.companies && s.companies.some(c => c.includes(query) || toHiragana(c).includes(query))) {
         const matchedComp = s.companies.find(c => c.includes(query) || toHiragana(c).includes(query));
         matchReason = `🏢 ${matchedComp}`;
         score = 10;
       }
 
+      // スコアが1以上の駅だけを結果リストに追加
       if (score > 0) {
         results.push({ station: s, reason: matchReason, score: score });
       }
     }
 
+    // スコアが高い順（1000→500...）に並び替え
     results.sort((a, b) => b.score - a.score);
-    results = results.slice(0, 50);
+    results = results.slice(0, 50); // 上位50件のみ表示してメモリを節約
 
-    renderSuggestList(results);
+    // 【バグ修正】結果が0件の時はリストを隠し、1件以上ある時は「確実に再表示」させる
+    if (results.length === 0) {
+      list.style.display = "none";
+    } else {
+      list.style.display = "block";
+      renderSuggestList(results);
+    }
   });
+}
 
   // 【2】キーボード操作（上下キーとエンター）の処理
   input.addEventListener("keydown", (e) => {
@@ -697,7 +726,9 @@ function submitLocaGuess() {
   } else {
     // 途中経過の保存
     if (currentDifficulty === 'endless') {
+       locaEndlessState.history = locaGridHistory; // 【追加】履歴を同期
        localStorage.setItem("ekiLocateEndlessDeck", JSON.stringify(locaEndlessState));
+       updateEndlessSkipButton(); // 【追加】入力の度にスキップ判定
     } else {
        saveLocaGameState();
     }
@@ -779,6 +810,9 @@ function setupUI() {
     
     const remainDisplay = document.getElementById('remaining-guesses-display');
     if (remainDisplay) remainDisplay.style.display = 'none';
+
+    const endlessBar = document.getElementById("endless-status-bar");
+    if (endlessBar) endlessBar.style.display = "none";
   };
 
   // ① 左上の「←」戻るボタンを押したときの処理
@@ -1488,6 +1522,23 @@ function getEndlessRecoveryAmount(guesses) {
 // ------------------------------------------
 
 
+// ====== [app.js] スキップボタンを完全にグレーアウトする共通関数を追加 ======
+function updateEndlessSkipButton() {
+  const skipBtn = document.getElementById("skip-endless-btn");
+  if (!skipBtn) return;
+  
+  if (locaEndlessState.remainingGuesses <= 3) {
+    skipBtn.disabled = true;
+    skipBtn.style.opacity = "0.4"; // 薄くして押せない感を出す
+    skipBtn.style.cursor = "not-allowed";
+  } else {
+    skipBtn.disabled = false;
+    skipBtn.style.opacity = "1";
+    skipBtn.style.cursor = "pointer";
+  }
+}
+
+
 // ==========================================
 // 次の問題をセットし、前の駅を「0手目のヒント」として自動入力する処理
 // ==========================================
@@ -1528,6 +1579,11 @@ function startNextEndlessRound() {
 
     // 画面に描画（locaGuessesCount は増えないため、15回の制限枠は減りません）
     renderResultRow(prev, dist, dir, regionStatus, compStatus, lineStatus, false);
+    
+    // 【追加】引いた駅と履歴をセーブデータに同期する
+    locaEndlessState.currentStation = todayLocaStation;
+    locaEndlessState.history = locaGridHistory;
+    localStorage.setItem("ekiLocateEndlessDeck", JSON.stringify(locaEndlessState));
   }
 
   // 画面表示等のリセット処理
@@ -1545,6 +1601,9 @@ function startNextEndlessRound() {
   
   // 次のタイマー計測の準備
   locaPlayStartTime = null; 
+
+  // スキップボタンの状態を更新
+  updateEndlessSkipButton();
 }
 
 
@@ -1660,48 +1719,65 @@ let locaEndlessMaxComboAllTime = parseInt(localStorage.getItem("ekiLocateEndless
 // エンドレスモード：起動時のポップアップ制御
 // ==========================================
 
-// ① モード選択画面のボタンを押した時に呼ばれる関数（ポップアップを開く）
-function openEndlessIntroModal() {
-  const modal = document.getElementById("endless-intro-modal");
-  if (modal) {
-    modal.style.display = "flex";
-  } else {
-    alert("エラー：説明画面のHTMLが見つかりません。index.htmlに追加されているか確認してください。");
-  }
-}
+// ====== [app.js] エンドレスモード起動処理（上書き） ======
 
-// ② ポップアップの「出発進行！」を押した時に呼ばれる関数（ゲーム開始）
-function closeEndlessIntroAndStart() {
-  document.getElementById("endless-intro-modal").style.display = "none";
-  
+// ① ボタンを押した時：先に画面を切り替えてから、履歴の復元を行い、ポップアップを出す
+function openEndlessIntroModal() {
   currentDifficulty = 'endless';
 
-  // モード選択画面を隠して、メインのゲーム画面を表示する
+  // 1. 先にメインゲーム画面を表示する
   document.getElementById('difficulty-screen').style.display = 'none';
   document.getElementById('main-game-screen').style.display = 'block';
-
-  // 左上の戻るボタンと、残り回数表示を復活させる
+  
   const topBackBtn = document.getElementById('top-back-btn');
   if (topBackBtn) topBackBtn.style.display = 'inline-flex';
-  
   const remainDisplay = document.getElementById('remaining-guesses-display');
   if (remainDisplay) remainDisplay.style.display = 'block';
 
-  // ハードモード用のバッジは隠す
   const badge = document.getElementById("hard-mode-badge");
   if (badge) badge.style.display = 'none';
 
-  // エンドレス用のステータスバーを表示
   document.getElementById("endless-status-bar").style.display = "flex";
-
-  // スコアなどの画面表示を復元
   document.getElementById("endless-score-display").textContent = locaEndlessState.score;
   document.getElementById("endless-combo-display").textContent = locaEndlessState.combo;
 
-  // 次の問題をセットしてスタート
-  startNextEndlessRound();
+  // 2. プレイ途中の履歴があれば盤面を復元し、なければ新しい問題をセットする
+  if (locaEndlessState.currentStation && locaEndlessState.history && locaEndlessState.history.length > 0) {
+    todayLocaStation = locaEndlessState.currentStation;
+    locaGridHistory = locaEndlessState.history;
+    // 0手目（ボーナス）を除いた実質の手数を計算
+    locaGuessesCount = locaGridHistory.filter(h => !h.isFreeGuess).length; 
+    
+    document.getElementById("results-tbody").innerHTML = "";
+    locaGridHistory.forEach(h => {
+      renderResultRow(h.guess, h.distanceNum, h.direction, h.region, h.comp, h.line, h.isWin);
+    });
+    updateRemainingGuesses();
+    updateEndlessSkipButton(); // スキップボタンの状態を更新
+  } else {
+    startNextEndlessRound();
+  }
+
+  // 3. 入力欄をロックした上で、説明ポップアップを表示する
+  document.getElementById("station-search-input").disabled = true;
+  document.getElementById("submit-guess-btn").disabled = true;
+  document.getElementById("endless-intro-modal").style.display = "flex";
 }
 
+// ② ポップアップのボタンを押した時：入力を解放してゲームをスタート
+function closeEndlessIntroAndStart() {
+  document.getElementById("endless-intro-modal").style.display = "none";
+  document.getElementById("station-search-input").disabled = false;
+  document.getElementById("submit-guess-btn").disabled = false;
+  locaPlayStartTime = null; // タイマーリセット
+}
+
+// ③ 「もう一度プレイ」ボタン用の直接リスタート関数
+function restartEndlessMode() {
+  document.getElementById("endless-result-modal").style.display = "none";
+  // データは showEndlessResultModal 内で初期化済みなので、次のラウンドを呼ぶだけ
+  startNextEndlessRound();
+}
 // ③ ハイスコア更新時にリアルタイムで派手な演出を出す関数
 function checkAndTriggerHighScoreEffect(currentScore) {
   // 今のスコアが過去のハイスコアを上回った瞬間の判定
@@ -1755,17 +1831,19 @@ function showEndlessResultModal() {
   // アフィリエイトPR枠の作成（スクロールのズレを防ぐため高さを固定確保）
   // 修正後：PRバッジを最上部に置き、全パターン＆両ショップのリンクを完全生成して敷き詰めた決定版です
   const affDiv = document.createElement("div");
-  affDiv.style.marginTop = "15px";
-  affDiv.style.padding = "12px";
+  affDiv.style.margin = "20px 15px"; // 【変更】上下に20px、左右に15pxの余白を持たせる
+  affDiv.style.padding = "15px";
   affDiv.style.background = "#fafafa";
   affDiv.style.borderRadius = "8px";
   affDiv.style.border = "1px solid #e2e8f0";
   affDiv.style.textAlign = "left";
-  affDiv.style.minHeight = "280px"; // 4パターン分の枠をガタつきなく表示させるため高さを固定確保
+  affDiv.style.minHeight = "280px";
   
+  // 内部のHTML文字列の中の「PRバッジ」の行を以下のように修正します
+  // 【変更】justify-content:center; を追加してPRの文字を真ん中にします
   affDiv.innerHTML = `
-    <div style="margin-bottom:10px; display:flex; align-items:center;">
-        <span style="font-size:10px; color:#94a3b8; border:1px solid #cbd5e1; border-radius:4px; padding:1px 5px; font-weight:bold; letter-spacing:0.5px; line-height:1; display:inline-block; background:#fff;">PR</span>
+    <div style="margin-bottom:12px; display:flex; justify-content:center; align-items:center;">
+        <span style="font-size:10px; color:#94a3b8; border:1px solid #cbd5e1; border-radius:4px; padding:2px 8px; font-weight:bold; letter-spacing:1px; background:#fff;">PR</span>
     </div>
 
     <div style="font-size:12px; color:#475569; font-weight:bold; margin-bottom:12px; text-align:center;">
