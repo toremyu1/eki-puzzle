@@ -1526,14 +1526,19 @@ function drawNextEndlessStation() {
 // エンドレスモード：スコア計算ロジック
 // ==========================================
 
-// タイムボーナス（秒数で区切り）
+// タイムボーナス（最大10分、1分区切り）
 function getEndlessTimeBonus(seconds) {
-  if (seconds <= 20) return 5000;
-  if (seconds <= 40) return 3000;
-  if (seconds <= 60) return 2000;
-  if (seconds <= 90) return 1000;
-  if (seconds <= 120) return 500;
-  return 0; // 121秒以降
+  if (seconds <= 60) return 10000;
+  if (seconds <= 120) return 8000;
+  if (seconds <= 180) return 6000;
+  if (seconds <= 240) return 4000;
+  if (seconds <= 300) return 3000;
+  if (seconds <= 360) return 2000;
+  if (seconds <= 420) return 1500;
+  if (seconds <= 480) return 1000;
+  if (seconds <= 540) return 500;
+  if (seconds <= 600) return 200;
+  return 0; // 10分以降
 }
 
 // コンボボーナス倍率
