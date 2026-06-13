@@ -662,3 +662,17 @@ body.event-tanabata #diff-title,
 body.event-nye #diff-title {
     color: #ffffff;
 }
+
+
+/* =================================== */
+/* エンドレスモード */
+/* =================================== */
+
+/* 回復時の「+n」フローティングアニメーション */
+@keyframes floatUpFade {
+  0% { opacity: 1; transform: translateY(0) scale(1); }
+  100% { opacity: 0; transform: translateY(-50px) scale(1.2); }
+}
+.anim-float {
+  animation: floatUpFade 1.2s ease-out forwards;
+}
