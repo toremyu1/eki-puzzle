@@ -259,6 +259,10 @@ body.event-valentine { background-color: #3e2723; color: #ffcdd2; --theme-accent
 body.event-christmas { background-color: #0f3024; color: #e8f5e9; --theme-accent: #d32f2f; --modal-bg: #144232; --modal-text: #e8f5e9; }
 body.event-newyear { background-color: #fffaf0; color: #b71c1c; --theme-accent: #e53935; --modal-bg: #fdf5e6; --modal-text: #b71c1c; }
 
+/* テーマカラーが黒の場合、タイトルを白文字に */
+body.theme-dark #game-title { 
+    color: #ffffff; 
+}
 
 /* ==========================================
    モーダルウィンドウ（枠線とスクロールバー）
