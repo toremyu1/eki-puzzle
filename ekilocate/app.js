@@ -814,11 +814,10 @@ function showLocaResultModal(isWin) {
   
   // 正解駅名の下に、立体化されたWikipediaを見るボタンを動的に配置します
   //let wikiUrl = todayLocaStation.url || "https://ja.wikipedia.org/";
-  //document.getElementById("modal-desc").innerHTML = `
-  //  <span style="font-size:18px; font-weight:bold;">${todayLocaStation.kanji}</span><br>
-  //  <span style="font-size:14px; color:#7f8c8d;">(${todayLocaStation.pref}${todayLocaStation.municipality})</span><br>
-  //  <a href="${wikiUrl}" target="_blank" class="btn" style="width:auto; height:auto; padding:6px 12px; margin-top:8px; font-size:12px; text-decoration:none; background-color:#34495e; color:#fff; border-bottom:2px solid #2c3e50 !important;">Wikipediaで見る 🔗</a>
-  //`;
+  document.getElementById("modal-desc").innerHTML = `
+    <span style="font-size:18px; font-weight:bold;">${todayLocaStation.kanji}</span><br>
+    <span style="font-size:14px; color:#7f8c8d;">(${todayLocaStation.pref}${todayLocaStation.municipality})</span><br>
+  `;
 
   // 【修正】お取り寄せ・ふるさと納税用に、常に市区町村単位の正確な地域名を作成
   let safePref = todayLocaStation.pref || "富山県";
