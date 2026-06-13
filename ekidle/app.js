@@ -1095,7 +1095,7 @@ function showResultModal(isWin,isRestore){
   if(!st.dist) st.dist=[0,0,0,0,0,0,0,0,0,0];
   document.getElementById("modal-title").textContent=isWin?"正解！おめでとう！":"残念！ゲームオーバー";
   document.getElementById("modal-desc").innerHTML = `
-    <span style="font-size:18px; font-weight:bold;">${todayLocaStation.kanji}</span><br>
+    <span style="font-size:18px; font-weight:bold;">${todayStation.kanji}</span><br>
     <span style="font-size:14px; color:#7f8c8d;">(${todayStation.yomi})</span><br>
   `;
 
