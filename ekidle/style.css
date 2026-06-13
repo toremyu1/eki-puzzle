@@ -368,8 +368,3 @@ body.event-nye .key {
 #enter-btn {
     border-bottom: 4px solid #0288d1 !important;
 }
-
-/* 結果画面のシェアボタン群 */
-#share-btn { border-bottom: 4px solid #333333 !important; }
-#line-btn { border-bottom: 4px solid #04a044 !important; }
-#fb-btn { border-bottom: 4px solid #135cbe !important; }
