@@ -831,13 +831,13 @@ function showLocaResultModal(isWin) {
   `;
 
   // 【修正】お取り寄せ・ふるさと納税用に、常に市区町村単位の正確な地域名を作成
-  let safePref = todayStation.pref || "富山県";
-  let searchMuni = todayStation.municipality || "富山市";
-  let searchWard = todayStation.ward || "";
+  let safePref = todayLocaStation.pref || "富山県";
+  let searchMuni = todayLocaStation.municipality || "富山市";
+  let searchWard = todayLocaStation.ward || "";
   let muniMuni = searchMuni // + searchWard; // 例：「島根県江津市」
 
   // トラベル用の都会・田舎のキーワード分岐（宿泊施設の件数0を回避するためトラベル側のみ維持）
-  let isRural = todayStation.muni_type === "町" || todayStation.muni_type === "村" || todayStation.population < 2000;
+  let isRural = todayLocaStation.muni_type === "町" || todayLocaStation.muni_type === "村" || todayLocaStation.population < 2000;
   let areaKeyword = isRural ? safePref : muniMuni;
   let searchKw = typeof isAprilFoolMode!=="undefined"&&isAprilFoolMode ? safePref : areaKeyword;
   
@@ -875,7 +875,7 @@ function showLocaResultModal(isWin) {
   // 結果画面のHTML書き換え
   document.getElementById("wiki-link-container").innerHTML=`
     <div style="margin-bottom:12px;">
-    <a href="${todayStation.url}" target="_blank" style="display:inline-block; padding:8px 12px; background-color:#e0e0e0; color:#333; text-decoration:none; border-radius:4px; font-weight:bold; font-size:12px;">Wikipediaで見る</a>
+    <a href="${todayLocaStation.url}" target="_blank" style="display:inline-block; padding:8px 12px; background-color:#e0e0e0; color:#333; text-decoration:none; border-radius:4px; font-weight:bold; font-size:12px;">Wikipediaで見る</a>
     </div>
     <div style="background-color:#fff3e0; border:1px solid #ffcc80; border-radius:6px; padding:10px; margin-bottom:5px; position:relative;">
     <div style="text-align:center; margin-bottom:8px;">
