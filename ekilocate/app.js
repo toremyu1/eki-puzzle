@@ -168,11 +168,18 @@ async function initLocaGame() {
 
     // 出題可能駅をフィルタする
     locaStations = rawStations.filter(s => {
-      // 計算済みの currentDayIndex を使って、貨物専用駅・未来の駅・古い廃止駅などを省きます
-      const isFreight = s.companies && s.companies.length === 1 && s.companies[0] === "日本貨物鉄道";
-      const isFuture = s.startDay !== undefined && s.startDay > currentDayIndex;
-      const isAbolishedOld = s.endDay !== undefined && s.endDay !== 999999 && s.endDay <= currentDayIndex - 33;
-      return !isFreight && !isFuture && !isAbolishedOld;
+      // 1. 緯度・経度の欠損チェック（一番処理が軽く、無効なデータを即弾けるため最優先）
+      if (s.latitude === undefined || s.latitude === null || s.longitude === undefined || s.longitude === null) return false;
+
+      // 2. 貨物駅のチェック
+      if (s.companies && s.companies.length === 1 && s.companies[0] === "日本貨物鉄道") return false;
+
+      // 3. 未来駅・廃止駅のチェック
+      if (s.startDay !== undefined && s.startDay > currentDayIndex) return false;
+      if (s.endDay !== undefined && s.endDay !== 999999 && s.endDay <= currentDayIndex - 33) return false;
+
+      // 全ての関門を突破した駅だけを残す
+      return true;
     });
 
     // サジェスト機能を有効化します
