@@ -1774,6 +1774,31 @@ if (skipEndlessBtn) {
 function showEndlessWinPopup(score, combo, recovery, breakdown) {
   const toast = document.getElementById("endless-toast");
 
+  // タイムボーナスと手数ボーナスの合計（最大15000）だけでプレイヤーの純粋な実力を評価します
+  const performanceScore = breakdown.time + breakdown.guess;
+  
+  // 9段階の厳しい評価メッセージとカラー設定
+  let evalText = "CLEAR! 🏁";
+  let evalColor = "#9e9e9e";
+  
+  if (performanceScore >= 15000) { evalText = "GODLIKE!!"; evalColor = "#ffd700"; }
+  else if (performanceScore >= 13000) { evalText = "PERFECT!"; evalColor = "#ffb300"; }
+  else if (performanceScore >= 11000) { evalText = "AMAZING!"; evalColor = "#fb8c00"; }
+  else if (performanceScore >= 9000) { evalText = "EXCELLENT!"; evalColor = "#43a047"; }
+  else if (performanceScore >= 7000) { evalText = "BRILLIANT!"; evalColor = "#00acc1"; }
+  else if (performanceScore >= 5000) { evalText = "GREAT!"; evalColor = "#1e88e5"; }
+  else if (performanceScore >= 3000) { evalText = "GOOD!"; evalColor = "#8e24aa"; }
+  else if (performanceScore >= 1000) { evalText = "NICE!"; evalColor = "#e53935"; }
+
+  // 既存のHTML要素にJavaScriptからIDを付け、文字と色を上書きします
+  let titleEl = document.getElementById("endless-toast-title");
+  if (!titleEl) {
+     titleEl = toast.firstElementChild;
+     titleEl.id = "endless-toast-title";
+  }
+  titleEl.textContent = evalText;
+  titleEl.style.color = evalColor;
+
   // 内訳を動的に書き込み
   document.getElementById("endless-toast-breakdown").innerHTML = `
     🎯 基礎スコア: +${breakdown.base}<br>
@@ -1783,19 +1808,23 @@ function showEndlessWinPopup(score, combo, recovery, breakdown) {
   `;
   
   document.getElementById("endless-toast-score").textContent = `+${score} pts`;
-  document.getElementById("endless-toast-combo").textContent = `${combo} Combo! (×${getEndlessComboMultiplier(combo)})`;
+  // ★ 浮動小数点バグを確実に防ぐための toFixed(1)
+  document.getElementById("endless-toast-combo").textContent = `${combo} Combo! (×${getEndlessComboMultiplier(combo).toFixed(1)})`;
   toast.style.display = "block";
 
   // 2秒後にポップアップを隠し、シームレスに次の問題の盤面を描画する
   setTimeout(() => {
     toast.style.display = "none";
     
-    // 【前回作成した関数】盤面リセットと0手目の自動入力
+    // 盤面リセットと0手目の自動入力
     startNextEndlessRound();
     
     // スコア表示の更新
     document.getElementById("endless-score-display").textContent = locaEndlessState.score;
     document.getElementById("endless-combo-display").textContent = locaEndlessState.combo;
+
+    // ★ 画面上の「BEST!」バッジを更新
+    updateEndlessBestBadges();
     
     // 手数の回復とアニメーション
     if (recovery > 0) {
@@ -1803,6 +1832,9 @@ function showEndlessWinPopup(score, combo, recovery, breakdown) {
       if (locaEndlessState.remainingGuesses > 15) locaEndlessState.remainingGuesses = 15; // 上限15回
       
       updateRemainingGuesses();
+
+      // ★ 回復後にスキップボタンの有効/無効を再判定して復活させる
+      updateEndlessSkipButton();
       
       // 残り回数表示の横から「+n」をフワッと浮かび上がらせる
       const anim = document.getElementById("recovery-anim");
@@ -1827,9 +1859,74 @@ function showEndlessWinPopup(score, combo, recovery, breakdown) {
   }, 2000);
 }
 
+
+// ==========================================
+// エンドレスモード：最終ランク判定
+// ==========================================
+function getEndlessRank(score) {
+  // 獲得スコアに応じて、ランクの文字と専用カラーを返します
+  // 後半のコンボ倍率インフレを考慮し、最高ランクは1000億に設定しています
+  if (score >= 100000000000) return { rank: "SSS+", color: "#ff1744" }; // 1000億
+  if (score >= 30000000000) return { rank: "SSS", color: "#f50057" };   // 300億
+  if (score >= 10000000000) return { rank: "SSS-", color: "#d500f9" };  // 100億
+  if (score >= 5000000000) return { rank: "SS+", color: "#651fff" };    // 50億
+  if (score >= 2500000000) return { rank: "SS", color: "#3d5afe" };     // 25億
+  if (score >= 1000000000) return { rank: "SS-", color: "#2979ff" };    // 10億
+  if (score >= 500000000) return { rank: "S+", color: "#00b0ff" };      // 5億
+  if (score >= 300000000) return { rank: "S", color: "#00e5ff" };       // 3億
+  if (score >= 150000000) return { rank: "S-", color: "#1de9b6" };      // 1.5億
+  if (score >= 80000000) return { rank: "A+", color: "#00e676" };       // 8000万
+  if (score >= 50000000) return { rank: "A", color: "#76ff03" };        // 5000万
+  if (score >= 30000000) return { rank: "A-", color: "#c6ff00" };       // 3000万
+  if (score >= 15000000) return { rank: "B+", color: "#ffea00" };       // 1500万
+  if (score >= 8000000) return { rank: "B", color: "#ffc400" };         // 8000万
+  if (score >= 3000000) return { rank: "B-", color: "#ff9100" };        // 300万
+  if (score >= 1500000) return { rank: "C+", color: "#ff3d00" };        // 150万
+  if (score >= 800000) return { rank: "C", color: "#ff8a65" };          // 80万
+  if (score >= 300000) return { rank: "C-", color: "#bcaaa4" };         // 30万
+  if (score >= 150000) return { rank: "D+", color: "#90a4ae" };         // 15万
+  if (score >= 80000) return { rank: "D", color: "#78909c" };           // 8万
+  if (score >= 40000) return { rank: "D-", color: "#546e7a" };          // 4万
+  return { rank: "E", color: "#37474f" };                               // それ未満
+}
+
+
 // エンドレス専用：ゲームオーバー画面の表示
 function showEndlessResultModal() {
   const modal = document.getElementById("endless-result-modal");
+
+  // 記録更新のチェックと「New Record!」の表示
+  const isNewScore = locaEndlessState.score > locaEndlessHighScore;
+  const isNewCombo = locaEndlessState.maxCombo > locaEndlessMaxComboAllTime;
+  
+  document.getElementById("endless-result-score-new").style.display = (isNewScore && locaEndlessHighScore > 0) ? "inline-block" : "none";
+  document.getElementById("endless-result-combo-new").style.display = (isNewCombo && locaEndlessMaxComboAllTime > 0) ? "inline-block" : "none";
+
+  if (isNewScore) {
+    locaEndlessHighScore = locaEndlessState.score;
+    localStorage.setItem("ekiLocateEndlessHighScore", locaEndlessHighScore.toString());
+  }
+  if (isNewCombo) {
+    locaEndlessMaxComboAllTime = locaEndlessState.maxCombo;
+    localStorage.setItem("ekiLocateEndlessMaxCombo", locaEndlessMaxComboAllTime.toString());
+  }
+
+  // HTMLを直接いじらず、JavaScriptからランク表示用の箱を自動生成して差し込みます
+  let rankEl = document.getElementById("endless-final-rank");
+  if (!rankEl) {
+    const scoreContainer = document.getElementById("endless-final-score").parentNode;
+    rankEl = document.createElement("div");
+    rankEl.id = "endless-final-rank";
+    rankEl.style.fontSize = "28px";
+    rankEl.style.fontWeight = "900";
+    rankEl.style.margin = "10px 0 15px 0";
+    scoreContainer.parentNode.insertBefore(rankEl, scoreContainer);
+  }
+  
+  // スコアからランク情報を取得し、色付きで画面に反映させます
+  const rankData = getEndlessRank(locaEndlessState.score);
+  rankEl.innerHTML = `RANK: <span style="color:${rankData.color}; font-size:42px; text-shadow:0 2px 4px rgba(0,0,0,0.2);">${rankData.rank}</span>`;
+  
   document.getElementById("endless-answer-station").textContent = todayLocaStation.kanji;
   document.getElementById("endless-final-score").textContent = locaEndlessState.score;
   document.getElementById("endless-final-combo").textContent = locaEndlessState.maxCombo;
@@ -2072,6 +2169,72 @@ function showEndlessResultModal() {
   };
   localStorage.setItem("ekiLocateEndlessDeck", JSON.stringify(locaEndlessState));
 }
+
+
+// ==========================================
+// エンドレスモード：追加機能群（バッジ・シェア・終了）
+// ==========================================
+
+// リアルタイムでステータスバーに「BEST!」バッジを表示する関数
+function updateEndlessBestBadges() {
+  const sBadge = document.getElementById("badge-score-best");
+  const cBadge = document.getElementById("badge-combo-best");
+  if (sBadge) sBadge.style.display = (locaEndlessState.score > locaEndlessHighScore && locaEndlessHighScore > 0) ? "inline-block" : "none";
+  if (cBadge) cBadge.style.display = (locaEndlessState.combo > locaEndlessMaxComboAllTime && locaEndlessMaxComboAllTime > 0) ? "inline-block" : "none";
+}
+
+// 終了（ギブアップ）ボタンの処理
+const giveupBtn = document.getElementById("giveup-endless-btn");
+if (giveupBtn) {
+  giveupBtn.addEventListener("click", () => {
+    if (confirm("サバイバルを終了して結果を見ますか？\n（現在のスコアは記録されます）")) {
+       showEndlessResultModal();
+    }
+  });
+}
+
+// 結果画面から「モード選択」に戻る処理
+function returnToDiffScreenFromEndless() {
+  document.getElementById("endless-result-modal").style.display = "none";
+  document.getElementById("main-game-screen").style.display = "none";
+  document.getElementById("difficulty-screen").style.display = "block";
+  
+  const badge = document.getElementById("hard-mode-badge");
+  if (badge) badge.style.display = "none";
+  const topBackBtn = document.getElementById("top-back-btn");
+  if (topBackBtn) topBackBtn.style.display = "none";
+  const remainDisplay = document.getElementById('remaining-guesses-display');
+  if (remainDisplay) remainDisplay.style.display = 'none';
+  const endlessBar = document.getElementById("endless-status-bar");
+  if (endlessBar) endlessBar.style.display = "none";
+}
+
+// 戻るボタン・×ボタンへの紐付け
+document.getElementById("endless-back-title-btn")?.addEventListener("click", returnToDiffScreenFromEndless);
+document.getElementById("close-endless-result-btn")?.addEventListener("click", returnToDiffScreenFromEndless);
+
+// エンドレスモード専用のシェア機能
+function shareEndlessResult(type) {
+  const currentUrl = window.location.href.split('?')[0];
+  let text = `駅ロケ エンドレスモード\n`;
+  text += `🏆 最終スコア: ${document.getElementById("endless-final-score").textContent} pts\n`;
+  text += `🔥 最高連勝: ${document.getElementById("endless-final-combo").textContent} 連勝\n`;
+  text += `📍 到達駅数: ${document.getElementById("endless-final-cleared").textContent} 駅\n\n`;
+  text += `#駅ロケ\n#駅ロケエンドレス\n${currentUrl}`;
+
+  if (type === "twitter") {
+    window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`, "_blank");
+  } else if (type === "line") {
+    window.open(`https://line.me/R/msg/text/?${encodeURIComponent(text)}`, "_blank");
+  } else if (type === "copy") {
+    navigator.clipboard.writeText(text).then(() => alert("クリップボードにコピーしました"));
+  }
+}
+
+// シェアボタンへの紐付け
+document.getElementById("endless-share-btn")?.addEventListener("click", () => shareEndlessResult("twitter"));
+document.getElementById("endless-line-btn")?.addEventListener("click", () => shareEndlessResult("line"));
+document.getElementById("endless-copy-btn")?.addEventListener("click", () => shareEndlessResult("copy"));
 
 
 // 画面の準備ができたらゲームスタート
