@@ -226,6 +226,24 @@ body.event-nye .key {
   color: #d1c7bd;
 }
 
+
+/* ==========================================
+   行事日の絵文字落下アニメーション
+========================================== */
+@keyframes fallingEmojiAnim {
+    0% { transform: translateY(-50px) rotate(0deg); opacity: 1; }
+    100% { transform: translateY(100vh) rotate(360deg); opacity: 0; }
+}
+
+.falling-emoji {
+    position: fixed;
+    top: -50px;
+    z-index: 9999;
+    pointer-events: none; /* クリックやタップの邪魔にならないようにします */
+    user-select: none;
+}
+
+
 /* ==========================================
 結果ウィンドウのスクロールバーはみ出し対策
 ========================================== */
