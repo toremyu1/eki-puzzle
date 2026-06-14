@@ -1746,6 +1746,9 @@ if (skipEndlessBtn) {
       // コスト3回の支払いと、コンボリセット（ペナルティ）
       locaEndlessState.remainingGuesses -= 3;
       locaEndlessState.combo = 0;
+
+      // コンボが途切れたのでBESTバッジを消す
+      updateEndlessBestBadges();
       
       // スキップした駅も「次の問題の0手目ヒント」として利用するために記憶しておく
       locaEndlessState.lastAnswerStation = todayLocaStation;
@@ -2156,10 +2159,13 @@ function showEndlessResultModal() {
   recordDiv.classList.add("endless-add-box");
   affDiv.classList.add("endless-add-box");
   
-  // ボタンの直前にデータを挿入
-  const restartBtn = modalContent.querySelector("button");
-  modalContent.insertBefore(recordDiv, restartBtn);
-  modalContent.insertBefore(affDiv, restartBtn);
+  // 【修正後：用意しておいた安全な専用エリアに差し込みます】
+  const dynamicArea = document.getElementById("endless-dynamic-content-area");
+  if (dynamicArea) {
+    dynamicArea.innerHTML = ""; // 過去の要素をクリア
+    dynamicArea.appendChild(recordDiv);
+    dynamicArea.appendChild(affDiv);
+  }
 
   modal.style.display = "flex";
 
@@ -2235,6 +2241,68 @@ function shareEndlessResult(type) {
 document.getElementById("endless-share-btn")?.addEventListener("click", () => shareEndlessResult("twitter"));
 document.getElementById("endless-line-btn")?.addEventListener("click", () => shareEndlessResult("line"));
 document.getElementById("endless-copy-btn")?.addEventListener("click", () => shareEndlessResult("copy"));
+
+
+// ==========================================
+// 総合成績（全モードのプレイ記録）の表示処理
+// ==========================================
+function showAllStats() {
+  const n = locaStats.normal || {played:0, won:0, currentStreak:0, maxStreak:0};
+  const h = locaStats.hard || {played:0, won:0, currentStreak:0, maxStreak:0};
+  
+  // 通常モードの数値をセット
+  document.getElementById("st-n-play").textContent = n.played;
+  document.getElementById("st-n-win").textContent = n.played > 0 ? Math.round((n.won / n.played) * 100) : 0;
+  document.getElementById("st-n-streak").textContent = n.currentStreak;
+  document.getElementById("st-n-max").textContent = n.maxStreak;
+
+  // ハードモードの数値をセット
+  document.getElementById("st-h-play").textContent = h.played;
+  document.getElementById("st-h-win").textContent = h.played > 0 ? Math.round((h.won / h.played) * 100) : 0;
+  document.getElementById("st-h-streak").textContent = h.currentStreak;
+  document.getElementById("st-h-max").textContent = h.maxStreak;
+
+  // エンドレスモードの数値をセット
+  document.getElementById("st-e-score").textContent = locaEndlessHighScore || 0;
+  document.getElementById("st-e-combo").textContent = locaEndlessMaxComboAllTime || 0;
+
+  document.getElementById("all-stats-modal").style.display = "flex";
+}
+
+// 記録画面を閉じる
+document.getElementById("close-all-stats-btn")?.addEventListener("click", () => {
+  document.getElementById("all-stats-modal").style.display = "none";
+});
+
+// モード選択画面のボタンから呼び出す
+document.getElementById("show-stats-btn")?.addEventListener("click", showAllStats);
+
+// サイドメニューのボタンから呼び出す（メニューを閉じてから表示）
+document.getElementById("side-stats-btn")?.addEventListener("click", (e) => {
+  e.preventDefault();
+  const sideMenu = document.getElementById("side-menu");
+  const overlay = document.getElementById("side-menu-overlay");
+  if(sideMenu) sideMenu.style.right = "-250px";
+  if(overlay) setTimeout(() => overlay.style.display = "none", 300);
+  showAllStats();
+});
+
+// タブの切り替えアニメーション（通常/Hard ⇔ サバイバル）
+document.getElementById("tab-normal")?.addEventListener("click", (e) => {
+  e.target.style.background = "#3498db"; e.target.style.color = "#fff";
+  const tEnd = document.getElementById("tab-endless");
+  if(tEnd) { tEnd.style.background = "#fff"; tEnd.style.color = "#3498db"; }
+  document.getElementById("stats-view-normal").style.display = "block";
+  document.getElementById("stats-view-endless").style.display = "none";
+});
+
+document.getElementById("tab-endless")?.addEventListener("click", (e) => {
+  e.target.style.background = "#3498db"; e.target.style.color = "#fff";
+  const tNorm = document.getElementById("tab-normal");
+  if(tNorm) { tNorm.style.background = "#fff"; tNorm.style.color = "#3498db"; }
+  document.getElementById("stats-view-endless").style.display = "block";
+  document.getElementById("stats-view-normal").style.display = "none";
+});
 
 
 // 画面の準備ができたらゲームスタート
