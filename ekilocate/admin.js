@@ -9,33 +9,36 @@ adminPanel.style.padding = '10px';
 adminPanel.style.background = '#e3f2fd'; // 駅ロケのテーマに合わせた水色系
 adminPanel.style.border = '2px solid #2196f3';
 adminPanel.style.marginBottom = '15px';
+// ----------------------------------------------------
+// 【修正後：admin.jsの冒頭（innerHTMLの中身）を置き換えます】
+// ----------------------------------------------------
 adminPanel.innerHTML = `
 <span style="color:#000000;"><b>🛠 駅ロケ 管理者モード</b><br>
 現在の答え: [通常] <span id="debug-ans-normal">（読込中...）</span> / [ハード] <span id="debug-ans-hard">（読込中...）</span></span><br>
-<input type="text" id="admin-custom-ans" placeholder="新しい答え(駅名/ひらがな)" style="padding:4px; margin-right:5px; width:180px;">
-<button id="admin-set-normal-btn" style="margin-right:5px; background:#4caf50; color:#fff; border:none; padding:4px 8px; border-radius:4px;">通常を変更</button>
-<button id="admin-set-hard-btn" style="margin-right:5px; background:#e74c3c; color:#fff; border:none; padding:4px 8px; border-radius:4px;">ハードを変更</button>
-<button id="admin-reset-btn" style="margin-right:5px;" title="成績や図鑑はそのままに、盤面だけをやり直します">盤面リセット</button>
-<button id="admin-stats-wipe-btn" style="background-color:#ffe6e6; color:#c62828; border:1px solid #c62828; padding:3px 8px; border-radius:4px;">戦績全消去</button>
-<button id="admin-full-wipe-btn" style="background-color:#b71c1c; color:#fff; border:1px solid #b71c1c; margin-left:5px; padding:3px 8px; border-radius:4px;">データ完全消去</button>
+<input type="text" id="admin-custom-ans" placeholder="新しい答え(駅名/ひらがな)" style="padding:4px; margin-right:5px; width:180px; border:1px solid #ccc; border-radius:4px;">
+<button id="admin-set-normal-btn" style="margin-right:5px; background:#4caf50; color:#fff; border:2px solid #2e7d32; padding:4px 8px; border-radius:4px; font-weight:bold;">通常を変更</button>
+<button id="admin-set-hard-btn" style="margin-right:5px; background:#e74c3c; color:#fff; border:2px solid #c0392b; padding:4px 8px; border-radius:4px; font-weight:bold;">ハードを変更</button>
+<button id="admin-reset-btn" style="margin-right:5px; border:2px solid #9e9e9e; background:#f5f5f5; color:#333; padding:4px 8px; border-radius:4px; font-weight:bold;" title="成績や図鑑はそのままに、盤面だけをやり直します">盤面リセット</button>
+<button id="admin-stats-wipe-btn" style="background-color:#ffe6e6; color:#c62828; border:2px solid #c62828; padding:4px 8px; border-radius:4px; font-weight:bold;">戦績全消去</button>
+<button id="admin-full-wipe-btn" style="background-color:#b71c1c; color:#fff; border:2px solid #7f0000; margin-left:5px; padding:4px 8px; border-radius:4px; font-weight:bold;">データ完全消去</button>
 
-<div style="margin-top:10px; padding:10px; background:#fff3e0; border:1px solid #ff9800; border-radius:4px;">
+<div style="margin-top:10px; padding:10px; background:#fff3e0; border:2px solid #ff9800; border-radius:4px;">
 <span style="color:black;"><b>【全データ一覧＆直接編集】</b></span><br>
-<button id="adm-load-all-btn" style="margin-bottom:10px; padding:4px 8px;">全データを読み込んで表示</button>
+<button id="adm-load-all-btn" style="margin-bottom:10px; padding:4px 8px; background:#fff; border:2px solid #ff9800; border-radius:4px; font-weight:bold; color:#e65100;">全データを読み込んで表示</button>
 <div id="adm-all-data-container" style="max-height:400px; overflow-y:auto; background:#fff; padding:5px; border:1px solid #ccc; font-size:12px; color:#333;">ここにデータが表示されます</div>
 </div>
 
-<div style="margin-top:10px; padding:10px; background:#f5f5f5; border:1px solid #ddd; border-radius:4px; font-size:12px; color:black; text-align:left;">
+<div style="margin-top:10px; padding:10px; background:#f5f5f5; border:2px solid #bdbdbd; border-radius:4px; font-size:12px; color:black; text-align:left;">
 <b>【各種カウンター手動編集】</b><br>
 図鑑解放数: <input type="text" id="adm-unlocked-count" style="width:50px; background:#e0e0e0; border:1px solid #ccc;" readonly title="解放済みの駅数"> 駅<br>
-連続ログイン: <input type="number" id="adm-cur-login-streak" style="width:60px;"> 日 <button id="adm-save-login">保存</button><br>
-通常モード最高連勝: <input type="number" id="adm-normal-max-streak" style="width:60px;"> 回 <button id="adm-save-normal-streak">保存</button><br>
-エンドレスハイスコア: <input type="number" id="adm-endless-high-score" style="width:100px;"> pts <button id="adm-save-endless-score">保存</button><br>
-エンドレス最高コンボ: <input type="number" id="adm-endless-max-combo" style="width:60px;"> 回 <button id="adm-save-endless-combo">保存</button><br>
+連続ログイン: <input type="number" id="adm-cur-login-streak" style="width:60px; border:1px solid #ccc;"> 日 <button id="adm-save-login" style="border:2px solid #9e9e9e; border-radius:4px;">保存</button><br>
+通常モード最高連勝: <input type="number" id="adm-normal-max-streak" style="width:60px; border:1px solid #ccc;"> 回 <button id="adm-save-normal-streak" style="border:2px solid #9e9e9e; border-radius:4px;">保存</button><br>
+エンドレスハイスコア: <input type="number" id="adm-endless-high-score" style="width:100px; border:1px solid #ccc;"> pts <button id="adm-save-endless-score" style="border:2px solid #9e9e9e; border-radius:4px;">保存</button><br>
+エンドレス最高コンボ: <input type="number" id="adm-endless-max-combo" style="width:60px; border:1px solid #ccc;"> 回 <button id="adm-save-endless-combo" style="border:2px solid #9e9e9e; border-radius:4px;">保存</button><br>
 </div>
 
 <div style="margin-top:10px; padding-top:10px; border-top:1px solid #ccc;">
-<select id="admin-event-select" style="padding:4px;">
+<select id="admin-event-select" style="padding:4px; border:2px solid #9e9e9e; border-radius:4px;">
 <option value="">通常（演出オフ）</option>
 <option value="newyear">正月（🎍）</option>
 <option value="valentine">バレンタイン（🍫）</option>
@@ -46,9 +49,9 @@ adminPanel.innerHTML = `
 <option value="christmas">クリスマス（🎄）</option>
 <option value="nye">大晦日（🔔）</option>
 </select>
-<button id="admin-event-btn" style="padding:4px 8px;">演出テスト</button>
+<button id="admin-event-btn" style="padding:4px 8px; border:2px solid #9e9e9e; border-radius:4px; font-weight:bold; background:#fff;">演出テスト</button>
 <br>
-<button id="admin-offline-banner-btn" style="background:#fff3e0; border:1px solid #ff9800; margin-top:10px; padding:4px 8px;">⚠️ オフライン警告バナーをテスト表示 (ON/OFF)</button>
+<button id="admin-offline-banner-btn" style="background:#fff3e0; border:2px solid #ff9800; margin-top:10px; padding:4px 8px; border-radius:4px; font-weight:bold; color:#e65100;">⚠️ オフライン警告バナーをテスト表示 (ON/OFF)</button>
 </div>
 `;
 
