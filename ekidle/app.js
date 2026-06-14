@@ -1727,7 +1727,9 @@ function importUserData(code) {
     
     // 合言葉が一致したので、データ本体をJavaScriptで扱える形に戻す
     const json = JSON.parse(secureJson.payload);
-    
+
+    if (parsed.game !== "Ekidle") throw new Error("このコードは駅ドル用ではありません。（他のゲームのコードは使えません）");
+
     // データが存在するものだけローカルストレージに上書きしていく
     if(json.stats) localStorage.setItem("ekiPuzzleStatsV2", json.stats);
     if(json.archive) localStorage.setItem("ekiPuzzleArchiveV1", json.archive);
