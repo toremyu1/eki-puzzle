@@ -2092,60 +2092,6 @@ function getEndlessRank(score) {
 }
 
 
-// エンドレス専用：ゲームオーバー画面の表示
-function showEndlessResultModal() {
-  const modal = document.getElementById("endless-result-modal");
-
-  // 記録更新のチェックと「New Record!」の表示
-  const isNewScore = locaEndlessState.score > locaEndlessHighScore;
-  const isNewCombo = locaEndlessState.maxCombo > locaEndlessMaxComboAllTime;
-  
-  document.getElementById("endless-result-score-new").style.display = (isNewScore && locaEndlessHighScore > 0) ? "inline-block" : "none";
-  document.getElementById("endless-result-combo-new").style.display = (isNewCombo && locaEndlessMaxComboAllTime > 0) ? "inline-block" : "none";
-
-  if (isNewScore) {
-    locaEndlessHighScore = locaEndlessState.score;
-    localStorage.setItem("ekiLocateEndlessHighScore", locaEndlessHighScore.toString());
-  }
-  if (isNewCombo) {
-    locaEndlessMaxComboAllTime = locaEndlessState.maxCombo;
-    localStorage.setItem("ekiLocateEndlessMaxCombo", locaEndlessMaxComboAllTime.toString());
-  }
-
-  // HTMLを直接いじらず、JavaScriptからランク表示用の箱を自動生成して差し込みます
-  let rankEl = document.getElementById("endless-final-rank");
-  if (!rankEl) {
-    const scoreContainer = document.getElementById("endless-final-score").parentNode;
-    rankEl = document.createElement("div");
-    rankEl.id = "endless-final-rank";
-    rankEl.style.fontSize = "28px";
-    rankEl.style.fontWeight = "900";
-    rankEl.style.margin = "10px 0 15px 0";
-    scoreContainer.parentNode.insertBefore(rankEl, scoreContainer);
-  }
-  
-  // スコアからランク情報を取得し、色付きで画面に反映させます
-  const rankData = getEndlessRank(locaEndlessState.score);
-  rankEl.innerHTML = `RANK: <span style="color:${rankData.color}; font-size:42px; text-shadow:0 2px 4px rgba(0,0,0,0.2);">${rankData.rank}</span>`;
-  
-  document.getElementById("endless-answer-station").textContent = todayLocaStation.kanji;
-  document.getElementById("endless-final-score").textContent = locaEndlessState.score;
-  document.getElementById("endless-final-combo").textContent = locaEndlessState.maxCombo;
-  document.getElementById("endless-final-cleared").textContent = locaEndlessState.clearedCount;
-  
-  modal.style.display = "flex";
-  
-  // ゲームオーバーなのでデータをリセットし、次回は最初から遊べるようにする
-  locaEndlessState.deck = [];
-  locaEndlessState.score = 0;
-  locaEndlessState.combo = 0;
-  locaEndlessState.maxCombo = 0;
-  locaEndlessState.clearedCount = 0;
-  locaEndlessState.remainingGuesses = 15;
-  locaEndlessState.lastAnswerStation = null;
-  localStorage.setItem("ekiLocateEndlessDeck", JSON.stringify(locaEndlessState));
-}
-
 
 // ==========================================
 // エンドレスモード：UI連携・演出・リザルト管理
@@ -2241,16 +2187,39 @@ function checkAndTriggerHighScoreEffect(currentScore) {
 // ④ 【差し替え・機能拡張】エンドレスモード終了時の専用ウィンドウ表示
 function showEndlessResultModal() {
   const modal = document.getElementById("endless-result-modal");
+
+  // 記録更新のチェックと「New Record!」の表示
+  const isNewScore = locaEndlessState.score > locaEndlessHighScore;
+  const isNewCombo = locaEndlessState.maxCombo > locaEndlessMaxComboAllTime;
   
-  // 今回のスコアが最終的にハイスコアを更新したかチェックして保存
-  if (locaEndlessState.score > locaEndlessHighScore) {
+  const scoreNewEl = document.getElementById("endless-result-score-new");
+  const comboNewEl = document.getElementById("endless-result-combo-new");
+  if (scoreNewEl) scoreNewEl.style.display = (isNewScore && locaEndlessHighScore > 0) ? "inline-block" : "none";
+  if (comboNewEl) comboNewEl.style.display = (isNewCombo && locaEndlessMaxComboAllTime > 0) ? "inline-block" : "none";
+  
+  // 今回のスコアがハイスコアを更新した場合は保存
+  if (isNewScore) {
     locaEndlessHighScore = locaEndlessState.score;
     localStorage.setItem("ekiLocateEndlessHighScore", locaEndlessHighScore.toString());
   }
-  if (locaEndlessState.maxCombo > locaEndlessMaxComboAllTime) {
+  if (isNewCombo) {
     locaEndlessMaxComboAllTime = locaEndlessState.maxCombo;
     localStorage.setItem("ekiLocateEndlessMaxCombo", locaEndlessMaxComboAllTime.toString());
   }
+
+  // --- ランク表示用の要素を作成し、計算したランクを表示する ---
+  let rankEl = document.getElementById("endless-final-rank");
+  if (!rankEl) {
+    const scoreContainer = document.getElementById("endless-final-score").parentNode;
+    rankEl = document.createElement("div");
+    rankEl.id = "endless-final-rank";
+    rankEl.style.fontSize = "28px";
+    rankEl.style.fontWeight = "900";
+    rankEl.style.margin = "10px 0 15px 0";
+    scoreContainer.parentNode.insertBefore(rankEl, scoreContainer);
+  }
+  const rankData = getEndlessRank(locaEndlessState.score);
+  rankEl.innerHTML = `RANK: <span style="color:${rankData.color}; font-size:42px; text-shadow:0 2px 4px rgba(0,0,0,0.2);">${rankData.rank}</span>`;
 
   // 専用結果ウィンドウのテキストを書き換える
   document.getElementById("endless-answer-station").textContent = todayLocaStation.kanji;
