@@ -1227,39 +1227,76 @@ function shareLocaResult(type) {
   }
 }
 
-// ==========================================
-// 行事日エフェクト（背景色とタイルの文字変更）
-// ==========================================
+// ----------------------------------------------------
+// 【修正後：タイトルの書き換えを廃止し、絵文字を降らせる処理を呼び出します】
+// ----------------------------------------------------
+// 行事日エフェクト（背景色変更と絵文字落下アニメーションの呼び出し）
 function triggerLocaEvent(ev) {
+  // 古いイベントクラスを消去して新しいクラス（CSSの背景色用）を付与します
   document.body.className = document.body.className.replace(/event-\w+/g, "");
   if (!ev) return;
   document.body.classList.add("event-" + ev);
 
-  const titleEl = document.getElementById("game-title");
-  const iconHtml = '<img src="/ekilocate-icon.svg" alt="駅ロケアイコン" style="width:36px; height:36px; margin-right:10px; border-radius:8px;">';
-  
-  if (ev === "newyear") titleEl.innerHTML = iconHtml + "駅ロケ 🎍 謹賀新年！";
-  else if (ev === "valentine") titleEl.innerHTML = iconHtml + "駅ロケ 🍫 ハッピーバレンタイン！";
-  else if (ev === "hinamatsuri") titleEl.innerHTML = iconHtml + "駅ロケ 🌸 楽しいひなまつり！";
-  else if (ev === "kodomo") titleEl.innerHTML = iconHtml + "駅ロケ 🎏 こどもの日！";
-  else if (ev === "tanabata") titleEl.innerHTML = iconHtml + "駅ロケ 🎋 七夕まつり！";
-  else if (ev === "halloween") titleEl.innerHTML = iconHtml + "駅ロケ 🎃 ハッピーハロウィン！";
-  else if (ev === "christmas") titleEl.innerHTML = iconHtml + "駅ロケ 🎄 メリークリスマス！";
-  else if (ev === "nye") titleEl.innerHTML = iconHtml + "駅ロケ 🔔 良いお年を！";
+  // イベントに応じた絵文字を設定します
+  let emoji = "";
+  if (ev === "newyear") emoji = "🎍";
+  else if (ev === "valentine") emoji = "🍫";
+  else if (ev === "hinamatsuri") emoji = "🌸";
+  else if (ev === "kodomo") emoji = "🎏";
+  else if (ev === "tanabata") emoji = "🎋";
+  else if (ev === "halloween") emoji = "🎃";
+  else if (ev === "christmas") emoji = "🎄";
+  else if (ev === "nye") emoji = "🔔";
+
+  // 絵文字が設定されていれば、画面上部から30個降らせます
+  if (emoji !== "") {
+    spawnFallingEmojis(emoji, 30);
+  }
 }
 
-function checkLocaEvent() {
-  const d = new Date(); const m = d.getMonth() + 1; const day = d.getDate();
-  let ev = "";
-  if (m === 1 && day <= 3) ev = "newyear";
-  else if (m === 2 && day === 14) ev = "valentine";
-  else if (m === 3 && day === 3) ev = "hinamatsuri";
-  else if (m === 5 && day === 5) ev = "kodomo";
-  else if (m === 7 && day === 7) ev = "tanabata";
-  else if (m === 10 && day === 31) ev = "halloween";
-  else if (m === 12 && (day === 24 || day === 25)) ev = "christmas";
-  else if (m === 12 && day === 31) ev = "nye";
-  triggerLocaEvent(ev);
+// 指定された絵文字を画面全体に1度だけ降らせる処理
+function spawnFallingEmojis(emoji, count) {
+  // 降らせる絵文字をまとめるための透明な箱（コンテナ）を作成します
+  const container = document.createElement("div");
+  container.id = "emoji-shower-container";
+  container.style.position = "fixed";
+  container.style.top = "0";
+  container.style.left = "0";
+  container.style.width = "100%";
+  container.style.height = "100%";
+  container.style.pointerEvents = "none"; // プレイヤーの操作を妨げないようにします
+  container.style.zIndex = "9999";
+  container.style.overflow = "hidden"; // 画面外にはみ出た横スクロールを防ぎます
+  document.body.appendChild(container);
+
+  // 指定された回数（count）だけ絵文字の要素を作成して箱に入れます
+  for (let i = 0; i < count; i++) {
+    const el = document.createElement("div");
+    el.className = "falling-emoji";
+    el.textContent = emoji;
+    
+    // 横幅のどこから降ってくるかをランダム（0〜100%）に設定します
+    el.style.left = Math.random() * 100 + "vw";
+    // 絵文字の大きさをランダム（20px〜35px）に設定し、奥行き感を出します
+    el.style.fontSize = (Math.random() * 15 + 20) + "px";
+    
+    // 落下にかかる時間（2秒〜4秒）をランダムにしてバラつきを出します
+    const duration = Math.random() * 2 + 2;
+    // 落下し始めるまでの待ち時間（0秒〜1.5秒）をズラします
+    const delay = Math.random() * 1.5;
+
+    // CSSで定義した落下アニメーションを個別に適用します
+    el.style.animation = `fallingEmojiAnim ${duration}s ease-in ${delay}s forwards`;
+
+    container.appendChild(el);
+  }
+
+  // 全てのアニメーションが確実に終わる頃（6秒後）に、箱ごと綺麗に削除してメモリを解放します
+  setTimeout(() => {
+    if (container.parentNode) {
+      container.parentNode.removeChild(container);
+    }
+  }, 6000);
 }
 
 
