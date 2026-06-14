@@ -881,7 +881,7 @@ function submitLocaGuess() {
        document.getElementById("station-search-input").disabled = true;
        
        // 【追加】遅延付きで終了ポップアップを出してから、結果ウィンドウを表示
-       showStatusPopup("残念！ゲームオーバー", "回答回数を使い切りました", "#e74c3c", () => { showEndlessResultModal(); });
+       showStatusPopup("終了！🏁", "回答回数を使い切りました", "#e74c3c", () => { showEndlessResultModal(); });
     } else {
        saveLocaStats(false);
        saveLocaGameState();
@@ -889,7 +889,7 @@ function submitLocaGuess() {
        document.getElementById("station-search-input").disabled = true;
        
        // 【追加】遅延付きで残念ポップアップを出してから、結果ウィンドウを表示
-       showStatusPopup("残念！💦", "ゲームオーバー", "#e74c3c", () => { showLocaResultModal(false); });
+       showStatusPopup("残念！", "ゲームオーバー", "#e74c3c", () => { showLocaResultModal(false); });
     }
   } else {
     if (currentDifficulty === 'endless') {
