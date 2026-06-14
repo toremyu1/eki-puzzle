@@ -73,5 +73,5 @@ jobs:
             git commit -m "Auto-update city categories (development)"
             git push origin development
           else
-            print "データの更新がなかったため、プッシュは行われませんでした。"
+            echo "データの更新がなかったため、プッシュは行われませんでした。"
           fi
