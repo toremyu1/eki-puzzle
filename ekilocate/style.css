@@ -691,3 +691,33 @@ body.event-nye #diff-title {
     pointer-events: none; /* クリックやタップの邪魔にならないようにします */
     user-select: none;
 }
+
+
+/* ==========================================
+   全ポップアップのテーマカラー完全連動
+========================================== */
+/* すべてのモーダルの背景色と基本文字色をテーマ変数で上書きする */
+#all-stats-modal .modal-content, 
+#endless-intro-modal .modal-content,
+#help-modal .modal-content,
+#result-modal .modal-content {
+    background: var(--modal-bg, #ffffff) !important;
+    color: var(--modal-text, #2c3e50) !important;
+    border-color: var(--theme-accent, #3498db) !important;
+}
+
+/* ポップアップ内の文字（黒や濃いグレーで固定されているもの）をテーマ色に連動 */
+#all-stats-modal h2,
+#endless-intro-modal h2,
+#help-modal h2,
+#endless-intro-modal div,
+#all-stats-modal .modal-content > div > div {
+    color: var(--modal-text, #2c3e50) !important;
+}
+
+/* 成績画面（サバイバル枠など）の固定背景色を透明にしてテーマ色に馴染ませる */
+#all-stats-modal #stats-view-endless > div {
+    background: transparent !important;
+    border-color: var(--theme-accent, #3498db) !important;
+}
+
