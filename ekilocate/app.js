@@ -2251,6 +2251,12 @@ document.getElementById("endless-copy-btn")?.addEventListener("click", () => sha
 // ==========================================
 // 総合成績（全モードのプレイ記録）の表示処理
 // ==========================================
+// ==========================================
+// 【修正後：app.js の一番最後に貼り付けてください】
+// エラーを出さない安全な成績表示・ボタン制御処理
+// ==========================================
+
+// 1. 成績データを画面に反映してモーダルを表示する、心臓部の関数です
 function showAllStats() {
   try {
     // セーブデータを安全に読み込みます（データが無い場合は空の数値を入れます）
@@ -2294,34 +2300,60 @@ function showAllStats() {
   }
 }
 
-// モード選択画面のボタンから呼び出す
-document.getElementById("show-stats-btn")?.addEventListener("click", showAllStats);
+// 2. 画面（HTML）が完全に準備できてから、すべてのボタンの通り道を確実に開通させます
+document.addEventListener("DOMContentLoaded", () => {
+  
+  // 閉じる（×）ボタンの登録
+  document.getElementById("close-all-stats-btn")?.addEventListener("click", () => {
+    document.getElementById("all-stats-modal").style.display = "none";
+  });
 
-// サイドメニューのボタンから呼び出す（メニューを閉じてから表示）
-document.getElementById("side-stats-btn")?.addEventListener("click", (e) => {
-  e.preventDefault();
-  const sideMenu = document.getElementById("side-menu");
-  const overlay = document.getElementById("side-menu-overlay");
-  if(sideMenu) sideMenu.style.right = "-250px";
-  if(overlay) setTimeout(() => overlay.style.display = "none", 300);
-  showAllStats();
-});
+  // モード選択画面の「プレイ記録・成績」ボタンの登録
+  document.getElementById("show-stats-btn")?.addEventListener("click", showAllStats);
 
-// タブの切り替えアニメーション（通常/Hard ⇔ サバイバル）
-document.getElementById("tab-normal")?.addEventListener("click", (e) => {
-  e.target.style.background = "#3498db"; e.target.style.color = "#fff";
-  const tEnd = document.getElementById("tab-endless");
-  if(tEnd) { tEnd.style.background = "#fff"; tEnd.style.color = "#3498db"; }
-  document.getElementById("stats-view-normal").style.display = "block";
-  document.getElementById("stats-view-endless").style.display = "none";
-});
+  // サイドメニューの「プレイ記録・成績」ボタンの登録
+  document.getElementById("side-stats-btn")?.addEventListener("click", (e) => {
+    e.preventDefault();
+    
+    // サイドメニューが開いている場合は、綺麗にスライドして閉じます
+    const sideMenu = document.getElementById("side-menu");
+    const overlay = document.getElementById("side-menu-overlay");
+    if (sideMenu) sideMenu.style.right = "-250px";
+    if (overlay) setTimeout(() => overlay.style.display = "none", 300);
+    
+    // メニューが閉じた後に成績画面を呼び出します
+    showAllStats();
+  });
 
-document.getElementById("tab-endless")?.addEventListener("click", (e) => {
-  e.target.style.background = "#3498db"; e.target.style.color = "#fff";
-  const tNorm = document.getElementById("tab-normal");
-  if(tNorm) { tNorm.style.background = "#fff"; tNorm.style.color = "#3498db"; }
-  document.getElementById("stats-view-endless").style.display = "block";
-  document.getElementById("stats-view-normal").style.display = "none";
+  // 「通常/Hard」タブが押された時の切り替え処理
+  document.getElementById("tab-normal")?.addEventListener("click", (e) => {
+    e.target.style.background = "#3498db"; 
+    e.target.style.color = "#fff";
+    
+    const tEnd = document.getElementById("tab-endless");
+    if (tEnd) { 
+      tEnd.style.background = "#fff"; 
+      tEnd.style.color = "#3498db"; 
+    }
+    
+    document.getElementById("stats-view-normal").style.display = "block";
+    document.getElementById("stats-view-endless").style.display = "none";
+  });
+
+  // 「サバイバル」タブが押された時の切り替え処理
+  document.getElementById("tab-endless")?.addEventListener("click", (e) => {
+    e.target.style.background = "#3498db"; 
+    e.target.style.color = "#fff";
+    
+    const tNorm = document.getElementById("tab-normal");
+    if (tNorm) { 
+      tNorm.style.background = "#fff"; 
+      tNorm.style.color = "#3498db"; 
+    }
+    
+    document.getElementById("stats-view-endless").style.display = "block";
+    document.getElementById("stats-view-normal").style.display = "none";
+  });
 });
 
 
