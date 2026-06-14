@@ -266,9 +266,9 @@ async function initLocaGame() {
       });
 
       // （既存）Enterキーの処理
-      searchInput.addEventListener("keypress", function(e) {
-        if (e.key === "Enter") submitLocaGuess();
-      });
+      // searchInput.addEventListener("keypress", function(e) {
+      //  if (e.key === "Enter") submitLocaGuess();
+      //});
     }
 
     // 100%表示になってから、コンマ数秒の綺麗な余韻を持たせてロード画面を非表示にします
