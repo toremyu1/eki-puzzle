@@ -2100,7 +2100,7 @@ function showEndlessResultModal() {
                 楽天市場
             </a>
             <a href="//af.moshimo.com/af/c/click?a_id=5626583&p_id=1225&pc_id=1925&pl_id=18502&url=https%3A%2F%2Fshopping.yahoo.co.jp%2Fsearch%3Fp%3D%25E3%2583%25A1%25E3%2582%25B0%25E3%2583%25AA%25E3%2582%25BA%25E3%2583%25A0" rel="nofollow" referrerpolicy="no-referrer-when-downgrade" attributionsrc style="flex:1; text-align:center; font-size:11px; color:#ff007f; background:#fff5fa; border:1px solid #fbb6ce; padding:5px 0; border-radius:4px; text-decoration:none; font-weight:bold;">
-                Yahoo!
+              <img src="/aff_images/yahoo_japan_icon_64.svg" alt="Y!" style="height:14px; margin-right:4px; border:none;">ショッピング
             </a>
         </div>
         <img src="//i.moshimo.com/af/i/impression?a_id=5616620&p_id=54&pc_id=54&pl_id=616" width="1" height="1" style="border:none;" alt="" loading="lazy">
@@ -2114,7 +2114,7 @@ function showEndlessResultModal() {
                 楽天市場
             </a>
             <a href="//af.moshimo.com/af/c/click?a_id=5626583&p_id=1225&pc_id=1925&pl_id=18502&url=https%3A%2F%2Fshopping.yahoo.co.jp%2Fsearch%2F%25E5%25A4%25A7%25E7%25B2%2592%25E3%2583%25A9%25E3%2583%25A0%25E3%2583%258D%2F0%2F%3Ffirst%3D1%26tab_ex%3Dcommerce%26fr%3Dshp-prop%26mcr%3D0d82602f670f66d79b8f3e6db110de22%26ts%3D1781342120%26sretry%3D1%26sc_i%3Dshopping-pc-web-search-suggest-h_srch-srchbtn-sgstfrom-top--h_srch-kwd%26area%3D13" rel="nofollow" referrerpolicy="no-referrer-when-downgrade" attributionsrc style="flex:1; text-align:center; font-size:11px; color:#ff007f; background:#fff5fa; border:1px solid #fbb6ce; padding:5px 0; border-radius:4px; text-decoration:none; font-weight:bold;">
-                Yahoo!
+              <img src="/aff_images/yahoo_japan_icon_64.svg" alt="Y!" style="height:14px; margin-right:4px; border:none;">ショッピング
             </a>
         </div>
         <img src="//i.moshimo.com/af/i/impression?a_id=5616620&p_id=54&pc_id=54&pl_id=616" width="1" height="1" style="border:none;" alt="" loading="lazy">
@@ -2128,7 +2128,7 @@ function showEndlessResultModal() {
                 楽天市場
             </a>
             <a href="//af.moshimo.com/af/c/click?a_id=5626583&p_id=1225&pc_id=1925&pl_id=18502&url=https%3A%2F%2Fshopping.yahoo.co.jp%2Fsearch%3Fp%3D%25E3%2583%25AA%25E3%2583%25B3%25E3%2583%25B4%252B%25E3%2583%2581%25E3%2583%25A7%25E3%2582%25B3%25E3%2583%25AC%25E3%2583%25BC%25E3%2583%2588" rel="nofollow" referrerpolicy="no-referrer-when-downgrade" attributionsrc style="flex:1; text-align:center; font-size:11px; color:#ff007f; background:#fff5fa; border:1px solid #fbb6ce; padding:5px 0; border-radius:4px; text-decoration:none; font-weight:bold;">
-                Yahoo!
+              <img src="/aff_images/yahoo_japan_icon_64.svg" alt="Y!" style="height:14px; margin-right:4px; border:none;">ショッピング
             </a>
         </div>
         <img src="//i.moshimo.com/af/i/impression?a_id=5616620&p_id=54&pc_id=54&pl_id=616" width="1" height="1" style="border:none;" alt="" loading="lazy">
@@ -2142,7 +2142,7 @@ function showEndlessResultModal() {
                 楽天市場
             </a>
             <a href="//af.moshimo.com/af/c/click?a_id=5626583&p_id=1225&pc_id=1925&pl_id=18502&url=https%3A%2F%2Fshopping.yahoo.co.jp%2Fsearch%3Fp%3D%25E6%2597%25A5%25E6%259C%25AC%25E9%2589%2584%25E9%2581%2593%25E6%2597%2585%25E8%25A1%258C%25E5%259C%25B0%25E5%259B%25B3%25E5%25B8%25B3" rel="nofollow" referrerpolicy="no-referrer-when-downgrade" attributionsrc style="flex:1; text-align:center; font-size:11px; color:#ff007f; background:#fff5fa; border:1px solid #fbb6ce; padding:5px 0; border-radius:4px; text-decoration:none; font-weight:bold;">
-                Yahoo!
+              <img src="/aff_images/yahoo_japan_icon_64.svg" alt="Y!" style="height:14px; margin-right:4px; border:none;">ショッピング
             </a>
         </div>
         <img src="//i.moshimo.com/af/i/impression?a_id=5616620&p_id=54&pc_id=54&pl_id=616" width="1" height="1" style="border:none;" alt="" loading="lazy">
