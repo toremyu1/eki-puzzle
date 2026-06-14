@@ -1681,6 +1681,7 @@ function generateChecksum(str) {
 function exportUserData() {
   // ローカルストレージから必要な全データを集める
   const data = {
+    game: "Ekidle",
     stats: localStorage.getItem("ekiPuzzleStatsV2"),
     archive: localStorage.getItem("ekiPuzzleArchiveV1"),
     zukan: localStorage.getItem("ekiZukanData"),
@@ -1730,6 +1731,14 @@ function importUserData(code) {
     
     // 合言葉が一致したので、データ本体をJavaScriptで扱える形に戻す
     const json = JSON.parse(secureJson.payload);
+
+    // 【ここから追加】他のゲームのデータがインポートされるのを防ぐ
+    // タグが存在していて、かつ「EkiDoru」ではない場合（EkiLocateなど）はエラーを投げて処理を止める
+    // ※タグ付け機能実装前の「古い駅ドルのコード（タグ無し）」はそのまま救済して通す
+    if (json.game !== "Ekidle") {
+      throw new Error("このコードは駅ドル用ではありません。（他のゲームのコードは使えません）");
+    }
+    // 【ここまで追加】
     
     // データが存在するものだけローカルストレージに上書きしていく
     if(json.stats) localStorage.setItem("ekiPuzzleStatsV2", json.stats);
