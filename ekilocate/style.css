@@ -730,25 +730,30 @@ body.event-nye #diff-title {
 
 
 /* ==========================================
-   全ボタンのフラットデザイン（ボーダーレス）化
+   ボタン押し込み時のガタつき完全防止
 ========================================== */
-/* すべてのボタンから立体用の下線を消去し、代わりに軽い影をつけます */
-.btn, 
-.diff-btn, 
-.top-icon-btn, 
-#submit-guess-btn {
-    border-bottom: none !important;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1) !important;
-}
-
-/* ボタンを押し込んだ時、影を消して少しだけ沈み込ませます（ガタつきません） */
-.btn:active:not([disabled]), 
-.diff-btn:active:not([disabled]), 
-.top-icon-btn:active:not([disabled]), 
+/* 古い競合コードを上書きし、「ボーダーの色を透明にするだけ」の完璧な立体ボタンにします */
+.btn:active:not([disabled]),
+.diff-btn:active:not([disabled]),
+.top-icon-btn:active:not([disabled]),
 #submit-guess-btn:active:not([disabled]),
 .flat-share-cluster .btn:active {
-    border-bottom: none !important;
-    transform: translateY(2px) !important; /* 沈み込みを4pxから2pxに控えめにします */
-    box-shadow: 0 1px 2px rgba(0,0,0,0.1) !important;
+    transform: translateY(4px) !important;       /* 下に4pxずらす */
+    border-bottom-color: transparent !important; /* ★太さは維持したまま、色だけ透明にする */
+    background-clip: padding-box !important;     /* 透明になった部分から背景色が漏れるのを防ぐ */
     margin-bottom: 0 !important;
+    top: 0 !important;
+}
+
+/* ==========================================
+   記録モーダルのカクつき防止（高さを固定）
+========================================== */
+/* タブを切り替えてもウィンドウの大きさが変わらないように、最小の高さを確保します */
+#all-stats-modal .modal-content {
+    min-height: 450px;
+    display: flex;
+    flex-direction: column;
+}
+#stats-view-normal, #stats-view-endless {
+    flex-grow: 1; /* 余った空間を埋めて高さを均等にする */
 }
