@@ -2587,24 +2587,40 @@ async function decompressFromBase64(base64) {
   return decompressedText;
 }
 
-// データの書き出し（エクスポート）※asyncを追加
+// データの書き出し（エクスポート）
 async function exportLocaData() {
+  // ① エンドレスモードのデータから、巨大化の原因（履歴や駅のフルデータ）を削除して軽量化します
+  let endlessDeckData = localStorage.getItem("ekiLocateEndlessDeck");
+  if (endlessDeckData) {
+    try {
+      let parsedDeck = JSON.parse(endlessDeckData);
+      
+      // プレイ途中の盤面履歴や、前回・今回の駅データを切り捨てます（スコアと山札だけ残す）
+      delete parsedDeck.history;
+      delete parsedDeck.currentStation;
+      delete parsedDeck.lastAnswerStation;
+      
+      endlessDeckData = JSON.stringify(parsedDeck);
+    } catch (e) {
+      console.warn("エンドレスデータの軽量化に失敗しました", e);
+    }
+  }
+
+  // ② 進行中の盤面状態（state）は、日付またぎバグの温床となるため引き継ぎ対象から完全に除外します
   const data = {
-    game: "EkiLocate", // 駅ドルと混ざらないための「駅ロケ専用」の証明タグ
+    game: "EkiLocate", 
     stats: localStorage.getItem("ekiLocateStatsV2"),
-    endlessDeck: localStorage.getItem("ekiLocateEndlessDeck"),
+    endlessDeck: endlessDeckData, // 軽量化済みのデータをセット
     endlessHighScore: localStorage.getItem("ekiLocateEndlessHighScore"),
     endlessMaxCombo: localStorage.getItem("ekiLocateEndlessMaxCombo"),
     meta: localStorage.getItem("ekiLocateMeta"),
-    settings: localStorage.getItem("ekiLocateSettings"),
-    // 進行中の盤面状態も引き継げるように追加
-    // state: localStorage.getItem("ekiLocateStateV2") 
+    settings: localStorage.getItem("ekiLocateSettings")
   };
   
   const payloadString = JSON.stringify(data);
   const secureData = JSON.stringify({ payload: payloadString, sig: generateLocaChecksum(payloadString) });
   
-  // 【変更】エンコードする前に gzip 圧縮をかけます
+  // ③ 圧縮してBase64に変換します
   try {
     const code = await compressToBase64(secureData);
     
@@ -2619,28 +2635,29 @@ async function exportLocaData() {
   }
 }
 
-// データの読み込み（インポート）※asyncを追加
+// データの読み込み（インポート）
 async function importLocaData() {
   const code = prompt("引き継ぎコードを入力してください:");
   if (!code) return;
   
   try {
-    // 【変更】Base64を解凍（解凍）してからパースします
+    // 圧縮されたBase64コードを解凍して元の文字列に戻します
     const decompressedStr = await decompressFromBase64(code);
     const secureData = JSON.parse(decompressedStr);
     
+    // 改ざん（チェックサム）確認
     if (generateLocaChecksum(secureData.payload) !== secureData.sig) throw new Error("コードが改ざんされているか、破損しています。");
     
     const parsed = JSON.parse(secureData.payload);
     if (parsed.game !== "EkiLocate") throw new Error("このコードは駅ロケ用ではありません。（他のゲームのコードは使えません）");
     
+    // 各種戦績や設定データを復元します（進行中の盤面 state は復元しません）
     if (parsed.stats) localStorage.setItem("ekiLocateStatsV2", parsed.stats);
     if (parsed.endlessDeck) localStorage.setItem("ekiLocateEndlessDeck", parsed.endlessDeck);
     if (parsed.endlessHighScore) localStorage.setItem("ekiLocateEndlessHighScore", parsed.endlessHighScore);
     if (parsed.endlessMaxCombo) localStorage.setItem("ekiLocateEndlessMaxCombo", parsed.endlessMaxCombo);
     if (parsed.meta) localStorage.setItem("ekiLocateMeta", parsed.meta);
     if (parsed.settings) localStorage.setItem("ekiLocateSettings", parsed.settings);
-    // if (parsed.state) localStorage.setItem("ekiLocateStateV2", parsed.state);
     
     alert("データの引き継ぎに成功しました！ページを再読み込みします。");
     location.reload();
