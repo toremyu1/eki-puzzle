@@ -140,44 +140,60 @@ def generate_answers():
                 "pref": candidate_hard['pref'], "municipality": candidate_hard['municipality']
             }
 
+# ==============================================================
     # 4. JSONファイルへの書き込み（直近3日間は上書きしない安全仕様）
-    for d in range(today_index, today_index + 36):
-        target_date = base_date + timedelta(days=d)
+    # ==============================================================
+    # ファイルを何度も開閉せず、キャッシュを利用して一括処理します
+    cache_hashes = {}
+    cache_admin = {}
+
+    # generated_hashes には「今日から42日後」までのデータが揃っているため、
+    # rangeを使わずにこの辞書の中身をそのままイテレート（反復）します。
+    for date_str, modes_data in generated_hashes.items():
+        target_date = datetime.strptime(date_str, '%Y-%m-%d').replace(tzinfo=timezone.utc)
+        d_current = (target_date.date() - base_date.date()).days
         year_str = str(target_date.year)
-        date_str = target_date.strftime('%Y-%m-%d')
         
         filepath_hash = f'answers/{year_str}.json'
         filepath_admin = f'answers_admin/{year_str}_admin.json'
 
-        # 本番用ファイル更新
-        existing_hashes = {}
-        if os.path.exists(filepath_hash):
-            with open(filepath_hash, 'r', encoding='utf-8') as f:
-                existing_hashes = json.load(f)
+        # キャッシュになければ、ファイルから読み込む（または新規作成）
+        if filepath_hash not in cache_hashes:
+            if os.path.exists(filepath_hash):
+                with open(filepath_hash, 'r', encoding='utf-8') as f:
+                    cache_hashes[filepath_hash] = json.load(f)
+            else:
+                cache_hashes[filepath_hash] = {}
                 
-        if d <= today_index + 3:
-            if date_str not in existing_hashes:
-                existing_hashes[date_str] = generated_hashes[date_str]
-        else:
-            existing_hashes[date_str] = generated_hashes[date_str]
+        if filepath_admin not in cache_admin:
+            if os.path.exists(filepath_admin):
+                with open(filepath_admin, 'r', encoding='utf-8') as f:
+                    cache_admin[filepath_admin] = json.load(f)
+            else:
+                cache_admin[filepath_admin] = {}
 
-        with open(filepath_hash, 'w', encoding='utf-8') as f:
-            json.dump(existing_hashes, f, ensure_ascii=False, separators=(',', ':'))
+        # 保護対象期間の判定（今日から3日後までは上書きしない）
+        is_protected = (d_current <= today_index + 3)
 
-        # 管理者用ファイル更新
-        existing_admin = {}
-        if os.path.exists(filepath_admin):
-            with open(filepath_admin, 'r', encoding='utf-8') as f:
-                existing_admin = json.load(f)
-                
-        if d <= today_index + 3:
-            if date_str not in existing_admin:
-                existing_admin[date_str] = generated_admin[date_str]
-        else:
-            existing_admin[date_str] = generated_admin[date_str]
+        # 本番用ファイルの更新
+        # 「保護期間中」かつ「すでにデータが存在する」場合を除き、書き込む
+        if not (is_protected and date_str in cache_hashes[filepath_hash]):
+            cache_hashes[filepath_hash][date_str] = generated_hashes[date_str]
+            
+        # 管理者用ファイルの更新
+        if not (is_protected and date_str in cache_admin[filepath_admin]):
+            cache_admin[filepath_admin][date_str] = generated_admin[date_str]
 
-        with open(filepath_admin, 'w', encoding='utf-8') as f:
-            json.dump(existing_admin, f, ensure_ascii=False, indent=4)
+    # すべてのデータの処理が終わった後、各ファイルを1回だけ上書き保存する
+    for filepath, data in cache_hashes.items():
+        with open(filepath, 'w', encoding='utf-8') as f:
+            sorted_data = dict(sorted(data.items())) # 日付順に綺麗にソート
+            json.dump(sorted_data, f, ensure_ascii=False, separators=(',', ':'))
+
+    for filepath, data in cache_admin.items():
+        with open(filepath, 'w', encoding='utf-8') as f:
+            sorted_data = dict(sorted(data.items())) # 日付順に綺麗にソート
+            json.dump(sorted_data, f, ensure_ascii=False, indent=4)
 
 if __name__ == "__main__":
     generate_answers()
