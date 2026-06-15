@@ -2608,82 +2608,150 @@ async function decompressFromBase64(base64) {
 }
 
 // データの書き出し（エクスポート）
+// 修正版のエクスポート関数
 async function exportLocaData() {
-  // ① エンドレスモードのデータから、巨大化の原因（履歴や駅のフルデータ）を削除して軽量化します
-  let endlessDeckData = localStorage.getItem("ekiLocateEndlessDeck");
-  if (endlessDeckData) {
-    try {
-      let parsedDeck = JSON.parse(endlessDeckData);
-      
-      // プレイ途中の盤面履歴や、前回・今回の駅データを切り捨てます（スコアと山札だけ残す）
-      delete parsedDeck.history;
-      delete parsedDeck.currentStation;
-      delete parsedDeck.lastAnswerStation;
-      
-      endlessDeckData = JSON.stringify(parsedDeck);
-    } catch (e) {
-      console.warn("エンドレスデータの軽量化に失敗しました", e);
-    }
-  }
-
-  // ② 進行中の盤面状態（state）は、日付またぎバグの温床となるため引き継ぎ対象から完全に除外します
-  const data = {
-    game: "EkiLocate", 
-    stats: localStorage.getItem("ekiLocateStatsV2"),
-    endlessDeck: endlessDeckData, // 軽量化済みのデータをセット
-    endlessHighScore: localStorage.getItem("ekiLocateEndlessHighScore"),
-    endlessMaxCombo: localStorage.getItem("ekiLocateEndlessMaxCombo"),
-    meta: localStorage.getItem("ekiLocateMeta"),
-    settings: localStorage.getItem("ekiLocateSettings")
-  };
-  
-  const payloadString = JSON.stringify(data);
-  const secureData = JSON.stringify({ payload: payloadString, sig: generateLocaChecksum(payloadString) });
-  
-  // ③ 圧縮してBase64に変換します
   try {
+    // 1. 通常・Hardモードの戦績を最低限の数値だけ抽出
+    const statsData = JSON.parse(localStorage.getItem("ekiLocateStatsV2") || "{}");
+    const n = statsData.normal || { played: 0, won: 0, currentStreak: 0, maxStreak: 0, dist: [] };
+    const h = statsData.hard || { played: 0, won: 0, currentStreak: 0, maxStreak: 0, dist: [] };
+
+    // 2. エンドレスとメタ、設定の最低限の数値
+    const eScore = parseInt(localStorage.getItem("ekiLocateEndlessHighScore") || "0", 10);
+    const eCombo = parseInt(localStorage.getItem("ekiLocateEndlessMaxCombo") || "0", 10);
+    const metaData = JSON.parse(localStorage.getItem("ekiLocateMeta") || "{}");
+    const settingsData = JSON.parse(localStorage.getItem("ekiLocateSettings") || "{}");
+
+    // 3. 【核心】駅図鑑（配列）をビット列に変換
+    // 全駅のフラグを '0' か '1' の文字列として結合する
+    const unlockedList = metaData.unlockedStations || [];
+    let stationBitString = "";
+    for (let i = 0; i < locaStations.length; i++) {
+      stationBitString += unlockedList.includes(locaStations[i].kanji) ? "1" : "0";
+    }
+
+    // ビット文字列(01011...)を、文字数削減のために16進数（または36進数）の塊にコンパパック
+    // ここではさらに短くするため、後ほどの全データJSON化の段階に回します。
+
+    // 図鑑リストを取得（ない場合は空配列）
+    const unlockedList = metaData.unlockedStations || [];
+    let stationBitString = "";
+
+    // 全ての出題可能駅を順番にチェックし、0と1の文字列を作ります
+    for (let i = 0; i < locaStations.length; i++) {
+      
+      if (unlockedList.includes(locaStations[i].kanji)) {
+        // プレイヤーがその駅を持っていれば「1」を追加
+        stationBitString += "1";
+      } else {
+        // 持っていなければ「0」を追加
+        stationBitString += "0";
+      }
+  
+    }
+
+// ※この後、作成した stationBitString をペイロード（保存データ）の中に含めて圧縮します。
+
+    // 4. 格納する大容量データを数値とフラグだけに絞り込んでJSON化
+    const miniPayload = {
+      n: [n.played, n.won, n.currentStreak, n.maxStreak, n.dist || []],
+      h: [h.played, h.won, h.currentStreak, h.maxStreak, h.dist || []],
+      e: [eScore, eCombo],
+      m: [metaData.consecutiveLoginDays || 0, metaData.consecutiveClearDays || 0, metaData.firstLoginDate || "", metaData.lastLoginDate || "", metaData.lastClearDate || ""],
+      s: [settingsData.theme || "", settingsData.volume || 50],
+      b: stationBitString // 010111... という軽量なフラグ文字列
+    };
+
+    const payloadString = JSON.stringify(miniPayload);
+    const secureData = JSON.stringify({ payload: payloadString, sig: generateLocaChecksum(payloadString) });
+    
+    // 5. 圧縮してBase64に変換
     const code = await compressToBase64(secureData);
     
     navigator.clipboard.writeText(code).then(() => {
-      alert("駅ロケ専用の引き継ぎコードをコピーしました！\nメモ帳などに貼り付けて保管してください。");
+      alert("コンパクト引き継ぎコードをコピーしました！");
     }).catch(() => {
-      prompt("コピーに失敗しました。以下のコードを手動でコピーしてください:", code);
+      prompt("以下のコードをコピーしてください:", code);
     });
   } catch (e) {
     console.error("圧縮エラー:", e);
-    alert("コードの生成中にエラーが発生しました。");
+    alert("コードの生成に失敗しました。");
   }
 }
 
 // データの読み込み（インポート）
+// 修正版のインポート関数
 async function importLocaData() {
   const code = prompt("引き継ぎコードを入力してください:");
   if (!code) return;
   
   try {
-    // 圧縮されたBase64コードを解凍して元の文字列に戻します
     const decompressedStr = await decompressFromBase64(code);
     const secureData = JSON.parse(decompressedStr);
     
-    // 改ざん（チェックサム）確認
-    if (generateLocaChecksum(secureData.payload) !== secureData.sig) throw new Error("コードが改ざんされているか、破損しています。");
+    if (generateLocaChecksum(secureData.payload) !== secureData.sig) {
+      throw new Error("コードが破損しています。");
+    }
     
     const parsed = JSON.parse(secureData.payload);
-    if (parsed.game !== "EkiLocate") throw new Error("このコードは駅ロケ用ではありません。（他のゲームのコードは使えません）");
     
-    // 各種戦績や設定データを復元します（進行中の盤面 state は復元しません）
-    if (parsed.stats) localStorage.setItem("ekiLocateStatsV2", parsed.stats);
-    if (parsed.endlessDeck) localStorage.setItem("ekiLocateEndlessDeck", parsed.endlessDeck);
-    if (parsed.endlessHighScore) localStorage.setItem("ekiLocateEndlessHighScore", parsed.endlessHighScore);
-    if (parsed.endlessMaxCombo) localStorage.setItem("ekiLocateEndlessMaxCombo", parsed.endlessMaxCombo);
-    if (parsed.meta) localStorage.setItem("ekiLocateMeta", parsed.meta);
-    if (parsed.settings) localStorage.setItem("ekiLocateSettings", parsed.settings);
+    // 1. 通常・Hardの戦績を復元
+    const newStats = {
+      normal: { played: parsed.n[0], won: parsed.n[1], currentStreak: parsed.n[2], maxStreak: parsed.n[3], dist: parsed.n[4], clearedDates: [] },
+      hard: { played: parsed.h[0], won: parsed.h[1], currentStreak: parsed.h[2], maxStreak: parsed.h[3], dist: parsed.h[4], clearedDates: [] }
+    };
+    localStorage.setItem("ekiLocateStatsV2", JSON.stringify(newStats));
+
+    // 2. エンドレスのハイスコア
+    localStorage.setItem("ekiLocateEndlessHighScore", parsed.e[0].toString());
+    localStorage.setItem("ekiLocateEndlessMaxCombo", parsed.e[1].toString());
+
+    // 3. 【核心】ビット列から駅図鑑の漢字リストを逆生成
+    const unlockedStations = [];
+    const bitStr = parsed.b;
+    for (let i = 0; i < bitStr.length; i++) {
+      if (bitStr[i] === "1" && locaStations[i]) {
+        unlockedStations.push(locaStations[i].kanji);
+      }
+    }
+
+    const unlockedStations = [];
+    // 読み込んだセーブデータから、0と1の文字列を取り出します
+    const bitStr = parsed.b; 
+
+    // 文字列の先頭から1文字ずつループして確認していきます
+    for (let i = 0; i < bitStr.length; i++) {
+  
+      // 文字が「1」であり、かつ辞書のその順番に駅が存在すれば復元対象です
+      if (bitStr[i] === "1" && locaStations[i]) {
+        // 辞書から該当する駅の漢字名を取り出し、図鑑リストに復活させます
+        unlockedStations.push(locaStations[i].kanji);
+      }
+  
+    }
+
+// ※この後、復元した unlockedStations をメタデータ（newMeta）にセットして保存します。
+
+    // 4. メタデータの復元
+    const newMeta = {
+      consecutiveLoginDays: parsed.m[0],
+      consecutiveClearDays: parsed.m[1],
+      firstLoginDate: parsed.m[2],
+      lastLoginDate: parsed.m[3],
+      lastClearDate: parsed.m[4],
+      unlockedStations: unlockedStations
+    };
+    localStorage.setItem("ekiLocateMeta", JSON.stringify(newMeta));
+
+    // 5. 設定の復元
+    const newSettings = { theme: parsed.s[0], volume: parsed.s[1], fontsize: "normal" };
+    localStorage.setItem("ekiLocateSettings", JSON.stringify(newSettings));
     
-    alert("データの引き継ぎに成功しました！ページを再読み込みします。");
+    alert("データの引き継ぎに成功しました！");
     location.reload();
   } catch (e) {
     console.error("復元エラー:", e);
-    alert("エラー: 無効なコードです。\n" + (e.message || ""));
+    alert("エラー: 無効なコードです。");
   }
 }
 
