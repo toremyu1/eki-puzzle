@@ -179,51 +179,51 @@ def generate_answers():
         filepath_hash = f'answers/{year_str}.json'
         filepath_admin = f'answers_admin/{year_str}_admin.json'
 
-    # キャッシュになければ、ファイルから読み込む（初回のみ実行される）
-    if filepath_hash not in cache_hashes:
-        if os.path.exists(filepath_hash):
-            with open(filepath_hash, 'r', encoding='utf-8') as f:
-                cache_hashes[filepath_hash] = json.load(f)
-        else:
-            cache_hashes[filepath_hash] = {}
+        # キャッシュになければ、ファイルから読み込む（初回のみ実行される）
+        if filepath_hash not in cache_hashes:
+            if os.path.exists(filepath_hash):
+                with open(filepath_hash, 'r', encoding='utf-8') as f:
+                    cache_hashes[filepath_hash] = json.load(f)
+            else:
+                cache_hashes[filepath_hash] = {}
                 
-    if filepath_admin not in cache_admin:
-        if os.path.exists(filepath_admin):
-            with open(filepath_admin, 'r', encoding='utf-8') as f:
-                cache_admin[filepath_admin] = json.load(f)
-        else:
-            cache_admin[filepath_admin] = {}
+        if filepath_admin not in cache_admin:
+            if os.path.exists(filepath_admin):
+                with open(filepath_admin, 'r', encoding='utf-8') as f:
+                    cache_admin[filepath_admin] = json.load(f)
+            else:
+                cache_admin[filepath_admin] = {}
 
-    # ---------------------------------------------------------
-    # 【重要】保護ロジック：今日から3日後までは上書きしない
-    # ---------------------------------------------------------
-    if date_str not in cache_hashes[filepath_hash]:
-        cache_hashes[filepath_hash][date_str] = {}
-    if date_str not in cache_admin[filepath_admin]:
-        cache_admin[filepath_admin][date_str] = {}
+        # ---------------------------------------------------------
+        # 【重要】保護ロジック：今日から3日後までは上書きしない
+        # ---------------------------------------------------------
+        if date_str not in cache_hashes[filepath_hash]:
+            cache_hashes[filepath_hash][date_str] = {}
+        if date_str not in cache_admin[filepath_admin]:
+            cache_admin[filepath_admin][date_str] = {}
             
-    is_protected = (d_current <= today_index + 3)
+        is_protected = (d_current <= today_index + 3)
 
-    for mode_str, hashed_text in modes_data.items():
-        # 保護対象期間で、かつ既にJSON内に答えが書き込み済みの場合はスキップ
-        if is_protected and mode_str in cache_hashes[filepath_hash][date_str]:
-            # ※管理者用も同様にスキップ
-            continue
+        for mode_str, hashed_text in modes_data.items():
+            # 保護対象期間で、かつ既にJSON内に答えが書き込み済みの場合はスキップ
+            if is_protected and mode_str in cache_hashes[filepath_hash][date_str]:
+                # ※管理者用も同様にスキップ
+                continue
             
-        # それ以外（保護期間外、またはJSONにまだ存在しない新規データ）なら書き込む
-        cache_hashes[filepath_hash][date_str][mode_str] = hashed_text
-        cache_admin[filepath_admin][date_str][mode_str] = generated_admin[date_str][mode_str]
+            # それ以外（保護期間外、またはJSONにまだ存在しない新規データ）なら書き込む
+            cache_hashes[filepath_hash][date_str][mode_str] = hashed_text
+            cache_admin[filepath_admin][date_str][mode_str] = generated_admin[date_str][mode_str]
             
     # ループが終わった後、更新されたデータを1回だけファイルに書き込む
     for filepath, data in cache_hashes.items():
         with open(filepath, 'w', encoding='utf-8') as f:
-            sorted_data = dict(sorted(data.items()))                    # 日付キーでソートして保存するとファイルが綺麗に保たれます
-            json.dump(data, f, ensure_ascii=False, separators=(',', ':'))
+            sorted_data = dict(sorted(data.items()))                    # 日付キーでソートして保存
+            json.dump(sorted_data, f, ensure_ascii=False, separators=(',', ':'))
 
     for filepath, data in cache_admin.items():
         with open(filepath, 'w', encoding='utf-8') as f:
             sorted_data = dict(sorted(data.items()))
-            json.dump(data, f, ensure_ascii=False, indent=4)
+            json.dump(sorted_data, f, ensure_ascii=False, indent=4)
 
     # 最後に state.json を保存
     with open(STATE_FILE, 'w', encoding='utf-8') as f:
