@@ -49,6 +49,10 @@ def generate_answers():
         valid_stations = []
         for s in raw_stations:
             companies = s.get('companies', [])
+
+            # selectTodayLocaStation と同等のフィルタ
+            if not s.get('pref') or not s.get('municipality') or not s.get('address') or s.get('min_km') is None or not companies:
+                continue
             
             # initLocaGame と同等のフィルタ
             if s.get('latitude') is None or s.get('longitude') is None:
@@ -59,11 +63,7 @@ def generate_answers():
                 continue
             if s.get('endDay') is not None and s.get('endDay') != 999999 and s.get('endDay') <= target_d - 33:
                 continue
-                
-            # selectTodayLocaStation と同等のフィルタ
-            if not s.get('pref') or not s.get('municipality') or not s.get('address') or s.get('min_km') is None or not companies:
-                continue
-                
+                                
             valid_stations.append(s)
 
         generated_hashes = {}
