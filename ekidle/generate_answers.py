@@ -96,9 +96,14 @@ def generate_answers():
             for s in mode_stations:
                 s_start = s.get('startDay')
                 s_end = s.get('endDay')
-                if s_start is None or s_start > d: continue
-                if s_end is None or s_end > d or s_end == 999999:
-                    active_stations.append(s)
+                
+                # if s_start is None or s_start > d: continue
+                # if s_end is None or s_end > d or s_end == 999999:
+                #     active_stations.append(s)
+                # Noneを確実にはじく
+                if s_start is not None and s_start <= d:
+                    if s_end is None or s_end > d or s_end == 999999:
+                        active_stations.append(s)
                     
             if not active_stations:
                 active_stations = mode_stations
