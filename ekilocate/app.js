@@ -2540,8 +2540,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 // ==========================================
-// データのエクスポートとインポート（駅ロケ専用・改ざん防止機能付き）
+// データのエクスポートとインポート（駅ロケ専用・圧縮＆改ざん防止機能付き）
 // ==========================================
+
+// 【既存】改ざん防止用のハッシュ生成関数
 function generateLocaChecksum(str) {
   let hash = 0;
   for (let i = 0; i < str.length; i++) {
@@ -2552,8 +2554,41 @@ function generateLocaChecksum(str) {
   return hash.toString(36);
 }
 
-// データの書き出し（エクスポート）
-function exportLocaData() {
+// 【新規追加】データを圧縮・解凍するための便利関数
+async function compressToBase64(str) {
+  // 1. 文字列をバイトデータ（Blob）に変換し、gzip形式で圧縮する
+  const stream = new Blob([str]).stream();
+  const compressedStream = stream.pipeThrough(new CompressionStream('gzip'));
+  const compressedBlob = await new Response(compressedStream).blob();
+  const buffer = await compressedBlob.arrayBuffer();
+  
+  // 2. 圧縮されたバイトデータをBase64文字列に変換する
+  const bytes = new Uint8Array(buffer);
+  let binary = '';
+  // ※データが大きい場合のエラーを防ぐため、分割して文字列化します
+  for (let i = 0; i < bytes.byteLength; i += 1024) {
+    binary += String.fromCharCode.apply(null, bytes.subarray(i, i + 1024));
+  }
+  return btoa(binary);
+}
+
+async function decompressFromBase64(base64) {
+  // 1. Base64文字列をバイトデータに戻す
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  
+  // 2. gzip形式の圧縮データを解凍して元の文字列に戻す
+  const stream = new Blob([bytes]).stream();
+  const decompressedStream = stream.pipeThrough(new DecompressionStream('gzip'));
+  const decompressedText = await new Response(decompressedStream).text();
+  return decompressedText;
+}
+
+// データの書き出し（エクスポート）※asyncを追加
+async function exportLocaData() {
   const data = {
     game: "EkiLocate", // 駅ドルと混ざらないための「駅ロケ専用」の証明タグ
     stats: localStorage.getItem("ekiLocateStatsV2"),
@@ -2561,27 +2596,39 @@ function exportLocaData() {
     endlessHighScore: localStorage.getItem("ekiLocateEndlessHighScore"),
     endlessMaxCombo: localStorage.getItem("ekiLocateEndlessMaxCombo"),
     meta: localStorage.getItem("ekiLocateMeta"),
-    settings: localStorage.getItem("ekiLocateSettings")
+    settings: localStorage.getItem("ekiLocateSettings"),
+    // 進行中の盤面状態も引き継げるように追加
+    // state: localStorage.getItem("ekiLocateStateV2") 
   };
   
   const payloadString = JSON.stringify(data);
   const secureData = JSON.stringify({ payload: payloadString, sig: generateLocaChecksum(payloadString) });
-  const code = btoa(encodeURIComponent(secureData));
   
-  navigator.clipboard.writeText(code).then(() => {
-    alert("駅ロケ専用の引き継ぎコードをコピーしました！\nメモ帳などに貼り付けて保管してください。");
-  }).catch(() => {
-    prompt("コピーに失敗しました。以下のコードを手動でコピーしてください:", code);
-  });
+  // 【変更】エンコードする前に gzip 圧縮をかけます
+  try {
+    const code = await compressToBase64(secureData);
+    
+    navigator.clipboard.writeText(code).then(() => {
+      alert("駅ロケ専用の引き継ぎコードをコピーしました！\nメモ帳などに貼り付けて保管してください。");
+    }).catch(() => {
+      prompt("コピーに失敗しました。以下のコードを手動でコピーしてください:", code);
+    });
+  } catch (e) {
+    console.error("圧縮エラー:", e);
+    alert("コードの生成中にエラーが発生しました。");
+  }
 }
 
-// データの読み込み（インポート）
-function importLocaData() {
+// データの読み込み（インポート）※asyncを追加
+async function importLocaData() {
   const code = prompt("引き継ぎコードを入力してください:");
   if (!code) return;
   
   try {
-    const secureData = JSON.parse(decodeURIComponent(atob(code)));
+    // 【変更】Base64を解凍（解凍）してからパースします
+    const decompressedStr = await decompressFromBase64(code);
+    const secureData = JSON.parse(decompressedStr);
+    
     if (generateLocaChecksum(secureData.payload) !== secureData.sig) throw new Error("コードが改ざんされているか、破損しています。");
     
     const parsed = JSON.parse(secureData.payload);
@@ -2593,11 +2640,13 @@ function importLocaData() {
     if (parsed.endlessMaxCombo) localStorage.setItem("ekiLocateEndlessMaxCombo", parsed.endlessMaxCombo);
     if (parsed.meta) localStorage.setItem("ekiLocateMeta", parsed.meta);
     if (parsed.settings) localStorage.setItem("ekiLocateSettings", parsed.settings);
+    // if (parsed.state) localStorage.setItem("ekiLocateStateV2", parsed.state);
     
     alert("データの引き継ぎに成功しました！ページを再読み込みします。");
     location.reload();
   } catch (e) {
-    alert("エラー: 無効なコードです。\n" + e.message);
+    console.error("復元エラー:", e);
+    alert("エラー: 無効なコードです。\n" + (e.message || ""));
   }
 }
 
