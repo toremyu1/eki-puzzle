@@ -135,7 +135,7 @@ def generate_answers():
             # 次回出禁日をセットする
             next_available_day[candidate['yomi']] = d + lookback + 1
 
-            # 【重要】0日目から計算はするが、保存するのは「今日から15日後」の分だけ
+            # 今日から43日後までのデータだけ保存する
             if d >= today_index:
                 target_date = base_date + timedelta(days=d)
                 date_str = target_date.strftime('%Y-%m-%d')
