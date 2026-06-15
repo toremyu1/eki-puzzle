@@ -675,20 +675,26 @@ async function selectTodayStation() {
     }
     
     // ==========================================
-    // ④ 不要になった過去の出禁データを掃除して保存
+    // ④ 不要になった過去の出禁データを掃除して保存（移し替え方式）
     // ==========================================
+    // 保存用の新しい箱（オブジェクト）を準備し、今日の日付を記録します
+    let stateToSave = { 
+      lastCalculatedDay: currentDayIndex, 
+      nextAvailableDay: {} 
+    };
+    
+    // 古い帳簿から1つずつデータを取り出します
     for (const yomi in nextAvailableDay) {
-      if (nextAvailableDay[yomi] <= currentDayIndex) {
-        delete nextAvailableDay[yomi];
+      // 出禁解除日が「今日より未来」のデータだけを、新しい箱にコピーします
+      if (nextAvailableDay[yomi] > currentDayIndex) {
+        stateToSave.nextAvailableDay[yomi] = nextAvailableDay[yomi];
       }
     }
     
-    // 今日の答えをローカルに保存
-    localStorage.setItem(rngStateKey, JSON.stringify({
-      lastCalculatedDay: currentDayIndex,
-      nextAvailableDay: nextAvailableDay
-    }));
-  }
+    // 今日の答え（シミュレーション状態）をローカルに保存します
+    localStorage.setItem(rngStateKey, JSON.stringify(stateToSave));
+  } // ← catchブロックの終わり
+}
 
 
 // ==========================================
