@@ -242,7 +242,7 @@ def get_todays_sub_pages():
         chunks[weekday] = ["あ"]
 
     # ★テスト用に「あ」のページだけを強制的に指定します
-    # return ["と"], weekday
+    return ["と"], weekday
 
     return chunks[weekday], weekday
 
