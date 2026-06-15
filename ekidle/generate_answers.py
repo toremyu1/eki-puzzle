@@ -5,6 +5,7 @@ from datetime import datetime, timedelta, timezone
 import requests
 
 SECRET_SALT = "EkiDoru_Secret_2026!"
+STATE_FILE = "state.json"
 
 def math_imul(a, b):
     return ((a & 0xffffffff) * (b & 0xffffffff)) & 0xffffffff
@@ -48,40 +49,61 @@ def generate_answers():
     os.makedirs('answers', exist_ok=True)
     os.makedirs('answers_admin', exist_ok=True)
 
+    # ---------------------------------------------------------
+    # 【追加】状態 (state.json) の読み込み
+    # ---------------------------------------------------------
+    app_state = {}
+    if os.path.exists(STATE_FILE):
+        try:
+            with open(STATE_FILE, 'r', encoding='utf-8') as f:
+                app_state = json.load(f)
+            print("state.json を読み込みました。差分のみ計算します。")
+        except Exception as e:
+            print(f"state.json の読み込みに失敗しました。0日目から再計算します: {e}")
+            app_state = {}
+
     # 後でファイルに書き込むためのデータを一時保存する箱
     generated_hashes = {}
     generated_admin = {}
 
-    # 【修正点1】文字数モードごとに、0日目から未来まで一貫してシミュレーションを行う
+    # 計算が必要な最終日（今日から43日後まで担保する）
+    target_day = today_index + 43
+
+    # 文字数モードごとに、0日目から未来まで一貫してシミュレーションを行う
     for mode in [4, 5, 6]:
         mode_stations = [s for s in stations if len(s['yomi']) == mode]
         if not mode_stations: continue
 
         unique_yomi_count = len(set([s['yomi'] for s in mode_stations]))
         lookback = min(1000, int(unique_yomi_count * 0.7))
-        next_available_day = {}
+        
+# state.json から前回の続きを取得（なければ初期値）
+        mode_state = app_state.get(mode_str, {})
+        last_calculated_day = mode_state.get("last_calculated_day", -1)
+        next_available_day = mode_state.get("next_available_day", {})
 
-        # 0日目から、今日＋35日後までを通してループさせる
-        for d in range(0, today_index + 43):
+        # もし既に十分な未来まで計算済みなら、この文字数モードはスキップ
+        if last_calculated_day >= target_day:
+            continue
+
+        # 前回の続き（または0日目）から計算スタート
+        start_day = last_calculated_day + 1
+
+        for d in range(start_day, target_day + 1):
             
-            # 【完全再現2】startDay / endDay の未定義（None）判定をJSの挙動と厳密に合わせる
+            # JSの挙動と厳密に合わせた現役判定
             active_stations = []
             for s in mode_stations:
                 s_start = s.get('startDay')
                 s_end = s.get('endDay')
-                
-                # JS側では startDay が undefined の駅は評価が false になり除外される
-                if s_start is None or s_start > d:
-                    continue
-                
-                # JS側では endDay が undefined、またはdより大きい、または999999の駅が現役扱い
+                if s_start is None or s_start > d: continue
                 if s_end is None or s_end > d or s_end == 999999:
                     active_stations.append(s)
                     
             if not active_stations:
                 active_stations = mode_stations
-
-            # ロック期間中ではない駅を絞り込む
+                
+            # ロック期間の絞り込み
             pool = [s for s in active_stations if next_available_day.get(s['yomi'], 0) <= d]
             if not pool:
                 pool = active_stations
@@ -118,6 +140,12 @@ def generate_answers():
                     "yomi": candidate['yomi']
                 }
 
+        # この文字数モードの状態を更新
+        app_state[mode_str] = {
+            "last_calculated_day": target_day,
+            "next_available_day": next_available_day
+        }
+
     # ---------------------------------------------------------
     # 最後に、生成された43日分のデータを各ファイルに書き込む処理
     # ---------------------------------------------------------
@@ -126,11 +154,10 @@ def generate_answers():
     cache_hashes = {}
     cache_admin = {}
     
-    # ファイルへの書き込み処理
-    for d in range(today_index, today_index + 36):
-        target_date = base_date + timedelta(days=d)
-        year_str = str(target_date.year)
-        date_str = target_date.strftime('%Y-%m-%d')
+        # date_strから「何日目(d)」かを逆算して保護判定に使う
+        date_obj = datetime.strptime(date_str, '%Y-%m-%d').replace(tzinfo=timezone.utc)
+        d_current = (date_obj.date() - base_date.date()).days
+        year_str = str(date_obj.year)
         
         filepath_hash = f'answers/{year_str}.json'
         filepath_admin = f'answers_admin/{year_str}_admin.json'
@@ -150,24 +177,41 @@ def generate_answers():
             else:
                 cache_admin[filepath_admin] = {}
 
-        # データの更新処理（メモリ上のキャッシュを更新するだけ）
-        if d <= today_index + 3:
-            if date_str not in cache_hashes[filepath_hash]:
-                cache_hashes[filepath_hash][date_str] = generated_hashes[date_str]
-            if date_str not in cache_admin[filepath_admin]:
-                cache_admin[filepath_admin][date_str] = generated_admin[date_str]
-        else:
-            cache_hashes[filepath_hash][date_str] = generated_hashes[date_str]
-            cache_admin[filepath_admin][date_str] = generated_admin[date_str]
+        # ---------------------------------------------------------
+        # 【重要】保護ロジック：今日から3日後までは上書きしない
+        # ---------------------------------------------------------
+        if date_str not in cache_hashes[filepath_hash]:
+            cache_hashes[filepath_hash][date_str] = {}
+        if date_str not in cache_admin[filepath_admin]:
+            cache_admin[filepath_admin][date_str] = {}
+            
+        is_protected = (d_current <= today_index + 3)
 
+        for mode_str, hashed_text in modes_data.items():
+            # 保護対象期間で、かつ既にJSON内に答えが書き込み済みの場合はスキップ
+            if is_protected and mode_str in cache_hashes[filepath_hash][date_str]:
+                # ※管理者用も同様にスキップ
+                continue
+            
+            # それ以外（保護期間外、またはJSONにまだ存在しない新規データ）なら書き込む
+            cache_hashes[filepath_hash][date_str][mode_str] = hashed_text
+            cache_admin[filepath_admin][date_str][mode_str] = generated_admin[date_str][mode_str]
+            
     # ループが終わった後、更新されたデータを1回だけファイルに書き込む
     for filepath, data in cache_hashes.items():
         with open(filepath, 'w', encoding='utf-8') as f:
+            sorted_data = dict(sorted(data.items()))                    # 日付キーでソートして保存するとファイルが綺麗に保たれます
             json.dump(data, f, ensure_ascii=False, separators=(',', ':'))
 
     for filepath, data in cache_admin.items():
         with open(filepath, 'w', encoding='utf-8') as f:
             json.dump(data, f, ensure_ascii=False, indent=4)
+
+    # 最後に state.json を保存
+    with open(STATE_FILE, 'w', encoding='utf-8') as f:
+        sorted_data = dict(sorted(data.items()))
+        json.dump(app_state, f, ensure_ascii=False)
+    print("処理が完了し、状態を保存しました。")
 
 if __name__ == "__main__":
     generate_answers()
