@@ -119,8 +119,13 @@ def generate_answers():
                 }
 
     # ---------------------------------------------------------
-    # 最後に、生成された33日分のデータを各ファイルに書き込む処理
+    # 最後に、生成された43日分のデータを各ファイルに書き込む処理
     # ---------------------------------------------------------
+    
+    # 【軽量化版】ファイルを何度も開閉せず、キャッシュを利用して一括処理する
+    cache_hashes = {}
+    cache_admin = {}
+    
     # ファイルへの書き込み処理
     for d in range(today_index, today_index + 36):
         target_date = base_date + timedelta(days=d)
@@ -130,38 +135,39 @@ def generate_answers():
         filepath_hash = f'answers/{year_str}.json'
         filepath_admin = f'answers_admin/{year_str}_admin.json'
 
-        # 本番用（ハッシュ）ファイルの更新
-        existing_hashes = {}
-        if os.path.exists(filepath_hash):
-            with open(filepath_hash, 'r', encoding='utf-8') as f:
-                existing_hashes = json.load(f)
+        # キャッシュになければ、ファイルから読み込む（初回のみ実行される）
+        if filepath_hash not in cache_hashes:
+            if os.path.exists(filepath_hash):
+                with open(filepath_hash, 'r', encoding='utf-8') as f:
+                    cache_hashes[filepath_hash] = json.load(f)
+            else:
+                cache_hashes[filepath_hash] = {}
                 
-        # 【対処法】ここが重要ポイント
-        # d が「今日より3日後」以前の場合は、すでにデータがあれば絶対に上書きしない（プレイ中の通信エラーを防ぐため）
+        if filepath_admin not in cache_admin:
+            if os.path.exists(filepath_admin):
+                with open(filepath_admin, 'r', encoding='utf-8') as f:
+                    cache_admin[filepath_admin] = json.load(f)
+            else:
+                cache_admin[filepath_admin] = {}
+
+        # データの更新処理（メモリ上のキャッシュを更新するだけ）
         if d <= today_index + 3:
-            if date_str not in existing_hashes:
-                existing_hashes[date_str] = generated_hashes[date_str]
+            if date_str not in cache_hashes[filepath_hash]:
+                cache_hashes[filepath_hash][date_str] = generated_hashes[date_str]
+            if date_str not in cache_admin[filepath_admin]:
+                cache_admin[filepath_admin][date_str] = generated_admin[date_str]
         else:
-            # d が4日後以降の場合は、常に最新の駅データに基づいた答えで強制上書きする
-            existing_hashes[date_str] = generated_hashes[date_str]
+            cache_hashes[filepath_hash][date_str] = generated_hashes[date_str]
+            cache_admin[filepath_admin][date_str] = generated_admin[date_str]
 
-        with open(filepath_hash, 'w', encoding='utf-8') as f:
-            json.dump(existing_hashes, f, ensure_ascii=False, separators=(',', ':'))
+    # ループが終わった後、更新されたデータを1回だけファイルに書き込む
+    for filepath, data in cache_hashes.items():
+        with open(filepath, 'w', encoding='utf-8') as f:
+            json.dump(data, f, ensure_ascii=False, separators=(',', ':'))
 
-        # 管理者用（平文）ファイルの更新（こちらも同様のロジックを適用）
-        existing_admin = {}
-        if os.path.exists(filepath_admin):
-            with open(filepath_admin, 'r', encoding='utf-8') as f:
-                existing_admin = json.load(f)
-                
-        if d <= today_index + 3:
-            if date_str not in existing_admin:
-                existing_admin[date_str] = generated_admin[date_str]
-        else:
-            existing_admin[date_str] = generated_admin[date_str]
-
-        with open(filepath_admin, 'w', encoding='utf-8') as f:
-            json.dump(existing_admin, f, ensure_ascii=False, indent=4)
+    for filepath, data in cache_admin.items():
+        with open(filepath, 'w', encoding='utf-8') as f:
+            json.dump(data, f, ensure_ascii=False, indent=4)
 
 if __name__ == "__main__":
     generate_answers()
