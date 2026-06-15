@@ -609,53 +609,107 @@ async function selectTodayStation() {
 
     let uniqueYomiCount = new Set(strictModeStations.map(s => s.yomi)).size;
     let lookback = Math.min(1000, Math.floor(uniqueYomiCount * 0.7));
-    let nextAvailableDay = {}; 
 
+    // ==========================================
+    // ① ローカルストレージから前回の計算状態を読み込む
+    // ==========================================
+    let nextAvailableDay = {};
+    let startDay = 0;
+    const rngStateKey = `ekidle_rng_state_${currentMode}`; // ユーザーのセーブデータと分けるための専用キー
+    const savedStateStr = localStorage.getItem(rngStateKey);
+
+    if (savedStateStr) {
+      try {
+        const savedState = JSON.parse(savedStateStr);
+        nextAvailableDay = savedState.nextAvailableDay || {};
+        // 前回計算した次の日からスタートする
+        startDay = (savedState.lastCalculatedDay !== undefined) ? savedState.lastCalculatedDay + 1 : 0;
+      } catch (e) {
+        console.error("シミュレーション状態の復元に失敗しました", e);
+      }
+    }
+
+    // もしすでに今日以降まで計算済みならループをスキップ
+    if (startDay <= currentDayIndex) {
+      
+      // ==========================================
+      // ② 高速化版：開業・廃止のイベントキューを準備
+      // ==========================================
+      const arrivalQueue = [...strictModeStations]
+        .filter(s => s.startDay != null)
+        .sort((a, b) => a.startDay - b.startDay);
+
+      const departureQueue = [...strictModeStations]
+        .filter(s => s.endDay != null && s.endDay !== 999999)
+        .sort((a, b) => a.endDay - b.endDay);
+
+      const permanentStations = strictModeStations.filter(s => s.startDay == null);
+      let activeSet = new Set(permanentStations);
+      let arrivalIdx = 0;
+      let departureIdx = 0;
+
+      // startDay以前のイベントを空回しして、activeSetをstartDay時点の状態に進める
+      for (let d = 0; d < startDay; d++) {
+        while (arrivalIdx < arrivalQueue.length && arrivalQueue[arrivalIdx].startDay <= d) {
+          activeSet.add(arrivalQueue[arrivalIdx]);
+          arrivalIdx++;
+        }
+        while (departureIdx < departureQueue.length && departureQueue[departureIdx].endDay <= d) {
+          activeSet.delete(departureQueue[departureIdx]);
+          departureIdx++;
+        }
+      }
+
+    // ==========================================
+    // ③ シミュレーションループ（前回の続きから今日まで）
+    // ==========================================
     for(let d = 0; d <= currentDayIndex; d++){
       
-      let activeStations = [];
-      
-      // d日目の時点で現役だった駅だけを抽出して配列に追加しています
-      for (let i = 0; i < strictModeStations.length; i++) {
-        let s = strictModeStations[i];
-
-        // jsの!=nullはnullとundefinedの両方を弾く
-        if (s.startDay != null && s.startDay <= d && (s.endDay == null || s.endDay > d || s.endDay === 999999)) {
-          activeStations.push(s);
-        }
+      // その日の現役駅を更新（イベント駆動）
+      while (arrivalIdx < arrivalQueue.length && arrivalQueue[arrivalIdx].startDay <= d) {
+        activeSet.add(arrivalQueue[arrivalIdx]);
+        arrivalIdx++;
+      }
+      while (departureIdx < departureQueue.length && departureQueue[departureIdx].endDay <= d) {
+        activeSet.delete(departureQueue[departureIdx]);
+        departureIdx++;
       }
 
-      // もし現役の駅が1つもなければ、全駅を対象にするフォールバック処理です
-      if (activeStations.length === 0) {
-        activeStations = strictModeStations;
-      }
+      let activeStations = Array.from(activeSet);
+      if (activeStations.length === 0) activeStations = strictModeStations;
 
-      let pool = [];
-      
-      // 抽出した現役駅の中から、さらに出禁期間（ロック）を過ぎている駅を絞り込んでいます
-      for (let i = 0; i < activeStations.length; i++) {
-        let s = activeStations[i];
-        
-        if (!nextAvailableDay[s.yomi] || nextAvailableDay[s.yomi] <= d) {
-          pool.push(s);
-        }
-      }
+      // 出禁判定
+      let pool = activeStations.filter(s => !nextAvailableDay[s.yomi] || nextAvailableDay[s.yomi] <= d);
+      if (pool.length === 0) pool = activeStations;  //もし出題できる駅が無ければ全ての駅を対象にする
 
-      // もし候補が1つもなければ、現役駅すべてを候補とするフォールバック処理です
-      if (pool.length === 0) {
-        pool = activeStations;
-      }
-
+      // ハッシュ計算
       let seed = d * 12345 + currentMode * 6789;
       let hash = Math.imul(seed ^ (seed >>> 15), 2246822507);
       hash = Math.imul(hash ^ (hash >>> 13), 3266489909);
       hash = (hash ^ (hash >>> 16)) >>> 0;
 
       let candidate = pool[hash % pool.length];
+      
+      // 次回の出禁日を登録
       nextAvailableDay[candidate.yomi] = d + lookback + 1;
 
       if(d === currentDayIndex) todayStation = candidate;
     } 
+      
+      // ==========================================
+      // ④ 不要になった過去の出禁データを掃除して保存
+      // ==========================================
+      for (const yomi in nextAvailableDay) {
+        if (nextAvailableDay[yomi] <= currentDayIndex) {
+          delete nextAvailableDay[yomi];
+        }
+      }
+
+      localStorage.setItem(rngStateKey, JSON.stringify({
+        lastCalculatedDay: currentDayIndex,
+        nextAvailableDay: nextAvailableDay
+      }));
+    }
   }
 
   // 6. 計算結果をキャッシュに保存して完了
