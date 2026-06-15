@@ -61,18 +61,43 @@ def generate_answers():
                 continue
                 
             # selectTodayLocaStation と同等のフィルタ
-            if not s.get('pref') or not s.get('address') or s.get('min_km') is None or not companies:
+            if not s.get('pref') or not s.get('municipality') or not s.get('address') or s.get('min_km') is None or not companies:
                 continue
                 
             valid_stations.append(s)
 
-        lookback = 1000
-        next_available_day = {}
-        candidate_normal = None
-        candidate_hard = None
+        generated_hashes = {}
+        generated_admin = {}
 
-        # 2. ターゲット日の配列を使って、0日からターゲット日まで歴史をシミュレーション
-        for d in range(0, target_d + 1):
+        # ▼▼ 追加：状態保存ファイル（loca_state.json）の読み込みと変数の準備 ▼▼
+        STATE_FILE = "loca_state.json"
+        app_state = {}
+        next_available_day = {}
+        start_day = 0
+
+        # 前回の計算データがあれば復元する
+        if os.path.exists(STATE_FILE):
+            try:
+                with open(STATE_FILE, 'r', encoding='utf-8') as f:
+                    app_state = json.load(f)
+                    next_available_day = app_state.get("next_available_day", {})
+                    start_day = app_state.get("last_calculated_day", -1) + 1
+                    print("loca_state.json を読み込み、途中から計算を再開します。")
+            except Exception as e:
+                print(f"状態の読み込みに失敗しました。最初から計算します: {e}")
+
+        # ▼▼ 追加・変更：同一座標（get_coord_key）を1つの駅としてカウントし、最大ロック日数を計算 ▼▼
+        unique_stations_count = len(set([get_coord_key(s) for s in valid_stations]))
+        lookback = min(1000, int(unique_stations_count * 0.7))
+        print(f"出題可能なユニーク駅数: {unique_stations_count} / ロック期間: {lookback}日")
+
+        target_day = today_index + 43
+
+        # ==============================================================
+        # JSの自力計算（フォールバック）と1ミリも違わない歴史シミュレーション
+        # ==============================================================
+        # ▼▼ 修正：0からではなく、start_day から目標日までループする ▼▼
+        for d in range(start_day, target_day):
             pool_normal = []
             pool_hard = []
             
@@ -168,9 +193,10 @@ def generate_answers():
         if d <= today_index + 3 and date_str in cache_hashes[filepath_hash]:
             continue
 
-        # キャッシュ（メモリ上）のデータを更新
-        cache_hashes[filepath_hash][date_str] = generated_hashes[date_str]
-        cache_admin[filepath_admin][date_str] = generated_admin[date_str]
+        # ▼▼ 修正：新しく計算されたデータがある場合のみ、メモリ上のデータを更新する ▼▼
+        if date_str in generated_hashes:
+            cache_hashes[filepath_hash][date_str] = generated_hashes[date_str]
+            cache_admin[filepath_admin][date_str] = generated_admin[date_str]
 
     # ループ終了後、更新されたデータを1回だけファイルに書き込む
     for filepath, data in cache_hashes.items():
@@ -183,6 +209,14 @@ def generate_answers():
         with open(filepath, 'w', encoding='utf-8') as f:
             sorted_data = dict(sorted(data.items()))
             json.dump(sorted_data, f, ensure_ascii=False, indent=4)
+
+    # ▼▼ 追加：関数の最後に、どこまで計算したかをセーブする処理 ▼▼
+    app_state["last_calculated_day"] = target_day - 1
+    app_state["next_available_day"] = next_available_day
+
+    with open(STATE_FILE, 'w', encoding='utf-8') as f:
+        json.dump(app_state, f, ensure_ascii=False)
+    print("処理が完了し、状態を保存しました。")
 
 if __name__ == "__main__":
     generate_answers()
