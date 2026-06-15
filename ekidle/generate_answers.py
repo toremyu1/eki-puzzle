@@ -76,6 +76,8 @@ def generate_answers():
 
         unique_yomi_count = len(set([s['yomi'] for s in mode_stations]))
         lookback = min(1000, int(unique_yomi_count * 0.7))
+
+        mode_str = str(mode)
         
         # state.json から前回の続きを取得（なければ初期値）
         mode_state = app_state.get(mode_str, {})
@@ -169,7 +171,7 @@ def generate_answers():
     cache_admin = {}
     
     # date_strから「何日目(d)」かを逆算して保護判定に使う
-   for date_str, modes_data in generated_hashes.items():
+    for date_str, modes_data in generated_hashes.items():
         date_obj = datetime.strptime(date_str, '%Y-%m-%d').replace(tzinfo=timezone.utc)
         d_current = (date_obj.date() - base_date.date()).days
         year_str = str(date_obj.year)
@@ -208,9 +210,9 @@ def generate_answers():
             # ※管理者用も同様にスキップ
             continue
             
-            # それ以外（保護期間外、またはJSONにまだ存在しない新規データ）なら書き込む
-            cache_hashes[filepath_hash][date_str][mode_str] = hashed_text
-            cache_admin[filepath_admin][date_str][mode_str] = generated_admin[date_str][mode_str]
+        # それ以外（保護期間外、またはJSONにまだ存在しない新規データ）なら書き込む
+        cache_hashes[filepath_hash][date_str][mode_str] = hashed_text
+        cache_admin[filepath_admin][date_str][mode_str] = generated_admin[date_str][mode_str]
             
     # ループが終わった後、更新されたデータを1回だけファイルに書き込む
     for filepath, data in cache_hashes.items():
