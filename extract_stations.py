@@ -311,7 +311,12 @@ def fetch_station_details(url):
 
         # これ以降の処理を、現役の表（active_infoboxes）だけで行うようにデータを上書きする
         infoboxes = active_infoboxes
-        # ↑↑↑ ここまで追加 ↑↑↑
+
+        if not infoboxes:
+            # 現役のinfoboxが1つも無い場合は、強制的にエラーデータを返して
+            # 後続の「廃駅」または「完全保護」ロジックに委ねる
+            data["min_km"] = None 
+            return data
 
         # ↓↓↓ ここから追加 ↓↓↓
         best_addr = ""
@@ -677,7 +682,7 @@ def fetch_station_details(url):
 
     # try-except の外に安全装置を置くことで、エラー発生時でも確実に変換させる
     if data["min_km"] == float('inf'):
-        data["min_km"] = 999999
+        data["min_km"] = None
 
     return data
 
