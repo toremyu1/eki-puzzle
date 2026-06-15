@@ -138,6 +138,9 @@ def generate_answers():
     # ==============================================================
     # 4. JSONファイルへの書き込み（本番用と管理者用）
     # ==============================================================
+    cache_hashes = {}
+    cache_admin = {}
+    
     for d in range(today_index, today_index + 36):
         target_date = base_date + timedelta(days=d)
         year_str = str(target_date.year)
@@ -146,42 +149,40 @@ def generate_answers():
         filepath_hash = f'answers/{year_str}.json'
         filepath_admin = f'answers_admin/{year_str}_admin.json'
 
-        # --------------------------------------------------
-        # 本番用ファイル更新
-        # --------------------------------------------------
-        existing_hashes = {}
-        if os.path.exists(filepath_hash):
-            with open(filepath_hash, 'r', encoding='utf-8') as f:
-                existing_hashes = json.load(f)
+        # キャッシュになければファイルから読み込む（各年1回だけ実行される）
+        if filepath_hash not in cache_hashes:
+            if os.path.exists(filepath_hash):
+                with open(filepath_hash, 'r', encoding='utf-8') as f:
+                    cache_hashes[filepath_hash] = json.load(f)
+            else:
+                cache_hashes[filepath_hash] = {}
                 
-        # 【復活】今日から3日間は、すでに過去に生成した答えが存在していれば「絶対に上書きしない」
-        if d <= today_index + 3:
-            if date_str not in existing_hashes:
-                existing_hashes[date_str] = generated_hashes[date_str]
-        else:
-            # 4日目以降の未来は常に最新のシミュレーション結果で上書きする
-            existing_hashes[date_str] = generated_hashes[date_str]
+        if filepath_admin not in cache_admin:
+            if os.path.exists(filepath_admin):
+                with open(filepath_admin, 'r', encoding='utf-8') as f:
+                    cache_admin[filepath_admin] = json.load(f)
+            else:
+                cache_admin[filepath_admin] = {}
 
-        with open(filepath_hash, 'w', encoding='utf-8') as f:
-            json.dump(existing_hashes, f, ensure_ascii=False, separators=(',', ':'))
+        # 保護対象（今日から3日後まで）で、既に書き込み済みの場合はスキップ
+        if d <= today_index + 3 and date_str in cache_hashes[filepath_hash]:
+            continue
 
-        # --------------------------------------------------
-        # 管理者用ファイル更新
-        # --------------------------------------------------
-        existing_admin = {}
-        if os.path.exists(filepath_admin):
-            with open(filepath_admin, 'r', encoding='utf-8') as f:
-                existing_admin = json.load(f)
-                
-        # 【復活】管理者用データも同様に、3日間は上書きしない
-        if d <= today_index + 3:
-            if date_str not in existing_admin:
-                existing_admin[date_str] = generated_admin[date_str]
-        else:
-            existing_admin[date_str] = generated_admin[date_str]
+        # キャッシュ（メモリ上）のデータを更新
+        cache_hashes[filepath_hash][date_str] = generated_hashes[date_str]
+        cache_admin[filepath_admin][date_str] = generated_admin[date_str]
 
-        with open(filepath_admin, 'w', encoding='utf-8') as f:
-            json.dump(existing_admin, f, ensure_ascii=False, indent=4)
+    # ループ終了後、更新されたデータを1回だけファイルに書き込む
+    for filepath, data in cache_hashes.items():
+        with open(filepath, 'w', encoding='utf-8') as f:
+            sorted_data = dict(sorted(data.items()))
+            json.dump(sorted_data, f, ensure_ascii=False, separators=(',', ':'))
+            
+    # 管理者用データファイル更新
+    for filepath, data in cache_admin.items():
+        with open(filepath, 'w', encoding='utf-8') as f:
+            sorted_data = dict(sorted(data.items()))
+            json.dump(sorted_data, f, ensure_ascii=False, indent=4)
 
 if __name__ == "__main__":
     generate_answers()
