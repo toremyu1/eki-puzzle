@@ -232,6 +232,19 @@ async function initLocaGame() {
       return true;
     });
 
+    // 【追加】駅データのロード時（locaStations作成直後）に検索用データを事前計算する
+    locaStations.forEach(s => {
+      const baseKanji = normalizeKanjiForSearch(s.kanji || "");
+      let rawKanji = baseKanji.replace(/[Ａ-Ｚａ-ｚ０-９]/g, m => String.fromCharCode(m.charCodeAt(0) - 0xFEE0));
+  
+      s._searchKanji = rawKanji.toLowerCase().replace(/[\s ]+/g, "");
+      s._searchHira = toHiragana(s._searchKanji);
+      s._searchYomi = (s.yomi || s.hiragana || "").replace(/[\s ]+/g, "");
+      s._scoreLen = baseKanji.replace(/[\(（].*?[\)）]/g, "").trim().length;
+      s._linesHira = (s.lines || []).map(l => toHiragana(l));
+      s._companiesHira = (s.companies || []).map(c => toHiragana(c));
+    });
+
     // サジェスト機能を有効化します
     setupSuggest();
 
@@ -294,6 +307,22 @@ async function initLocaGame() {
 // ゲーム開始と再開の処理
 // ==========================================
 function startGame(difficulty) {
+  
+  // モード切替時に現在の日付を再計算し、0時をまたいでいるかチェックします
+  const t = new Date();
+  const jstMs = t.getTime() + (t.getTimezoneOffset() * 60000) + (9 * 3600000);
+  const jstObj = new Date(jstMs);
+  const todayUTC = Date.UTC(jstObj.getFullYear(), jstObj.getMonth(), jstObj.getDate());
+  const baseUTC = Date.UTC(2024, 0, 1);
+  const newDayIndex = Math.round((todayUTC - baseUTC) / 86400000);
+
+  // 日付が変わっていた場合は、バグを防ぐため強制的にリロードして最新状態にします
+  if (currentDayIndex !== newDayIndex) {
+    alert("日付が変わりました！新しい問題を読み込みます。");
+    location.reload();
+    return;
+  }
+  
   // 1. 選択された難易度を記憶し、対応する正解駅をセットします
   currentDifficulty = difficulty;
   todayLocaStation = currentDifficulty === 'hard' ? todayLocaStationHard : todayLocaStationNormal;
@@ -473,20 +502,11 @@ function setupSuggest() {
       const pref = s.pref || "";
       const muni = s.municipality || "";
       const ward = s.ward || "";
-      // ----------------------------------------------------
-      // 【修正後】
-      // ----------------------------------------------------
-      const originalKanji = s.kanji || "";
-      const baseKanji = normalizeKanjiForSearch(originalKanji);
-      
-      // 【追加】カッコ（半角・全角）とその中身を無視した純粋な文字数を計算（朝倉駅 (愛知県) → 「朝倉駅」の3文字として評価）
-      const scoreLen = baseKanji.replace(/[\(（].*?[\)）]/g, "").trim().length;
-
-      // 辞書側の文字も全角英数を半角・小文字化・スペース全削除して比較用（裏側専用）にする
-      let rawKanji = baseKanji.replace(/[Ａ-Ｚａ-ｚ０-９]/g, m => String.fromCharCode(m.charCodeAt(0) - 0xFEE0));
-      const kanji = rawKanji.toLowerCase().replace(/[\s ]+/g, "");
-      const kanjiHira = toHiragana(kanji);
-      const yomi = (s.yomi || s.hiragana || "").replace(/[\s ]+/g, ""); 
+      // 事前計算済みの値を使用
+      const kanji = s._searchKanji;
+      const kanjiHira = s._searchHira;
+      const yomi = s._searchYomi;
+      const scoreLen = s._scoreLen;
 
       // 1. 完全一致
       if (kanji === query || kanjiHira === query || yomi === query) {
@@ -508,15 +528,15 @@ function setupSuggest() {
         matchReason = `📍 ${pref}${muni}${ward}`;
         score = 50;
       } 
-      // 5. 路線
-      else if (s.lines && s.lines.some(l => l.includes(query) || toHiragana(l).includes(query))) {
-        const matchedLine = s.lines.find(l => l.includes(query) || toHiragana(l).includes(query));
+// 5. 路線（事前計算済みの _linesHira を使って比較します）
+      else if (s.lines && (s.lines.some(l => l.includes(query)) || s._linesHira.some(l => l.includes(query)))) {
+        const matchedLine = s.lines.find((l, idx) => l.includes(query) || s._linesHira[idx].includes(query));
         matchReason = `🚃 ${matchedLine}`;
         score = 30;
       } 
-      // 6. 事業者
-      else if (s.companies && s.companies.some(c => c.includes(query) || toHiragana(c).includes(query))) {
-        const matchedComp = s.companies.find(c => c.includes(query) || toHiragana(c).includes(query));
+      // 6. 事業者（同じく事前計算済みの _companiesHira を使います）
+      else if (s.companies && (s.companies.some(c => c.includes(query)) || s._companiesHira.some(c => c.includes(query)))) {
+        const matchedComp = s.companies.find((c, idx) => c.includes(query) || s._companiesHira[idx].includes(query));
         matchReason = `🏢 ${matchedComp}`;
         score = 10;
       }
