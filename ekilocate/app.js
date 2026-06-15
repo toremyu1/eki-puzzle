@@ -2624,12 +2624,6 @@ async function exportLocaData() {
 
     // 3. 【核心】駅図鑑（配列）をビット列に変換
     // 全駅のフラグを '0' か '1' の文字列として結合する
-    const unlockedList = metaData.unlockedStations || [];
-    let stationBitString = "";
-    for (let i = 0; i < locaStations.length; i++) {
-      stationBitString += unlockedList.includes(locaStations[i].kanji) ? "1" : "0";
-    }
-
     // ビット文字列(01011...)を、文字数削減のために16進数（または36進数）の塊にコンパパック
     // ここではさらに短くするため、後ほどの全データJSON化の段階に回します。
 
@@ -2708,14 +2702,6 @@ async function importLocaData() {
 
     // 3. 【核心】ビット列から駅図鑑の漢字リストを逆生成
     const unlockedStations = [];
-    const bitStr = parsed.b;
-    for (let i = 0; i < bitStr.length; i++) {
-      if (bitStr[i] === "1" && locaStations[i]) {
-        unlockedStations.push(locaStations[i].kanji);
-      }
-    }
-
-    const unlockedStations = [];
     // 読み込んだセーブデータから、0と1の文字列を取り出します
     const bitStr = parsed.b; 
 
@@ -2730,7 +2716,7 @@ async function importLocaData() {
   
     }
 
-// ※この後、復元した unlockedStations をメタデータ（newMeta）にセットして保存します。
+    // ※この後、復元した unlockedStations をメタデータ（newMeta）にセットして保存します。
 
     // 4. メタデータの復元
     const newMeta = {
