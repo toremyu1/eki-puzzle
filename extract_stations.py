@@ -13,6 +13,42 @@ import urllib.parse  # 追加：URLを解析するためのモジュール
 #自治体データキャッシュ用
 municipality_cache = {}
 
+#自治体データキャッシュ用
+municipality_cache = {}
+
+
+# =========================================================================
+# 【追加】URLの表記揺れ（エンコード）を解消して標準化する関数
+# =========================================================================
+def normalize_wikipedia_url(url_string):
+    if not url_string:
+        return ""
+    # 「%E5%90%8D...」のようなエンコードを生の「名古屋市」などの日本語に直す
+    decoded = urllib.parse.unquote(url_string)
+    # 前後の余計な空白などを削除して返す
+    return decoded.strip()
+
+
+# =========================================================================
+# 【修正】都市カテゴリJSONの読み込みと判定用セット（URLベース）の作成
+# =========================================================================
+DESIGNATED_CITIES_URLS = set()
+CORE_CITIES_URLS = set()
+SPECIAL_CITIES_URLS = set()
+PREF_CAPITALS_URLS = set()
+
+if os.path.exists("city_categories.json"):
+    try:
+        with open("city_categories.json", "r", encoding="utf-8") as f:
+            city_categories_data = json.load(f)
+            # URL全体をデコード（標準化）してセットに格納
+            DESIGNATED_CITIES_URLS = set(normalize_wikipedia_url(item["url"]) for item in city_categories_data.get("政令指定都市", []))
+            CORE_CITIES_URLS = set(normalize_wikipedia_url(item["url"]) for item in city_categories_data.get("中核市", []))
+            SPECIAL_CITIES_URLS = set(normalize_wikipedia_url(item["url"]) for item in city_categories_data.get("施行時特例市", []))
+            PREF_CAPITALS_URLS = set(normalize_wikipedia_url(item["url"]) for item in city_categories_data.get("都道府県庁所在地", []))
+    except Exception as e:
+        print(f"city_categories.json の読み込みに失敗しました: {e}")
+
 
 # =========================================================================
 # 【ここに追加！】uub.jpから最新の全国市区町村リストを全自動で取得する関数
@@ -206,7 +242,7 @@ def get_todays_sub_pages():
         chunks[weekday] = ["あ"]
 
     # ★テスト用に「あ」のページだけを強制的に指定します
-    return ["ち-て"], weekday
+    return ["と"], weekday
 
     return chunks[weekday], weekday
 
@@ -220,6 +256,10 @@ def fetch_station_details(url):
         "municipality": "",        # 市区町村名
         "ward": "",                # 政令指定都市の行政区名
         "muni_url": "",            # 自治体ページのURL
+        "is_designated_city": False, # 政令指定都市か
+        "is_core_city": False,       # 中核市か
+        "is_special_city": False,    # 施行時特例市か
+        "is_pref_capital": False,    # 都道府県庁所在地か
         "platforms": 0,            # 面数
         "tracks": 0,               # 線路数
         "min_km": float('inf'),    # 最小営業キロ
@@ -244,21 +284,73 @@ def fetch_station_details(url):
         infoboxes = soup.find_all('table', class_='infobox')
 
         # ↓↓↓ ここから追加 ↓↓↓
+        # 廃止駅確認処理
+        active_infoboxes = []
+        for box in infoboxes:
+            is_abolished = False
+            
+            # 取得した表の行(tr)を1行ずつ確認する
+            for tr in box.find_all('tr'):
+                th = tr.find('th') # 見出し（「開業年月日」や「廃止年月日」など）
+                td = tr.find('td') # 中身（「1980年」など）
+                
+                # 見出しと中身の両方が存在する場合のみ判定
+                if th and td:
+                    # 見出しに「廃止」が含まれ、かつ中身が空っぽではない場合
+                    # （※Wikipediaの仕様上、項目だけあって中身が空のケースを安全にスルーするため）
+                    if '廃止' in th.get_text(strip=True) and td.get_text(strip=True):
+                        is_abolished = True
+                        print("      [除外] 廃止情報が含まれる表を検知したため、抽出から除外しました。")
+                        break # 廃止表と確定した時点で、この表の確認を終了
+
+            
+            # 廃止フラグが立っていない（現役の）表だけをリストに追加する
+            if not is_abolished:
+                active_infoboxes.append(box)
+
+        
+        # これ以降の処理を、現役の表（active_infoboxes）だけで行うようにデータを上書きする
+        infoboxes = active_infoboxes
+        # ↑↑↑ ここまで追加 ↑↑↑
+
+        # ↓↓↓ ここから追加 ↓↓↓
         best_addr = ""
+        best_lat = None
+        best_lon = None
+        best_loc_td = None # ★追加：最古の所在地のHTMLタグそのものを記憶する変数
         oldest_y = float('inf')
 
         for box in infoboxes:
             box_addr = ""
+            box_lat = None
+            box_lon = None
+            box_loc_td = None 
             box_y = None
+            
+            # まず、このInfobox内に座標タグがあるか探す
+            #infoboxから座標を取得する
+            geo_span = box.find('span', class_='geo')
+            if geo_span:
+                lat_lon = geo_span.get_text(strip=True).split(';')
+                if len(lat_lon) == 2:
+                    try:
+                        box_lat = float(lat_lon[0].strip())
+                        box_lon = float(lat_lon[1].strip())
+                    except ValueError:
+                        pass
+
+            #infoboxから所在地を取得する
             for tr in box.find_all('tr'):
                 th = tr.find('th')
                 td = tr.find('td')
+
                 if th and td:
                     hdr = th.get_text(strip=True)
                     if hdr == '所在地':
                         clean = re.split(r'<div|<sup', str(td))[0]
                         txt = BeautifulSoup(clean, "html.parser").get_text(strip=True)
                         box_addr = re.split(r'\[|座標:|北緯|〒', txt)[0].strip()
+                        box_loc_td = td # ★追加：所在地のtdタグを確保
                     elif '開業年月日' in hdr:
                         m = re.search(r'(\d{4})年', td.get_text(strip=True))
                         if m:
@@ -266,49 +358,39 @@ def fetch_station_details(url):
                             if box_y is None or y < box_y:
                                 box_y = y
 
-            # 最初の住所を保険としてキープ
+            # 最初の住所・座標を保険としてキープ
             if box_addr and not best_addr:
                 best_addr = box_addr
-            # より古い開業年が見つかれば、そのInfoboxの住所で上書き！
+                best_loc_td = box_loc_td 
+            if box_lat is not None and best_lat is None:
+                best_lat = box_lat
+                best_lon = box_lon
+                
+            # より古い開業年が見つかれば、そのInfoboxの住所・座標で上書き！
             if box_y is not None and box_y < oldest_y:
                 oldest_y = box_y
                 if box_addr:
                     best_addr = box_addr
+                    best_loc_td = box_loc_td 
+                if box_lat is not None:
+                    best_lat = box_lat
+                    best_lon = box_lon
 
         data["address"] = best_addr
+        data["latitude"] = best_lat
+        data["longitude"] = best_lon
         # ↑↑↑ ここまで追加 ↑↑↑
 
         # （これ以降は、もともとある既存の for tr in infobox.find_all('tr'): などの処理が続きます）
 
-        # 全Infoboxを横断して「最も古い開業年」を追跡するための変数
-        global_oldest_year = float('inf')
-        best_address = ""
-        fallback_address = ""
-
         # 複数のInfoboxを1つずつ順番に処理する
         for idx, infobox in enumerate(infoboxes):
-
-            local_address = ""
-            local_year = None
-            local_month = None
-            local_day = None
 
             # --- 【追加】アルファベット表記の抽出（最初のinfoboxのみ） ---
             if idx == 0:
                 romaji_span = infobox.find('span', lang='en')
                 if romaji_span:
                     data["romaji"] = romaji_span.get_text(strip=True)
-
-            # --- 【追加】緯度経度の抽出 ---
-            geo_span = infobox.find('span', class_='geo')
-            if geo_span and data["latitude"] is None:
-                lat_lon = geo_span.get_text(strip=True).split(';')
-                if len(lat_lon) == 2:
-                    try:
-                        data["latitude"] = float(lat_lon[0].strip())
-                        data["longitude"] = float(lat_lon[1].strip())
-                    except ValueError:
-                        pass
 
             # --- 【修正】隣駅の抽出（リンク付き） ---
             # 「float:left」と「float:right」のdivが横並びになっている行を探す
@@ -334,11 +416,25 @@ def fetch_station_details(url):
                     add_adjacent(left_div)
                     add_adjacent(right_div)
 
+            # --- 【追加】本物の「所在地」見出しがあるか事前チェック ---
+            has_real_location = any(tr.find('th') and tr.find('th').get_text(strip=True) == '所在地' for tr in infobox.find_all('tr'))
+
             # ここから元の処理（<th>と<td>のペアを探す処理）が続く
             for tr in infobox.find_all('tr'):
                 th = tr.find('th')
                 td = tr.find('td')
 
+                
+                # ▼ここから不要
+                # th必須にする処理は土合駅でバグを起こすため廃止
+                # 見出し(th)と中身(td)のペアが揃っていない行は、すべて問答無用で無視する
+                # if not th or not td:
+                #     continue
+
+                # header = th.get_text(strip=True)
+                # value_text = td.get_text(" ", strip=True)
+                # ▲ここまで不要
+                
                 header = ""
                 value_text = ""
 
@@ -348,37 +444,44 @@ def fetch_station_details(url):
                 elif not th and td:
                     value_text = td.get_text(" ", strip=True)
                     # 郵便番号等があってもマッチするように re.search を使用
-                    if re.search(r'(東京都|北海道|(?:京都|大阪)府|[一-龠]{2,3}県)', value_text):
+                    # 【変更】土合駅のように本物の所在地が「存在しない」場合のみ、都道府県名を頼りに推測を発動する
+                    if not has_real_location and re.search(r'(東京都|北海道|(?:京都|大阪)府|[一-龠]{2,3}県)', value_text):
                         header = '所在地'
                 else:
                     continue
+                
+
 
                 # ① 所在地と住所の抽出
                 if header == '所在地':
-
+                    
+                    # ▼ここから不要
+                    # 古い開業年月日を取得する段階で座標も取得するようになったため不要
                     # 【シンプル化】注釈(<sup)や座標等の補足(<div)が始まる前までのHTMLを切り出してテキスト化
-                    clean_html = re.split(r'<div|<sup', str(td))[0]
-                    address_text = BeautifulSoup(clean_html, "html.parser").get_text(strip=True)
+                    # clean_html = re.split(r'<div|<sup', str(td))[0]
+                    # address_text = BeautifulSoup(clean_html, "html.parser").get_text(strip=True)
                     # 念のため、テキスト上のゴミ（[1]、座標、郵便番号など）から先を完全にカット
-                    address_text = re.split(r'\[|座標:|北緯|〒', address_text)[0].strip()
+                    # address_text = re.split(r'\[|座標:|北緯|〒', address_text)[0].strip()
 
                     # このInfobox内で見つけた住所として一時保存
-                    if address_text:
-                        local_address = address_text
-                        if not fallback_address:
-                            fallback_address = local_address
+                    # if address_text:
+                    #     local_address = address_text
+                    #     if not fallback_address:
+                    #        fallback_address = local_address
+                    # ▲ここまで不要
 
-
+                    # ★変更：現在見ている td ではなく、事前ループで勝ち残った「最古の td (best_loc_td)」を使う
+                    target_td = best_loc_td if best_loc_td else td
 
                     # 1. 駅ページから都道府県を優先取得
                     if not data["pref"]:
-                        m_pref = re.search(r'(東京都|北海道|(?:京都|大阪)府|[一-龠]{2,3}県)', value_text)
+                        m_pref = re.search(r'(東京都|北海道|(?:京都|大阪)府|[一-龠]{2,3}県)', target_td.get_text(strip=True))
                         if m_pref:
                             data["pref"] = m_pref.group(1)
 
                     # 2. 所在地内のリンクから市区町村と行政区を抽出
                     if not data.get("municipality") or not data.get("ward"):
-                        for a in td.find_all('a'):
+                        for a in target_td.find_all('a'):
                             txt = a.get_text(strip=True)
                             href = a.get('href')
 
@@ -427,6 +530,27 @@ def fetch_station_details(url):
 
                             data["municipality"] = muni_str
 
+                    # =====================================================================
+                    # 【修正】URLの直接比較による都市カテゴリの判定と、偽の行政区の除外処理
+                    # =====================================================================
+                    # スクレイピングで取得した自治体URLをデコードして標準化
+                    normalized_muni_url = normalize_wikipedia_url(data["muni_url"])
+                    
+                    if normalized_muni_url:
+                        # 標準化されたURL同士で直接判定（非常に堅牢です）
+                        data["is_designated_city"] = normalized_muni_url in DESIGNATED_CITIES_URLS
+                        data["is_core_city"]       = normalized_muni_url in CORE_CITIES_URLS
+                        data["is_special_city"]    = normalized_muni_url in SPECIAL_CITIES_URLS
+                        data["is_pref_capital"]    = normalized_muni_url in PREF_CAPITALS_URLS
+
+                    # 【区の誤判定防止】
+                    # すでに ward（区）が抽出されているが、親の自治体が「政令指定都市」ではない場合
+                    muni_name = data["municipality"]
+                    if data["ward"] and not data["is_designated_city"] and data["pref"] != "東京都":
+                        print(f"      [補正] {muni_name} は政令指定都市ではないため、行政区 '{data['ward']}' を除外しました。")
+                        data["ward"] = ""  # 偽の行政区をリセット
+                    # =====================================================================
+
                     # 4. 【合体】自治体データを取得して駅データに統合
                     if data["muni_url"]:
                         if data["muni_url"] not in municipality_cache:
@@ -466,10 +590,13 @@ def fetch_station_details(url):
                 # ④ 開業年月日
                 elif '開業年月日' in header:
                     m_date = re.search(r'(\d{4})年(?:.*?(\d+)月(\d+)日)?', value_text)
-                    if m_date and not data["open_year"]:
-                        data["open_year"] = int(m_date.group(1))
-                        if m_date.group(2): data["open_month"] = int(m_date.group(2))
-                        if m_date.group(3): data["open_day"] = int(m_date.group(3))
+                    if m_date:
+                        found_year = int(m_date.group(1))
+                        # 初回登録、または今回見つけた年が既存の年より古い場合のみ上書きする
+                        if not data["open_year"] or found_year < data["open_year"]:
+                            data["open_year"] = found_year
+                            data["open_month"] = int(m_date.group(2)) if m_date.group(2) else None
+                            data["open_day"] = int(m_date.group(3)) if m_date.group(3) else None
 
                 # ⑤ 乗降人員
                 elif '乗車人員' in header or '乗降人員' in header:
@@ -708,6 +835,9 @@ def extract_and_count_stations():
     except Exception:
         all_wikipedia_sub_pages = BACKUP_SUB_PAGES
 
+    # 変更があった駅の情報を記録するためのリスト
+    updated_summary = []
+
     # 1. 既存の JSON データを読み込む（古いデータの自動アップデート付き）
     if os.path.exists("stations.json"):
         try:
@@ -803,6 +933,26 @@ def extract_and_count_stations():
                 existing_stations[unique_key]["missingCount"] = 0
                 print(f"  [完全保護] {v['kanji']} の通信エラーを検知。過去の全データを安全に復元しました。")
             else:
+                # --- 【変更】全データ項目の変更を自動検知して記録する ---
+                # システムが管理する項目（更新比較の対象外）
+                ignore_keys = {"id", "startDay", "endDay", "missingCount", "unique_key", "subPage", "url"}
+                
+                station_changes = {}
+                for key in v.keys():
+                    if key in ignore_keys:
+                        continue
+                    old_val = old_item.get(key)
+                    new_val = v.get(key)
+                    if old_val != new_val:
+                        station_changes[key] = {"old": old_val, "new": new_val}
+
+                if station_changes:
+                    updated_summary.append({
+                        "kanji": v["kanji"],
+                        "changes": station_changes
+                    })
+                    print(f"  [データ更新] {v['kanji']} の情報が更新されました（{len(station_changes)}項目）。")
+
                 # 正常に取得できた場合は、新しいデータで上書き（ただしID等のシステム数値は引き継ぐ）
                 existing_stations[unique_key] = v
                 existing_stations[unique_key]["id"] = preserved_id
@@ -885,6 +1035,17 @@ def extract_and_count_stations():
     print("----------------------------------------")
     print(f"👉 総データ数 : {len(result_list)} 駅 (うち現役: {active_count} 駅) を 'stations.json' に保存しました。")
     print("========================================")
+
+    # --- 【追加】変更レポートの一括出力 ---
+    if updated_summary:
+        print("\n========================================")
+        print(f"🔄 【更新レポート】既存データに変更があった駅（計 {len(updated_summary)} 駅）")
+        print("========================================")
+        for info in updated_summary:
+            print(f"■ {info['kanji']}")
+            for k, diff in info['changes'].items():
+                print(f"  - {k}: {diff['old']} -> {diff['new']}")
+        print("========================================")
 
 if __name__ == "__main__":
     extract_and_count_stations()
