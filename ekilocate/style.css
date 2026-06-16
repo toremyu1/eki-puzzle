@@ -787,3 +787,44 @@ body.theme-dark .stat-value,
 body.theme-dark .stat-label {
     color: #ffffff !important;
 }
+
+
+/* モーダルの戦績エリアを完璧に横幅4等分（均等）に並べる設定 */
+#all-stats-modal .stats-flex-panel,
+#result-modal .stats-panel {
+    display: flex !important;
+    justify-content: space-between !important;
+    gap: 4px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+#all-stats-modal .stats-flex-panel > div,
+#result-modal .stats-panel > div {
+    flex: 1 !important;
+    width: 25% !important;
+    text-align: center !important;
+}
+
+/* すべての数字（最多連勝含む）の色をテーマカラー（水色など）に完全統一 */
+#all-stats-modal .stat-value,
+#result-modal .stat-value {
+    font-size: 20px !important;
+    font-weight: bold !important;
+    color: var(--theme-accent, #3498db) !important;
+}
+
+/* 下のラベル（プレイ、勝率など）のベース色 */
+#all-stats-modal .stat-label,
+#result-modal .stat-label {
+    font-size: 9px !important;
+    color: #7f8c8d !important;
+}
+
+/* テーマカラーが黒（ダークモード）の時は、数字もラベルも最優先で真っ白にする命令 */
+body.theme-dark #all-stats-modal .stat-value,
+body.theme-dark #result-modal .stat-value,
+body.theme-dark #all-stats-modal .stat-label,
+body.theme-dark #result-modal .stat-label {
+    color: #ffffff !important;
+}
