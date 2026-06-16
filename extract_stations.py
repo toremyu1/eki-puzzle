@@ -328,7 +328,7 @@ def fetch_station_details(url):
                     
                     # ② 開業・再開業の記述がある場合
                     # 【追加】「再開業」「経営移管」などの復活キーワードも逃さず抽出
-                    if any(word in th_text for word in ['開業', '再開業', '経営移管', '営業再開']) and td_text:
+                    if any(word in th_text for word in ['開業', '再開業', '経営移管', '再開', '営業再開']) and td_text:
                         max_open_date = extract_max_date(td_text, max_open_date)
                             
                     # ③ 現役旅客駅の証拠（乗降人員があること）
