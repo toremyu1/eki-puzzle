@@ -2632,16 +2632,8 @@ async function exportLocaData() {
     let stationBitString = "";
 
     // 全ての出題可能駅を順番にチェックし、0と1の文字列を作ります
-    for (let i = 0; i < locaStations.length; i++) {
-      
-      if (unlockedList.includes(locaStations[i].kanji)) {
-        // プレイヤーがその駅を持っていれば「1」を追加
-        stationBitString += "1";
-      } else {
-        // 持っていなければ「0」を追加
-        stationBitString += "0";
-      }
-  
+    for (let i = 0; i < locaAllStaticStations.length; i++) {
+      stationBitString += unlockedList.includes(locaAllStaticStations[i].kanji) ? "1" : "0";
     }
 
 // ※この後、作成した stationBitString をペイロード（保存データ）の中に含めて圧縮します。
@@ -2707,13 +2699,9 @@ async function importLocaData() {
 
     // 文字列の先頭から1文字ずつループして確認していきます
     for (let i = 0; i < bitStr.length; i++) {
-  
-      // 文字が「1」であり、かつ辞書のその順番に駅が存在すれば復元対象です
-      if (bitStr[i] === "1" && locaStations[i]) {
-        // 辞書から該当する駅の漢字名を取り出し、図鑑リストに復活させます
-        unlockedStations.push(locaStations[i].kanji);
+      if (bitStr[i] === "1" && locaAllStaticStations[i]) {
+        unlockedStations.push(locaAllStaticStations[i].kanji);
       }
-  
     }
 
     // ※この後、復元した unlockedStations をメタデータ（newMeta）にセットして保存します。
