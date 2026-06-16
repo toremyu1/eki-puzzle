@@ -767,15 +767,23 @@ body.event-nye #diff-title {
 }
 
 
-/* * ダークモード時に、HTMLに直接書かれた黒・グレー系の文字色を
- * 自動的に白（#ffffff）へ反転させる処理 
+/* モーダル内の数字（プレイ回数など）のベースデザイン */
+.stat-value {
+    font-size: 20px;
+    font-weight: bold;
+    color: var(--modal-text, #2c3e50); /* テーマカラーに自動連動します */
+}
+
+/* モーダル内のラベル（「プレイ」「勝率%」など）のベースデザイン */
+.stat-label {
+    font-size: 9px;
+    color: #7f8c8d; /* デフォルトのグレー色 */
+}
+
+/* * テーマがダークモードの時だけ、
+ * 数字とラベルの両方の文字色を強制的に白（#ffffff）にする 
  */
-body.theme-dark [style*="color:#334155"], body.theme-dark [style*="color: #334155"],
-body.theme-dark [style*="color:#2c3e50"], body.theme-dark [style*="color: #2c3e50"],
-body.theme-dark [style*="color:#333"], body.theme-dark [style*="color: #333"],
-body.theme-dark [style*="color:#666"], body.theme-dark [style*="color: #666"],
-body.theme-dark [style*="color:#888"], body.theme-dark [style*="color: #888"],
-body.theme-dark [style*="color:#7f8c8d"], body.theme-dark [style*="color: #7f8c8d"],
-body.theme-dark [style*="color:#475569"], body.theme-dark [style*="color: #475569"] {
+body.theme-dark .stat-value,
+body.theme-dark .stat-label {
     color: #ffffff !important;
 }
