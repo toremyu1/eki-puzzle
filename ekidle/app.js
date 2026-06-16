@@ -386,17 +386,32 @@ updateHelpContent(); // 起動時に説明文を現在の設定に合わせる
   updateHelpContent();
   });
   
-  // 【ここを追加：④ 最終準備】
-  updateLoadingProgress(80, "ゲーム盤を構築中...");
+    // 【ここを追加：④ 最終準備】
+    updateLoadingProgress(80, "ゲーム盤を構築中...");
   
-  //最後に、今日の正解駅を選び、ゲーム盤を作り、行事日かどうかを調べる
-  await selectTodayStation(); restoreBoard(); checkSpecialEvent();
+    // 裏側で今日の正解駅を選び、ゲーム盤の準備だけをしておく（ポップアップ判定はまだしない）
+    await selectTodayStation(); 
+    restoreBoard(); 
 
-  // 【ここを追加：⑤ 完了・画面を閉じる】
-  updateLoadingProgress(100, "出発進行！");
-  setTimeout(hideLoadingScreen, 600); // 100%を見せるために0.6秒待ってから消す
+    // タイトル画面のボタンが押されたときの動作を設定する
+    document.getElementById("btn-normal-mode").addEventListener("click", () => {
+      // 通常モードが選ばれたら、タイトル画面を非表示にして裏のゲーム盤を見せる
+      document.getElementById("title-screen").style.display = "none";
+      // ゲーム画面に入ってから、行事日のポップアップなどを開始する
+      checkSpecialEvent();
+    });
+
+    document.getElementById("btn-reverse-mode").addEventListener("click", () => {
+      // リバースモードは現在準備中のためアラートを出す
+      alert("リバースモードは現在開発中です！お楽しみに！");
+    });
+
+    // 【ここを追加：⑤ 完了・画面を閉じる】
+    updateLoadingProgress(100, "出発進行！");
+  // ロード画面が消えると、下に配置したタイトル画面（title-screen）が現れる仕組み
+    setTimeout(hideLoadingScreen, 600);
   
-}catch(e){ console.error("データエラー:",e); }
+  }catch(e){ console.error("データエラー:",e); }
 }
 
 
@@ -510,9 +525,6 @@ function loadGameState(dayIdx){
 function saveGameState() {
   // ランダムモードのプレイ状況は再読み込みで復元する必要がないため保存しない
   if (isPlayingRandom) return;
-  
-  // 従来のセーブデータ（念のため更新）
-  localStorage.setItem("ekiPuzzleStateV1", JSON.stringify(savedState));
   
   // 新方式の履歴ログ用（こちらがページ再読み込み時の復元に絶対必要）
   const savedLog = localStorage.getItem("ekiPuzzleStateV1_Log");
@@ -946,12 +958,14 @@ function submitGuess(isRestore=false){
     // 通常モードのみ履歴保存や図鑑更新を行う
     if(!isPlayingRandom){
       saveGameState(); 
+
+      // ekiZukanDataに統合するため廃止
+      // let allGuessed=JSON.parse(localStorage.getItem("ekiAllGuesses")||"[]");
+      // if(!allGuessed.includes(currentGuess)){
+      //   allGuessed.push(currentGuess);
+      //   localStorage.setItem("ekiAllGuesses",JSON.stringify(allGuessed));
+      // }
       
-      let allGuessed=JSON.parse(localStorage.getItem("ekiAllGuesses")||"[]");
-      if(!allGuessed.includes(currentGuess)){
-        allGuessed.push(currentGuess);
-        localStorage.setItem("ekiAllGuesses",JSON.stringify(allGuessed));
-      }
       // 【安全性強化】図鑑機能が実装されている場合のみ呼び出し、エラーを防ぐ
       if(typeof updateZukan === "function") updateZukan(currentGuess, 2);
     }
