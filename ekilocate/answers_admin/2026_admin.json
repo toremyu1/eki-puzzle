@@ -642,5 +642,19 @@
             "pref": "京都府",
             "municipality": "宮津市"
         }
+    },
+    "2026-07-29": {
+        "normal": {
+            "kanji": "広川ビーチ駅",
+            "yomi": "ひろかわビーチ",
+            "pref": "和歌山県",
+            "municipality": "広川町"
+        },
+        "hard": {
+            "kanji": "三口駅",
+            "yomi": "みつくち",
+            "pref": "石川県",
+            "municipality": "金沢市"
+        }
     }
 }
