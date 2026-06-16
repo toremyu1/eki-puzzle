@@ -758,3 +758,10 @@ body.event-nye #diff-title {
 #stats-view-normal, #stats-view-endless {
     flex-grow: 1; /* 余った空間を埋めて高さを均等にする */
 }
+
+
+/* プレイ記録モーダル内のラベル（プレイ、勝率%など）をテーマに連動 */
+#all-stats-modal #stats-view-normal div > div > div:last-child {
+    color: var(--modal-text, #2c3e50);
+    opacity: 0.65; /* 文字を少し透過させることで、どの背景色でも自然になじむ薄さになります */
+}
