@@ -2560,10 +2560,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 // ==========================================
-// データのエクスポートとインポート（駅ロケ専用・圧縮＆改ざん防止機能付き）
+// データのエクスポートとインポート（完全版・自動圧縮＆フォールバック機能付き）
 // ==========================================
 
-// 【既存】改ざん防止用のハッシュ生成関数
+// 改ざん防止用のハッシュ生成関数
 function generateLocaChecksum(str) {
   let hash = 0;
   for (let i = 0; i < str.length; i++) {
@@ -2574,158 +2574,157 @@ function generateLocaChecksum(str) {
   return hash.toString(36);
 }
 
-// 【新規追加】データを圧縮・解凍するための便利関数
-async function compressToBase64(str) {
-  // 1. 文字列をバイトデータ（Blob）に変換し、gzip形式で圧縮する
-  const stream = new Blob([str]).stream();
-  const compressedStream = stream.pipeThrough(new CompressionStream('gzip'));
-  const compressedBlob = await new Response(compressedStream).blob();
-  const buffer = await compressedBlob.arrayBuffer();
-  
-  // 2. 圧縮されたバイトデータをBase64文字列に変換する
-  const bytes = new Uint8Array(buffer);
-  let binary = '';
-  // ※データが大きい場合のエラーを防ぐため、分割して文字列化します
-  for (let i = 0; i < bytes.byteLength; i += 1024) {
-    binary += String.fromCharCode.apply(null, bytes.subarray(i, i + 1024));
+// データを安全に文字列化・圧縮するハイブリッド関数
+async function encodeSaveData(jsonStr) {
+  // 1. ブラウザが最新の圧縮機能（CompressionStream）に対応しているかチェック
+  if ('CompressionStream' in window) {
+    try {
+      const stream = new Blob([jsonStr]).stream();
+      const compressedStream = stream.pipeThrough(new CompressionStream('gzip'));
+      const blob = await new Response(compressedStream).blob();
+      const buffer = await blob.arrayBuffer();
+      const bytes = new Uint8Array(buffer);
+      let binary = '';
+      for (let i = 0; i < bytes.byteLength; i += 1024) {
+        binary += String.fromCharCode.apply(null, bytes.subarray(i, i + 1024));
+      }
+      // 圧縮成功時は、先頭に「C_」をつけて判別できるようにする
+      return "C_" + btoa(binary);
+    } catch(e) {
+      console.warn("圧縮に失敗しました。非圧縮モードに切り替えます。", e);
+    }
   }
-  return btoa(binary);
+  
+  // 2. 圧縮非対応、またはエラー時は、文字化けを防ぐ処理をしてそのままBase64化する（フォールバック）
+  // 非圧縮時は、先頭に「R_ (Raw)」をつけて判別できるようにする
+  return "R_" + btoa(unescape(encodeURIComponent(jsonStr)));
 }
 
-async function decompressFromBase64(base64) {
-  // 1. Base64文字列をバイトデータに戻す
-  const binary = atob(base64);
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) {
-    bytes[i] = binary.charCodeAt(i);
+// 引き継ぎコードを解読・解凍する関数
+async function decodeSaveData(code) {
+  if (code.startsWith("C_")) {
+    // 圧縮モード（C_）の解凍処理
+    const base64 = code.substring(2);
+    const binary = atob(base64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) {
+      bytes[i] = binary.charCodeAt(i);
+    }
+    const stream = new Blob([bytes]).stream();
+    const decompressedStream = stream.pipeThrough(new DecompressionStream('gzip'));
+    return await new Response(decompressedStream).text();
+    
+  } else if (code.startsWith("R_")) {
+    // 非圧縮モード（R_）の復元処理
+    const base64 = code.substring(2);
+    return decodeURIComponent(escape(atob(base64)));
+    
+  } else {
+    throw new Error("未対応のコード形式です");
   }
-  
-  // 2. gzip形式の圧縮データを解凍して元の文字列に戻す
-  const stream = new Blob([bytes]).stream();
-  const decompressedStream = stream.pipeThrough(new DecompressionStream('gzip'));
-  const decompressedText = await new Response(decompressedStream).text();
-  return decompressedText;
 }
 
 // データの書き出し（エクスポート）
-// 修正版のエクスポート関数
 async function exportLocaData() {
   try {
-    // 1. 通常・Hardモードの戦績を最低限の数値だけ抽出
+    // 1. 通常・Hardモードの戦績を抽出（途中経過は除外し、クリア日とタイムを含める）
     const statsData = JSON.parse(localStorage.getItem("ekiLocateStatsV2") || "{}");
-    const n = statsData.normal || { played: 0, won: 0, currentStreak: 0, maxStreak: 0, dist: [] };
-    const h = statsData.hard || { played: 0, won: 0, currentStreak: 0, maxStreak: 0, dist: [] };
+    const n = statsData.normal || { played: 0, won: 0, currentStreak: 0, maxStreak: 0, dist: [], clearedDates: [], fastestTime: null };
+    const h = statsData.hard || { played: 0, won: 0, currentStreak: 0, maxStreak: 0, dist: [], clearedDates: [], fastestTime: null };
 
-    // 2. エンドレスとメタ、設定の最低限の数値
+    // 2. エンドレス、メタデータ、設定の抽出
     const eScore = parseInt(localStorage.getItem("ekiLocateEndlessHighScore") || "0", 10);
     const eCombo = parseInt(localStorage.getItem("ekiLocateEndlessMaxCombo") || "0", 10);
     const metaData = JSON.parse(localStorage.getItem("ekiLocateMeta") || "{}");
     const settingsData = JSON.parse(localStorage.getItem("ekiLocateSettings") || "{}");
 
-    // 3. 【核心】駅図鑑（配列）をビット列に変換
-    // 全駅のフラグを '0' か '1' の文字列として結合する
-    // ビット文字列(01011...)を、文字数削減のために16進数（または36進数）の塊にコンパパック
-    // ここではさらに短くするため、後ほどの全データJSON化の段階に回します。
-
-    // 図鑑リストを取得（ない場合は空配列）
-    const unlockedList = metaData.unlockedStations || [];
-    let stationBitString = "";
-
-    // 全ての出題可能駅を順番にチェックし、0と1の文字列を作ります
-    for (let i = 0; i < locaAllStaticStations.length; i++) {
-      stationBitString += unlockedList.includes(locaAllStaticStations[i].kanji) ? "1" : "0";
-    }
-
-// ※この後、作成した stationBitString をペイロード（保存データ）の中に含めて圧縮します。
-
-    // 4. 格納する大容量データを数値とフラグだけに絞り込んでJSON化
+    // 3. 必要なデータだけを配列の形で極限までスリム化してまとめる
     const miniPayload = {
-      n: [n.played, n.won, n.currentStreak, n.maxStreak, n.dist || []],
-      h: [h.played, h.won, h.currentStreak, h.maxStreak, h.dist || []],
+      // 順番: [プレイ回数, 勝利数, 現在連勝, 最大連勝, 手数分布, クリア日リスト, 最速タイム]
+      n: [n.played, n.won, n.currentStreak, n.maxStreak, n.dist || [], n.clearedDates || [], n.fastestTime || null],
+      h: [h.played, h.won, h.currentStreak, h.maxStreak, h.dist || [], h.clearedDates || [], h.fastestTime || null],
       e: [eScore, eCombo],
+      // 順番: [連続ログイン, 連続クリア, 初回ログイン日, 最終ログイン日, 最終クリア日]
       m: [metaData.consecutiveLoginDays || 0, metaData.consecutiveClearDays || 0, metaData.firstLoginDate || "", metaData.lastLoginDate || "", metaData.lastClearDate || ""],
       s: [settingsData.theme || "", settingsData.volume || 50],
-      b: stationBitString // 010111... という軽量なフラグ文字列
+      // 駅図鑑は順番ズレのバグを防ぐため、漢字の配列をそのまま格納する
+      u: metaData.unlockedStations || [] 
     };
 
     const payloadString = JSON.stringify(miniPayload);
+    // 改ざん防止のハッシュ値（署名）をくっつける
     const secureData = JSON.stringify({ payload: payloadString, sig: generateLocaChecksum(payloadString) });
     
-    // 5. 圧縮してBase64に変換
-    const code = await compressToBase64(secureData);
+    // 4. ハイブリッド圧縮を実行してコードを生成
+    const code = await encodeSaveData(secureData);
     
+    // クリップボードにコピー
     navigator.clipboard.writeText(code).then(() => {
-      alert("コンパクト引き継ぎコードをコピーしました！");
+      alert("引き継ぎコードをコピーしました！");
     }).catch(() => {
       prompt("以下のコードをコピーしてください:", code);
     });
   } catch (e) {
-    console.error("圧縮エラー:", e);
+    console.error("エクスポートエラー:", e);
     alert("コードの生成に失敗しました。");
   }
 }
 
 // データの読み込み（インポート）
-// 修正版のインポート関数
 async function importLocaData() {
   const code = prompt("引き継ぎコードを入力してください:");
   if (!code) return;
   
   try {
-    const decompressedStr = await decompressFromBase64(code);
+    // 1. コードの形式（圧縮 or 非圧縮）を自動判定して解読
+    const decompressedStr = await decodeSaveData(code);
     const secureData = JSON.parse(decompressedStr);
     
+    // 2. 改ざん・欠損チェック
     if (generateLocaChecksum(secureData.payload) !== secureData.sig) {
       throw new Error("コードが破損しています。");
     }
     
     const parsed = JSON.parse(secureData.payload);
     
-    // 1. 通常・Hardの戦績を復元
+    // 3. 通常・Hardの戦績を復元（クリア日とタイムもしっかり復元）
     const newStats = {
-      normal: { played: parsed.n[0], won: parsed.n[1], currentStreak: parsed.n[2], maxStreak: parsed.n[3], dist: parsed.n[4], clearedDates: [] },
-      hard: { played: parsed.h[0], won: parsed.h[1], currentStreak: parsed.h[2], maxStreak: parsed.h[3], dist: parsed.h[4], clearedDates: [] }
+      normal: { 
+        played: parsed.n[0], won: parsed.n[1], currentStreak: parsed.n[2], maxStreak: parsed.n[3], 
+        dist: parsed.n[4], clearedDates: parsed.n[5] || [], fastestTime: parsed.n[6] || null 
+      },
+      hard: { 
+        played: parsed.h[0], won: parsed.h[1], currentStreak: parsed.h[2], maxStreak: parsed.h[3], 
+        dist: parsed.h[4], clearedDates: parsed.h[5] || [], fastestTime: parsed.h[6] || null 
+      }
     };
     localStorage.setItem("ekiLocateStatsV2", JSON.stringify(newStats));
 
-    // 2. エンドレスのハイスコア
+    // 4. エンドレスのハイスコア復元
     localStorage.setItem("ekiLocateEndlessHighScore", parsed.e[0].toString());
     localStorage.setItem("ekiLocateEndlessMaxCombo", parsed.e[1].toString());
 
-    // 3. 【核心】ビット列から駅図鑑の漢字リストを逆生成
-    const unlockedStations = [];
-    // 読み込んだセーブデータから、0と1の文字列を取り出します
-    const bitStr = parsed.b; 
-
-    // 文字列の先頭から1文字ずつループして確認していきます
-    for (let i = 0; i < bitStr.length; i++) {
-      if (bitStr[i] === "1" && locaAllStaticStations[i]) {
-        unlockedStations.push(locaAllStaticStations[i].kanji);
-      }
-    }
-
-    // ※この後、復元した unlockedStations をメタデータ（newMeta）にセットして保存します。
-
-    // 4. メタデータの復元
+    // 5. メタデータ（駅図鑑を含む）の復元
     const newMeta = {
       consecutiveLoginDays: parsed.m[0],
       consecutiveClearDays: parsed.m[1],
       firstLoginDate: parsed.m[2],
       lastLoginDate: parsed.m[3],
       lastClearDate: parsed.m[4],
-      unlockedStations: unlockedStations
+      // 漢字のリストをそのまま復元するため、仕様変更や廃駅アップデートに完全耐性があります
+      unlockedStations: parsed.u || []
     };
     localStorage.setItem("ekiLocateMeta", JSON.stringify(newMeta));
 
-    // 5. 設定の復元
+    // 6. 設定の復元
     const newSettings = { theme: parsed.s[0], volume: parsed.s[1], fontsize: "normal" };
     localStorage.setItem("ekiLocateSettings", JSON.stringify(newSettings));
     
-    alert("データの引き継ぎに成功しました！");
-    location.reload();
+    alert("データの引き継ぎに成功しました！再読み込みします。");
+    location.reload(); // 反映させるためにリロード
   } catch (e) {
     console.error("復元エラー:", e);
-    alert("エラー: 無効なコードです。");
+    alert("エラー: 無効なコード、または破損しています。");
   }
 }
 
