@@ -1515,7 +1515,7 @@ async function selectTodayLocaStation() {
   const validStations = locaStations.filter(s => 
     s.pref !== "" && 
     s.address !== "" && 
-    s.min_km !== null &&
+    s.min_km != null &&
     s.companies && s.companies.length > 0 &&
     !(s.companies.length === 1 && s.companies[0] === "日本貨物鉄道") 
   );
@@ -1784,12 +1784,12 @@ function drawNextEndlessStation() {
       let s = locaStations[i];
       
       // selectTodayLocaStation と完全に一致させた厳格なフィルター
-      const isValid = 
-          s.latitude !== undefined && s.latitude !== null &&     // 緯度がある
-          s.longitude !== undefined && s.longitude !== null &&   // 経度がある
+      const isValid =       
+          s.latitude != null &&                                  // 緯度がある
+          s.longitude != null &&                                 // 経度がある
           s.pref !== "" &&                                       // 都道府県名がある
           s.address !== "" &&                                    // 住所がある
-          s.min_km !== null &&                                   // 営業キロがある
+          s.min_km != null &&                                    // 営業キロがある
           s.companies && s.companies.length > 0 &&               // 事業者が登録されている
           !(s.companies.length === 1 && s.companies[0] === "日本貨物鉄道") && // 貨物専用駅ではない
           (s.startDay === undefined || s.startDay <= currentDayIndex) &&    // まだ開業していない未来の駅ではない
