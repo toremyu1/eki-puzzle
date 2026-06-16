@@ -40,7 +40,7 @@ def generate_answers():
             continue
 
         # 廃駅を除外
-        if s.is_abolished_confirmed === True
+        if s.get('is_abolished_confirmed') is True:
             continue
             
         stations.append(s)
