@@ -1,5 +1,6 @@
 //1.共通変数の定義　
 const SITE_OPEN_DATE = "2025-06-25";　 // 【設定】サイトを公開した日（周年記念の基準日）
+const FALLBACK_URL = "/stationdle";  // 【設定】読み込みエラー時に戻るルートフォルダのURL
 let stations=[];　　　　　　　//すべての駅データの入れる箱
 let availableStations=[];　　//選択文字数に一致する駅を入れる箱
 let todayStation=null;　　　 //今日の正解駅
@@ -207,15 +208,52 @@ try{
     const res = await fetch('/stations.json', { cache: "no-store" });
     if (!res.ok) throw new Error("ネットワークエラー");
     
-    // 【重要】レスポンスの中身（2MB）は1回しか読めないため、バックアップ用にコピー（clone）を作る
-    const resToCache = res.clone();
-    raw = await res.json();
+    // サーバーからファイルサイズの総量（Content-Length）を取得する
+    const contentLength = res.headers.get('content-length');
     
-    // Cache APIを使って、ブラウザの専用金庫に非同期で安全に保存する（フリーズしない・容量制限に引っかからない）
-    if ('caches' in window) {
-      const cache = await caches.open('eki-backup-v1');
-      cache.put('stations.json', resToCache).catch(e => console.warn("キャッシュ保存スキップ:", e));
+    if (!contentLength) {
+      // サーバー側の設定で総量が分からない場合は、従来通り一気に読み込む
+      raw = await res.json();
+      if ('caches' in window) {
+        const cache = await caches.open('eki-backup-v1');
+        // バックアップ保存用に文字列化してレスポンスを作り直す
+        const resToCache = new Response(JSON.stringify(raw), { headers: { 'Content-Type': 'application/json' } });
+        cache.put('stations.json', resToCache).catch(e => console.warn("キャッシュ保存スキップ:", e));
+      }
+    } else {
+      // 総量が分かる場合、細かく分割して読み込みながら進捗バーを動かす
+      const total = parseInt(contentLength, 10);
+      let loaded = 0;
+      const reader = res.body.getReader(); // データを少しずつ読み込む機能
+      const chunks = []; // 受信した細切れのデータを入れる箱
+
+      while(true) {
+        // データをひと口分読み込む
+        const {done, value} = await reader.read();
+        if (done) break; // 全部読み終わったらループを抜ける
+        
+        chunks.push(value);
+        loaded += value.byteLength;
+        
+        // 30% ～ 60% の間でプログレスバーを動かす（例：半分ダウンロード完了なら45%）
+        let progress = 30 + Math.floor((loaded / total) * 30);
+        let percentText = Math.floor((loaded / total) * 100);
+        updateLoadingProgress(progress, `駅データをダウンロード中... (${percentText}%)`);
+      }
+
+      // バラバラに届いたデータをくっつけて、1つのJSONデータに復元する
+      const blob = new Blob(chunks);
+      const text = await blob.text();
+      raw = JSON.parse(text);
+      
+      // Cache APIを使って、ブラウザの専用金庫にバックアップを保存する
+      if ('caches' in window) {
+         const cache = await caches.open('eki-backup-v1');
+         const resToCache = new Response(text, { headers: { 'Content-Type': 'application/json' } });
+         cache.put('stations.json', resToCache).catch(e => console.warn("キャッシュ保存スキップ:", e));
+      }
     }
+
   } catch (err) {
     console.warn("最新データの取得に失敗。Cache APIのバックアップを使用します。", err);
     
@@ -228,7 +266,7 @@ try{
         raw = await cachedRes.json();
         isRecovered = true;
 
-        // 【追加】画面上部に「バックアップ起動中」の警告バナーを動的に表示する
+        // 画面上部に「バックアップ起動中」の警告バナーを動的に表示する
         if (!document.getElementById("offline-warning-banner")) {
           document.body.insertAdjacentHTML("afterbegin", `
             <div id="offline-warning-banner" style="background-color: #fff3e0; color: #e65100; font-size: 11px; font-weight: bold; text-align: center; padding: 6px; border-bottom: 1px solid #ffcc80; width: 100%; box-sizing: border-box;">
@@ -241,13 +279,16 @@ try{
     
     // バックアップすら無い（完全な初回プレイで通信エラー）場合の致命的エラー画面
     if (!isRecovered) {
+      // 画面全体をエラー表示に書き換え、変数で設定したルートURLへ戻るボタンを配置する
       document.body.innerHTML = `
-        <div style="text-align:center; padding:50px; font-family:sans-serif;">
-          <h3 style="color:#e53935;">駅データの読み込みに失敗しました</h3>
-          <p style="font-size:14px; color:#555;">通信環境の良いところで、もう一度お試しください。</p>
-          <button onclick="location.reload()" style="margin-top:20px; padding:10px 20px; font-size:16px; font-weight:bold; background:#3498db; color:#fff; border:none; border-radius:5px;">再読み込み</button>
+        <div style="text-align:center; padding:50px; font-family:sans-serif; background-color:#f0f2f5; height:100vh; display:flex; flex-direction:column; justify-content:center; align-items:center;">
+          <h3 style="color:#e53935; font-size:24px; margin-bottom:15px;">駅データの読み込みに失敗しました</h3>
+          <p style="font-size:14px; color:#555; margin-bottom:30px;">通信環境が不安定です。<br>電波の良いところで再度お試しください。</p>
+          <button onclick="window.location.href='${FALLBACK_URL}'" style="padding:15px 30px; font-size:18px; font-weight:bold; background:#3498db; color:#fff; border:none; border-radius:8px; cursor:pointer; box-shadow: 0 4px 0 #2980b9;">
+            トップページへ戻る
+          </button>
         </div>`;
-      return; // 処理を止める
+      return; // 処理を完全に止める
     }
   }
 
