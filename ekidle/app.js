@@ -206,54 +206,66 @@ try{
   try {
     // 常に最新を取りに行く
     const res = await fetch('/stations.json', { cache: "no-store" });
-    if (!res.ok) throw new Error("ネットワークエラー");
-    
-    // サーバーからファイルサイズの総量（Content-Length）を取得する
+    if (!res.ok) throw new Error(`通信エラーが発生しました (ステータス: ${res.status})`);
+
+    // ファイルの全体サイズを取得（サーバー側が対応している場合）
     const contentLength = res.headers.get('content-length');
-    
-    if (!contentLength) {
-      // サーバー側の設定で総量が分からない場合は、従来通り一気に読み込む
-      raw = await res.json();
-      if ('caches' in window) {
-        const cache = await caches.open('eki-backup-v1');
-        // バックアップ保存用に文字列化してレスポンスを作り直す
-        const resToCache = new Response(JSON.stringify(raw), { headers: { 'Content-Type': 'application/json' } });
-        cache.put('stations.json', resToCache).catch(e => console.warn("キャッシュ保存スキップ:", e));
-      }
-    } else {
-      // 総量が分かる場合、細かく分割して読み込みながら進捗バーを動かす
-      const total = parseInt(contentLength, 10);
-      let loaded = 0;
-      const reader = res.body.getReader(); // データを少しずつ読み込む機能
-      const chunks = []; // 受信した細切れのデータを入れる箱
+    const totalBytes = contentLength ? parseInt(contentLength, 10) : 0;
+    let loadedBytes = 0;
 
-      while(true) {
-        // データをひと口分読み込む
-        const {done, value} = await reader.read();
-        if (done) break; // 全部読み終わったらループを抜ける
-        
-        chunks.push(value);
-        loaded += value.byteLength;
-        
-        // 30% ～ 60% の間でプログレスバーを動かす（例：半分ダウンロード完了なら45%）
-        let progress = 30 + Math.floor((loaded / total) * 30);
-        let percentText = Math.floor((loaded / total) * 100);
-        updateLoadingProgress(progress, `駅データをダウンロード中... (${percentText}%)`);
-      }
+    // データを少しずつ読み込むためのリーダーを取得する
+    const reader = res.body.getReader();
+    const chunks = [];
 
-      // バラバラに届いたデータをくっつけて、1つのJSONデータに復元する
-      const blob = new Blob(chunks);
-      const text = await blob.text();
-      raw = JSON.parse(text);
-      
-      // Cache APIを使って、ブラウザの専用金庫にバックアップを保存する
-      if ('caches' in window) {
-         const cache = await caches.open('eki-backup-v1');
-         const resToCache = new Response(text, { headers: { 'Content-Type': 'application/json' } });
-         cache.put('stations.json', resToCache).catch(e => console.warn("キャッシュ保存スキップ:", e));
+    // データのダウンロードが終わるまでループで少しずつ受け取る
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break; // 読み込み完了でループを抜ける
+
+      // 受け取ったデータの欠片（チャンク）を保存し、読み込み済みのバイト数を加算する
+      chunks.push(value);
+      loadedBytes += value.length;
+
+      // 進捗バーの更新計算
+      if (totalBytes) {
+        // 全体サイズが分かる場合は、30%〜60%の間で正確に進捗を進める
+        const percent = 30 + (loadedBytes / totalBytes) * 30;
+        updateLoadingProgress(percent, `駅データをダウンロード中... (${Math.floor(percent)}%)`);
+      } else {
+        // Cloudflare等の圧縮環境で全体サイズが分からない場合のフェイク進捗
+        const mb = (loadedBytes / (1024 * 1024)).toFixed(1);
+        updateLoadingProgress(45, `駅データをダウンロード中... (${mb}MB)`); 
       }
     }
 
+    // 【進捗60%】保管完了
+    updateLoadingProgress(60, "データを展開・保管中...");
+
+    // バラバラに受け取ったデータの欠片を1つの箱に結合する
+    const allChunks = new Uint8Array(loadedBytes);
+    let position = 0;
+    for (const chunk of chunks) {
+      allChunks.set(chunk, position);
+      position += chunk.length;
+    }
+
+    // バイトデータを文字列（テキスト）に変換する
+    const textData = new TextDecoder("utf-8").decode(allChunks);
+
+    // エラーページ（HTML）などを誤って読み込んでいないか確認する
+    if (textData.trim().startsWith("<")) {
+      throw new Error("JSONの代わりにエラー画面が読み込まれました。");
+    }
+
+    // 文字列をJSONデータとして変換する
+    raw = JSON.parse(textData);
+
+    // Cache APIを使って非同期でバックアップ保存
+    if ('caches' in window) {
+      const cache = await caches.open('eki-backup-v1');
+      const resToCache = new Response(textData, { headers: { 'Content-Type': 'application/json' } });
+      cache.put('stations.json', resToCache).catch(e => console.warn("キャッシュ保存スキップ:", e));
+    }
   } catch (err) {
     console.warn("最新データの取得に失敗。Cache APIのバックアップを使用します。", err);
     
