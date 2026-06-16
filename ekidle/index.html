@@ -28,6 +28,7 @@
   <header>
     <div class="toolbar">
       <div class="toolbar-left">
+        <button id="home-btn" class="btn btn-icon">←</button>
         <button id="help-btn" class="btn btn-icon">？</button>
         <button id="theme-btn" class="btn btn-icon">🎨</button>
         <button id="stats-btn" class="btn btn-icon">📊</button>
@@ -48,7 +49,7 @@
       <button id="mode-5" class="btn mode-btn">5文字</button>
       <button id="mode-6" class="btn mode-btn">6文字</button>
     </div>
-    <div class="hardmode-container">
+    <div class="hardmode-container hidden">
       <label class="hardmode-label">
         <input type="checkbox" id="hardmode-switch"> 🔥 ハードモード
       </label>
@@ -175,6 +176,7 @@
       メニュー <span id="close-menu-btn" class="modal-close" style="position:static;">&times;</span>
     </div>
     <ul class="side-menu-list">
+      <li style="border-bottom:1px solid #eee;"><a href="#" id="menu-home-btn">🏠 タイトル画面に戻る</a></li>
       <li><a href="#" onclick="alert('鋭意開発中です！お楽しみに。'); return false;">🔰 練習モード（準備中）</a></li>
       <li><a href="#" onclick="alert('鋭意開発中です！お楽しみに。'); return false;">🏆 実績（準備中）</a></li>
       <li><a href="#" onclick="alert('鋭意開発中です！お楽しみに。'); return false;">🗓 過去問プレイ（準備中）</a></li>
