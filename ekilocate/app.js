@@ -213,7 +213,7 @@ async function initLocaGame() {
     updateLocaLoadingProgress(80, "今日の問題を構築中...");
 
     // 出題可能駅をフィルタする
-    locaStations = rawStations.filter(s => {
+    locaAllStaticStations = rawStations.filter(s => {
       // 緯度・経度の欠損チェック（一番処理が軽く、無効なデータを即弾けるため最優先）
       if (s.latitude == null || s.longitude == null) return false;
       // 都道府県、住所、営業キロが無い駅（エラーデータ）を排除
