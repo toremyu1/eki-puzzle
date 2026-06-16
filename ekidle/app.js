@@ -566,6 +566,7 @@ async function selectTodayStation() {
     !(s.companies.length === 1 && s.companies[0] === "日本貨物鉄道") &&
     s.address !== "" &&
     s.min_km != null
+    s.is_abolished_confirmed !== True
   );
 
   if (strictModeStations.length === 0) {
