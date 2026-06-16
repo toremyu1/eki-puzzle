@@ -828,3 +828,48 @@ body.theme-dark #all-stats-modal .stat-label,
 body.theme-dark #result-modal .stat-label {
     color: #ffffff !important;
 }
+
+
+/* エンドレスモード：通常時の各パーツの色とレイアウト設定 */
+.endless-bar { background-color: #f8fafc; }
+.endless-bar-text { color: #334155; }
+.endless-val-score { color: var(--theme-accent, #3498db); font-weight: bold; }
+.endless-val-combo { color: #e74c3c; font-weight: bold; }
+.endless-val-cleared { color: #6aaa64; font-weight: bold; }
+.endless-res-score { color: var(--theme-accent, #3498db); }
+.endless-res-panel { color: #334155; }
+
+/* 成績モーダル内のエンドレス個別ボックスの色 */
+.endless-stat-box.box-score { background: #fff3e0; }
+.endless-stat-label.label-score { color: #e65100; }
+.endless-stat-box.box-score .stat-value { color: #f57c00 !important; }
+
+.endless-stat-box.box-combo { background: #e3f2fd; }
+.endless-stat-label.label-combo { color: #1565c0; }
+.endless-stat-box.box-combo .stat-value { color: #1976d2 !important; }
+
+/* ==========================================
+   テーマカラーが黒（ダークモード）の時の完全白化命令
+   ========================================== */
+body.theme-dark .endless-bar { 
+    background-color: #222222 !important; 
+    border-color: #444444 !important; 
+}
+
+body.theme-dark .endless-stat-box {
+    background-color: #222222 !important;
+    border-color: #555555 !important;
+}
+
+body.theme-dark .endless-bar-text,
+body.theme-dark .endless-val-score,
+body.theme-dark .endless-val-combo,
+body.theme-dark .endless-val-cleared,
+body.theme-dark .endless-res-score,
+body.theme-dark .endless-res-panel,
+body.theme-dark .endless-stat-label,
+body.theme-dark .endless-stat-box .stat-value,
+body.theme-dark #endless-result-modal h2,
+body.theme-dark #endless-result-modal p {
+    color: #ffffff !important;
+}
