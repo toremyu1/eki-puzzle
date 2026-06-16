@@ -452,6 +452,8 @@ updateHelpContent(); // 起動時に説明文を現在の設定に合わせる
       document.getElementById("title-screen").style.display = "none";
       // ★追加：裏に隠しておいたゲーム画面（キーボードやマス目）を表示する
       document.getElementById("game-screen").classList.remove("hidden");
+      // 【追加】ゲーム画面に入ったので、ハードモードのチェックボックスを表示します
+      document.querySelector(".hardmode-container").classList.remove("hidden");
       // ゲーム画面に入ってから、行事日のポップアップなどを開始する
       checkSpecialEvent();
     });
@@ -470,6 +472,30 @@ updateHelpContent(); // 起動時に説明文を現在の設定に合わせる
     document.getElementById("btn-reverse-mode").addEventListener("click", () => {
       // リバースモードは現在準備中のためアラートを出す
       alert("リバースモードは現在開発中です！お楽しみに！");
+    });
+
+    // 【新設】タイトル画面へ戻るための共通関数
+    const returnToTitleScreen = () => {
+      document.getElementById("title-screen").classList.remove("hidden");
+      document.getElementById("game-screen").classList.add("hidden");
+    
+      // タイトル画面に戻ったので、ハードモードのチェックボックスを再び隠します
+      document.querySelector(".hardmode-container").classList.add("hidden");
+    
+      // もしサイドメニューが開いていたら、右側に隠してオーバーレイも消します
+      document.getElementById("side-menu").style.right = "-250px";
+      setTimeout(() => {
+        document.getElementById("side-menu-overlay").style.display = "none";
+      }, 300);
+    };
+
+    // ヘッダーの「🏠」ボタンが押されたらタイトルに戻る
+    document.getElementById("home-btn").addEventListener("click", returnToTitleScreen);
+
+    // サイドメニューの「タイトル画面に戻る」が押されたらタイトルに戻る
+    document.getElementById("menu-home-btn").addEventListener("click", (e) => {
+      e.preventDefault(); // リンクの標準動作（画面最上部へのジャンプなど）を防止
+      returnToTitleScreen();
     });
 
     // 【ここを追加：⑤ 完了・画面を閉じる】
