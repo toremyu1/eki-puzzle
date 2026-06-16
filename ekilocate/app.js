@@ -146,39 +146,78 @@ async function initLocaGame() {
     // 【進捗30%】ダウンロード開始
     updateLocaLoadingProgress(30, "駅データをダウンロード中...");
 
-    // 2. 駅データの読み込み（Cache APIによる大容量バックアップ機能付き）
+    // 2. 駅データの読み込み（ストリーム処理による進捗バー連携付き）
     let rawStations = [];
     try {
-      // 常に最新を取りに行く（ルートフォルダを指定します）
+      // 常に最新を取りに行く
       const res = await fetch('/stations.json', { cache: "no-store" });
-      if (!res.ok) throw new Error("ネットワークエラー");
+      if (!res.ok) throw new Error(`通信エラーが発生しました (ステータス: ${res.status})`);
 
-      // エラーページ（HTML）などを誤って読み込んでいないか、一度テキストとして確認します
-      const textData = await res.text();
-      if (textData.trim().startsWith("<")) {
-        throw new Error("/stations.json の代わりに HTML が読み込まれました。");
+      // ファイルの全体サイズを取得（サーバー側が対応している場合）
+      const contentLength = res.headers.get('content-length');
+      const totalBytes = contentLength ? parseInt(contentLength, 10) : 0;
+      let loadedBytes = 0;
+
+      // データを少しずつ読み込むためのリーダーを取得する
+      const reader = res.body.getReader();
+      const chunks = [];
+
+      // データのダウンロードが終わるまでループで少しずつ受け取る
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break; // 読み込み完了でループを抜ける
+
+        // 受け取ったデータの欠片（チャンク）を保存し、読み込み済みのバイト数を加算する
+        chunks.push(value);
+        loadedBytes += value.length;
+
+        // 進捗バーの更新計算
+        if (totalBytes) {
+          // 全体サイズが分かる場合は、30%〜60%の間で正確に進捗を進める
+          const percent = 30 + (loadedBytes / totalBytes) * 30;
+          updateLocaLoadingProgress(percent, `駅データをダウンロード中... (${Math.floor(percent)}%)`);
+        } else {
+          // Cloudflare等の圧縮環境で全体サイズが分からない場合のフェイク進捗
+          // 読み込んだデータ量（MB）を表示して、画面がフリーズしていないことを伝える
+          const mb = (loadedBytes / (1024 * 1024)).toFixed(1);
+          updateLocaLoadingProgress(Math.min(55, currentLoadingProgress + 0.5), `駅データをダウンロード中... (${mb}MB)`);
+        }
       }
-
-      // 問題がなければデータ（JSON）として変換します
-      rawStations = JSON.parse(textData);
 
       // 【進捗60%】保管完了
-      updateLocaLoadingProgress(60, "データを安全に保管中...");
+      updateLocaLoadingProgress(60, "データを展開・保管中...");
 
-      // Cache APIを使って、ブラウザの専用金庫に非同期で安全に保存します（13MBでもフリーズしません）
+      // バラバラに受け取ったデータの欠片を1つの箱に結合する
+      const allChunks = new Uint8Array(loadedBytes);
+      let position = 0;
+      for (const chunk of chunks) {
+        allChunks.set(chunk, position);
+        position += chunk.length;
+      }
+
+      // バイトデータを文字列（テキスト）に変換する
+      const textData = new TextDecoder("utf-8").decode(allChunks);
+
+      // エラーページ（HTML）などを誤って読み込んでいないか確認する
+      if (textData.trim().startsWith("<")) {
+        throw new Error("JSONの代わりにエラー画面が読み込まれました。");
+      }
+
+      // 文字列をJSONデータとして変換する
+      rawStations = JSON.parse(textData);
+
+      // Cache APIを使って非同期でバックアップ保存
       if ('caches' in window) {
         const cache = await caches.open('ekilocate-backup-v1');
-        // 一度 textData として読み取ってしまったため、キャッシュ保存用に新しい Response オブジェクトを作り直して金庫に入れます
-        const resToCache = new Response(textData, {
-          headers: { 'Content-Type': 'application/json' }
-        });
+        const resToCache = new Response(textData, { headers: { 'Content-Type': 'application/json' } });
         cache.put('../stations.json', resToCache).catch(e => console.warn("キャッシュ保存スキップ:", e));
       }
+
     } catch (err) {
       console.warn("最新データの取得に失敗。Cache APIのバックアップを使用します。", err);
 
       let isRecovered = false;
-      // 通信エラー時は、Cache APIの金庫から過去のデータを引っ張り出します
+      // 通信エラー時は、Cache APIの金庫から過去のデータを引っ張り出す
       if ('caches' in window) {
         const cache = await caches.open('ekilocate-backup-v1');
         const cachedRes = await cache.match('../stations.json');
@@ -186,26 +225,18 @@ async function initLocaGame() {
           rawStations = await cachedRes.json();
           isRecovered = true;
 
-          // 画面上部に「バックアップ起動中」の警告バナーを動的に表示します
+          // バックアップ起動時の警告バナーを動的に表示する
           if (!document.getElementById("offline-warning-banner")) {
-            document.body.insertAdjacentHTML("afterbegin", `
-              <div id="offline-warning-banner" style="background-color: #fff3e0; color: #e65100; font-size: 11px; font-weight: bold; text-align: center; padding: 6px; border-bottom: 1px solid #ffcc80; width: 100%; box-sizing: border-box;">
-                ⚠️ バックアップデータで運行中。最新の駅情報と異なる場合があります。
-              </div>
-            `);
+            document.body.insertAdjacentHTML("afterbegin", "<div id='offline-warning-banner' style='background-color: #fff3e0; color: #e65100; font-size: 11px; font-weight: bold; text-align: center; padding: 6px; border-bottom: 1px solid #ffcc80; width: 100%; box-sizing: border-box;'>⚠️ バックアップデータで運行中。最新の駅情報と異なる場合があります。</div>");
           }
         }
       }
 
-      // バックアップすら無い（完全な初回プレイで通信エラー）場合の致命的エラー画面です
+      // バックアップすら無い（完全な初回プレイで通信エラー等）場合の致命的エラー画面
       if (!isRecovered) {
-        document.body.innerHTML = `
-          <div style="text-align:center; padding:50px; font-family:sans-serif;">
-            <h3 style="color:#e53935;">駅データの読み込みに失敗しました</h3>
-            <p style="font-size:14px; color:#555;">通信環境の良いところで、もう一度お試しください。</p>
-            <button onclick="location.reload()" style="margin-top:20px; padding:10px 20px; font-size:16px; font-weight:bold; background:#3498db; color:#fff; border:none; border-radius:5px;">再読み込み</button>
-          </div>`;
-        return; // ゲームの起動処理を完全に止めます
+        // エラー内容を画面全体に大きく表示し、指定のルートフォルダ(/ekilocate/)へ戻るボタンを配置する
+        document.body.innerHTML = "<div style='position:fixed;top:0;left:0;width:100vw;height:100vh;background:#f8fafc;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;box-sizing:border-box;z-index:99999;'><div style='font-size:48px;margin-bottom:10px;'>⚠️</div><h3 style='color:#e53935;margin:0 0 10px 0;'>駅データの読み込みに失敗しました</h3><p style='font-size:14px;color:#475569;text-align:center;max-width:400px;line-height:1.5;'>通信環境が不安定か、サーバーでエラーが発生しています。<br><span style='font-size:12px;color:#94a3b8;'>詳細: " + err.message + "</span></p><div style='display:flex;gap:10px;margin-top:20px;'><button onclick='location.reload()' style='padding:12px 24px;font-size:16px;font-weight:bold;background:#3498db;color:#fff;border:none;border-radius:8px;cursor:pointer;box-shadow:0 4px 6px rgba(0,0,0,0.1);'>再読み込み</button><button onclick=\"location.href='/ekilocate/'\" style='padding:12px 24px;font-size:16px;font-weight:bold;background:#64748b;color:#fff;border:none;border-radius:8px;cursor:pointer;box-shadow:0 4px 6px rgba(0,0,0,0.1);'>トップへ戻る</button></div></div>";
+        return; // ゲームの起動処理を完全に止める
       }
     }
 
