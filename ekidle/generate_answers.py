@@ -38,6 +38,10 @@ def generate_answers():
         # 【強化版フィルター】都道府県、事業者、住所、営業キロのいずれかが欠けているゴースト駅を除外
         if not s.get('pref') or not companies or not s.get('address') or s.get('min_km') is None:
             continue
+
+        # 廃駅を除外
+        if s.is_abolished_confirmed === True
+            continue
             
         stations.append(s)
     
