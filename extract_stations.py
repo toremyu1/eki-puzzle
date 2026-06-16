@@ -275,6 +275,7 @@ def fetch_station_details(url):
         "longitude": None,         # 経度
         "adjacent_stations": [],   # 隣駅リスト（辞書形式: name, link）
         "transfer_stations": []    # 乗換駅リスト（辞書形式: name, link）
+        "is_abolished_confirmed": False # ★追加：確実に廃止された証拠を掴んだかどうかのフラグ
     }
 
     try:
@@ -286,13 +287,15 @@ def fetch_station_details(url):
         # ↓↓↓ ここから追加 ↓↓↓
         # 廃止駅確認処理
         active_infoboxes = []
+        abolished_count = 0 # ★追加：廃止と書かれた表の数をカウント
+        
         for box in infoboxes:
             is_abolished = False
 
             # 取得した表の行(tr)を1行ずつ確認する
             for tr in box.find_all('tr'):
-                th = tr.find('th') # 見出し（「開業年月日」や「廃止年月日」など）
-                td = tr.find('td') # 中身（「1980年」など）
+                th = tr.find('th') # 見出し
+                td = tr.find('td') # 中身
 
                 # 見出しと中身の両方が存在する場合のみ判定
                 if th and td:
@@ -300,6 +303,7 @@ def fetch_station_details(url):
                     # （※Wikipediaの仕様上、項目だけあって中身が空のケースを安全にスルーするため）
                     if '廃止' in th.get_text(strip=True) and td.get_text(strip=True):
                         is_abolished = True
+                        abolished_count += 1 # ★廃止の証拠を発見
                         print("      [除外] 廃止情報が含まれる表を検知したため、抽出から除外しました。")
                         break # 廃止表と確定した時点で、この表の確認を終了
 
@@ -308,6 +312,9 @@ def fetch_station_details(url):
             if not is_abolished:
                 active_infoboxes.append(box)
 
+        # ★追加：もし「現役の表が1つも無い」かつ「廃止の表があった」なら、これは紛れもなく廃駅！
+        if not active_infoboxes and abolished_count > 0:
+            data["is_abolished_confirmed"] = True
 
         # これ以降の処理を、現役の表（active_infoboxes）だけで行うようにデータを上書きする
         infoboxes = active_infoboxes
@@ -939,10 +946,16 @@ def extract_and_count_stations():
                 continue
 
             # =========================================================================
-            # 【追加】完全データ保護ロジック（一括復元）
+            # 【修正】完全データ保護ロジック ＆ 廃駅の強制引導
             # =========================================================================
-            # 距離がエラー値であり、かつ住所も空っぽなら「明らかな通信エラー」と判定する
             is_fetch_failed = (v["min_km"] is None and not v["address"])
+
+            # ★追加：確実な廃駅シグナルを受信した場合、保護をキャンセルして引導を渡す！
+            if v.get("is_abolished_confirmed"):
+                is_fetch_failed = False
+                v["endDay"] = current_day_index
+                v["subPage"] = "廃止済"
+                print(f"  [廃駅確定] Wikipediaページ内で廃止の記述を確認したため、廃駅処理を行いました: {v['kanji']}")
 
             if is_fetch_failed:
                 # 取得失敗時は、新しい空っぽのデータ(v)を捨てて、過去のデータ(old_item)をそのまま残す
