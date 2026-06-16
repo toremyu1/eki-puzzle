@@ -125,10 +125,11 @@ header {
   transition: transform 0.1s ease, border-bottom-width 0.1s ease;
 }
 
-/* ボタンが押された瞬間の沈み込みアクション */
+/* ボタンを押した瞬間に影をなくして下に沈ませる（ガタつき防止版） */
 .btn:active:not([disabled]) {
-  transform: translateY(4px); /* 4px下に移動 */
-  border-bottom-width: 0px;   /* 厚みを消して押し込まれたように見せる */
+  transform: translateY(4px);
+  /* 太さを0にするのではなく、4pxのまま色を透明にして全体の高さを維持します */
+  border-bottom-color: transparent !important;
 }
 
 /* 無効化（グレーアウト）時のボタン */
