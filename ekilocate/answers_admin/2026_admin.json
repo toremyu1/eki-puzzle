@@ -544,5 +544,103 @@
             "pref": "山形県",
             "municipality": "鶴岡市"
         }
+    },
+    "2026-07-22": {
+        "normal": {
+            "kanji": "一社駅",
+            "yomi": "いっしゃ",
+            "pref": "愛知県",
+            "municipality": "名古屋市"
+        },
+        "hard": {
+            "kanji": "上松駅",
+            "yomi": "あげまつ",
+            "pref": "長野県",
+            "municipality": "上松町"
+        }
+    },
+    "2026-07-23": {
+        "normal": {
+            "kanji": "五日市駅",
+            "yomi": "いつかいち",
+            "pref": "広島県",
+            "municipality": "広島市"
+        },
+        "hard": {
+            "kanji": "抜里駅",
+            "yomi": "ぬくり",
+            "pref": "静岡県",
+            "municipality": "島田市"
+        }
+    },
+    "2026-07-24": {
+        "normal": {
+            "kanji": "岳南原田駅",
+            "yomi": "がくなんはらだ",
+            "pref": "静岡県",
+            "municipality": "富士市"
+        },
+        "hard": {
+            "kanji": "北河内駅 (山口県)",
+            "yomi": "きたごうち",
+            "pref": "山口県",
+            "municipality": "岩国市"
+        }
+    },
+    "2026-07-25": {
+        "normal": {
+            "kanji": "京成酒々井駅",
+            "yomi": "けいせいしすい",
+            "pref": "千葉県",
+            "municipality": "酒々井町"
+        },
+        "hard": {
+            "kanji": "ほうらい丘駅",
+            "yomi": "ほうらいおか",
+            "pref": "滋賀県",
+            "municipality": "大津市"
+        }
+    },
+    "2026-07-26": {
+        "normal": {
+            "kanji": "成増駅",
+            "yomi": "なります",
+            "pref": "東京都",
+            "municipality": "板橋区"
+        },
+        "hard": {
+            "kanji": "竹下駅",
+            "yomi": "たけした",
+            "pref": "福岡県",
+            "municipality": "福岡市"
+        }
+    },
+    "2026-07-27": {
+        "normal": {
+            "kanji": "金谷駅",
+            "yomi": "かなや",
+            "pref": "静岡県",
+            "municipality": "島田市"
+        },
+        "hard": {
+            "kanji": "太郎丸エンゼルランド駅",
+            "yomi": "たろうまるエンゼルランド",
+            "pref": "福井県",
+            "municipality": "坂井市"
+        }
+    },
+    "2026-07-28": {
+        "normal": {
+            "kanji": "みなみ子宝温泉駅",
+            "yomi": "みなみこだからおんせん",
+            "pref": "岐阜県",
+            "municipality": "郡上市"
+        },
+        "hard": {
+            "kanji": "北本駅",
+            "yomi": "きたもと",
+            "pref": "埼玉県",
+            "municipality": "北本市"
+        }
     }
 }
