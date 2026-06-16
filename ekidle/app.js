@@ -561,12 +561,12 @@ async function selectTodayStation() {
   // （JSON逆引き時の「同名ゴースト駅の誤認」を防ぐため、全ルートで共通使用する）
   const strictModeStations = stations.filter(s => 
     s.yomi.length === currentMode && 
-    s.pref !== "" && 
+    s.pref && s.pref !== "" && 
     s.companies && s.companies.length > 0 &&
     !(s.companies.length === 1 && s.companies[0] === "日本貨物鉄道") &&
-    s.address !== "" &&
-    s.min_km != null
-    s.is_abolished_confirmed !== True
+    s.address && s.address !== "" &&
+    s.min_km != null &&
+    s.is_abolished_confirmed !== true
   );
 
   if (strictModeStations.length === 0) {
