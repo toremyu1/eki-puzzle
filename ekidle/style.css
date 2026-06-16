@@ -1,326 +1,369 @@
+/* ==========================================
+   1. 変数定義と基本設定
+========================================== */
 :root {
---correct-color: #6aaa64;
---present-color: #c9b458;
---diacritic-color: #9c27b0;
---absent-color: #787c7e;
---bg-color: #ffffff;
---text-color: #1a1a1b;
+  --correct-color: #6aaa64;
+  --present-color: #c9b458;
+  --diacritic-color: #9c27b0;
+  --absent-color: #787c7e;
+  --bg-color: #ffffff;
+  --text-color: #1a1a1b;
 }
+
 body {
-font-family: 'Clear Sans', 'Helvetica Neue', Arial, sans-serif;
-background-color: var(--bg-color); color: var(--text-color);
-display: flex; flex-direction: column; align-items: center;
-margin: 0; padding: 10px; height: 100vh; box-sizing: border-box;
+  font-family: 'Clear Sans', 'Helvetica Neue', Arial, sans-serif;
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 0;
+  padding: 10px;
+  min-height: 100vh;
+  box-sizing: border-box;
 }
+
+/* 共通で非表示にするクラス */
+.hidden { display: none !important; }
+
+/* ==========================================
+   2. レイアウト枠（ヘッダー・画面コンテナ）
+========================================== */
 header {
-width: 100%; max-width: 500px; display: flex; flex-direction: column; align-items: center; border-bottom: 1px solid #d3d6da; padding-bottom: 10px; margin-bottom: 10px;
+  width: 100%;
+  max-width: 500px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border-bottom: 1px solid #d3d6da;
+  padding-bottom: 10px;
+  margin-bottom: 10px;
 }
-h1 { margin: 0 0 10px 0; font-size: 24px; }
-.mode-selector { display: flex; gap: 10px; }
+
+/* タイトル画面・ゲーム画面の枠組み */
+.screen-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex-grow: 1;
+  width: 100%;
+  max-width: 500px;
+}
+
+/* ヘッダー内部の要素 */
+.toolbar {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 375px;
+  margin: 0 auto 5px;
+}
+.toolbar-left, .toolbar-right {
+  display: flex;
+  gap: 5px;
+}
+.header-title {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 10px 0;
+  font-size: 24px;
+}
+.header-logo {
+  width: 36px;
+  height: 36px;
+  margin-right: 10px;
+  border-radius: 8px;
+}
+.header-subtitle {
+  font-size: 14px;
+  font-weight: bold;
+  color: #666;
+  margin-top: -5px;
+  margin-bottom: 15px;
+  text-align: center;
+}
+.mode-selector {
+  display: flex;
+  gap: 10px;
+}
+.hardmode-container {
+  margin-top: 10px;
+  text-align: center;
+}
+.hardmode-label {
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  user-select: none;
+}
+
+/* タイトル画面固有の装飾 */
+.title-catchphrase {
+  color: #555;
+  margin-bottom: 40px;
+  margin-top: 20px;
+  font-weight: bold;
+}
+
+/* ==========================================
+   3. 立体ボタンの設計（全ボタン共通）
+========================================== */
 .btn {
-background-color: #e3e3e1; border: none; padding: 8px 12px; border-radius: 4px; font-weight: bold; cursor: pointer; color: var(--text-color); font-size: 14px;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+  box-sizing: border-box;
+  text-align: center;
+  user-select: none; /* スマホで長押し選択されるのを防ぐ */
+  outline: none;
+  border: none;
+  
+  /* 立体感（厚み）を出すための下枠線 */
+  border-bottom: 4px solid rgba(0,0,0,0.2);
+  /* 押した時にフワッと動くアニメーション設定 */
+  transition: transform 0.1s ease, border-bottom-width 0.1s ease;
 }
-.mode-btn.active { background-color: var(--correct-color); color: white; }
-.ad-space {
-width: 100%; max-width: 320px; height: 50px; background-color: #f0f0f0; display: flex; justify-content: center; align-items: center; font-size: 12px; color: #999; margin: 10px 0; border: 1px dashed #ccc;
+
+/* ボタンが押された瞬間の沈み込みアクション */
+.btn:active:not([disabled]) {
+  transform: translateY(4px); /* 4px下に移動 */
+  border-bottom-width: 0px;   /* 厚みを消して押し込まれたように見せる */
 }
-main {
-display: flex; flex-direction: column; align-items: center; flex-grow: 1; width: 100%; max-width: 500px;
+
+/* 無効化（グレーアウト）時のボタン */
+.btn[disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
+
+/* ------------------------------------------
+   ボタンのサイズと色のバリエーション
+------------------------------------------ */
+/* アイコン用の小さいボタン（ヘッダー等） */
+.btn-icon {
+  width: 32px; height: 32px;
+  font-size: 16px;
+  padding: 0;
+  display: flex; justify-content: center; align-items: center;
+  background-color: #e3e3e1; color: var(--text-color);
+}
+
+/* モード切り替えボタン */
+.mode-btn {
+  background-color: #e3e3e1;
+  color: var(--text-color);
+  padding: 8px 12px;
+  font-size: 14px;
+}
+.mode-btn.active {
+  background-color: var(--correct-color);
+  color: white;
+  border-bottom-color: #4a7c46; /* 緑ボタン専用の影色 */
+}
+
+/* タイトル画面用の巨大ボタン */
+.btn-large {
+  width: 80%; max-width: 320px;
+  padding: 20px;
+  font-size: 20px;
+  margin-bottom: 20px;
+}
+
+/* 色のバリエーション */
+.btn-green { background-color: var(--correct-color); color: white; border-bottom-color: #4a7c46; }
+.btn-gray { background-color: #95a5a6; color: white; border-bottom-color: #7f8c8d; }
+.btn-outline { background-color: #ffffff; color: var(--text-color); border: 2px solid #d3d6da; border-bottom: 4px solid #d3d6da; }
+
+/* ゲーム画面のコントロールボタン群 */
+.control-buttons {
+  display: flex; justify-content: center; gap: 8px;
+  margin: 10px auto 15px; width: 95%; max-width: 400px;
+}
+.btn-small { flex: 1; padding: 8px 0; font-size: 14px; }
+.btn-medium { flex: 2; padding: 8px 0; font-size: 18px; }
+.btn-danger { background-color: #fff; color: #e53935; border: 2px solid #e53935; border-bottom: 4px solid #c0392b; }
+.btn-primary { background-color: #fff; color: #03a9f4; border: 2px solid #03a9f4; border-bottom: 4px solid #0288d1; }
+
+/* 結果画面のシェアボタン等（平面的なデザイン） */
+.btn-flat {
+  border-radius: 4px;
+  padding: 8px 12px;
+  font-size: 14px;
+  color: white;
+  /* 平面にするため、影と沈み込みアニメーションをキャンセル */
+  border-bottom: none;
+  transition: opacity 0.2s;
+}
+.btn-flat:active:not([disabled]) {
+  transform: none;
+  opacity: 0.7;
+}
+
+/* ==========================================
+   4. ゲームボードとタイル・キーボード
+========================================== */
 #game-board {
-display: grid; grid-template-rows: repeat(6, 1fr); gap: 5px; margin-bottom: 20px;
+  display: grid;
+  grid-template-rows: repeat(6, 1fr);
+  gap: 5px;
+  margin-bottom: 20px;
+  position: relative;
 }
 .board-row {
-display: grid; grid-template-columns: repeat(var(--row-length, 4), 1fr); gap: 5px;
+  display: grid;
+  grid-template-columns: repeat(var(--row-length, 4), 1fr);
+  gap: 5px;
 }
 .tile {
-width: 12vw; height: 12vw; max-width: 60px; max-height: 60px;
-border: 2px solid #d3d6da; display: flex; justify-content: center; align-items: center;
-font-size: 24px; font-weight: bold; text-transform: uppercase; box-sizing: border-box;
+  width: 12vw; height: 12vw; max-width: 60px; max-height: 60px;
+  border: 2px solid #d3d6da; display: flex; justify-content: center; align-items: center;
+  font-size: 24px; font-weight: bold; text-transform: uppercase; box-sizing: border-box;
 }
+
+/* 色付け状態のタイル */
 .tile.correct { background-color: var(--correct-color); color: white; border-color: var(--correct-color); }
 .tile.present { background-color: var(--present-color); color: white; border-color: var(--present-color); }
 .tile.diacritic { background-color: var(--diacritic-color); color: white; border-color: var(--diacritic-color); }
 .tile.absent { background-color: var(--absent-color); color: white; border-color: var(--absent-color); }
+
+/* キーボード */
 #keyboard {
-width: 100%; display: flex; flex-direction: column; align-items: center; gap: 5px;
+  width: 100%; display: flex; flex-direction: column; align-items: center; gap: 5px;
 }
 .keyboard-title {
-width: 100%; text-align: left; font-size: 12px; color: #666; margin-top: 5px; border-bottom: 1px solid #eee; padding-bottom: 2px;
+  width: 100%; text-align: left; font-size: 12px; color: #666; margin-top: 5px; border-bottom: 1px solid #eee; padding-bottom: 2px;
 }
 .keyboard-section {
-display: flex; gap: 4px; justify-content: center; width: 100%; margin-bottom: 5px;
+  display: flex; gap: 4px; justify-content: center; width: 100%; margin-bottom: 5px;
 }
-.key-col {
-display: flex; flex-direction: column; gap: 4px;
-}
+.key-col { display: flex; flex-direction: column; gap: 4px; }
 .key {
-background-color: #d3d6da; border: none; border-radius: 4px;
-font-weight: bold; font-size: 14px; cursor: pointer;
-display: flex; justify-content: center; align-items: center;
-width: 8vw; max-width: 35px; height: 35px; padding: 0; margin: 0;
+  background-color: #d3d6da; border: none; border-radius: 4px;
+  font-weight: bold; font-size: 14px; cursor: pointer;
+  display: flex; justify-content: center; align-items: center;
+  width: 8vw; max-width: 35px; height: 35px; padding: 0; margin: 0;
 }
 .key.dummy { visibility: hidden; pointer-events: none; }
 .key.correct { background-color: var(--correct-color) !important; color: white !important; }
 .key.present { background-color: var(--present-color) !important; color: white !important; }
 .key.diacritic { background-color: var(--diacritic-color) !important; color: white !important; }
 .key.absent { background-color: var(--absent-color) !important; color: white !important; }
+
+/* ==========================================
+   5. モーダル・ポップアップ・サイドメニュー
+========================================== */
+/* 画面中央のポップアップメッセージ */
 #message-box {
-position: absolute; top: 20%; background-color: rgba(0,0,0,0.8); color: white; padding: 10px 20px; border-radius: 4px; font-weight: bold; z-index: 100;
+  position: fixed; top: 45%; left: 50%; transform: translate(-50%, -50%);
+  background-color: rgba(0,0,0,0.85); color: #fff;
+  padding: 15px 30px; border-radius: 12px; font-weight: bold; font-size: 18px;
+  z-index: 9999; text-align: center; white-space: nowrap;
+  box-shadow: 0 8px 16px rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.2);
 }
-#info-board { margin-bottom: 10px; font-weight: bold; color: #333; }
-#correct-popup {
-position: absolute; top: 30%; background-color: var(--correct-color); color: white; padding: 20px 40px; border-radius: 8px; font-size: 24px; font-weight: bold; z-index: 150; box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+
+/* 全画面を覆う半透明の黒背景 */
+.modal-overlay {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  background-color: rgba(0,0,0,0.6);
+  display: flex; justify-content: center; align-items: center;
+  z-index: 200;
 }
-.hidden { display: none !important; }
+
+/* モーダルの白い箱部分 */
 .modal-content {
   position: relative;
   background-color: var(--bg-color);
-  
-  /* 【工夫】元の色を活かしつつ、135度の角度でほんのり光と影のグラデーションを重ねて深みを出します */
   background-image: linear-gradient(135deg, rgba(255, 255, 255, 0.12) 0%, rgba(0, 0, 0, 0.06) 100%);
-  
   color: var(--text-color);
   border: 3px solid var(--correct-color);
-  
-  /* 【工夫】外側への強い影に加え、inset（内側）にうっすら光の縁取りを入れて高級感を出します */
   box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5), inset 0 0 12px rgba(255, 255, 255, 0.15);
-  
-  /* 駅の案内板や記念切符のイメージに合わせて、角の丸みを「12px」に少し優しくします */
   border-radius: 12px;
   padding: 25px 20px;
-  text-align: center;
-  width: 95%;
-  max-width: 350px;
-}
-.wiki-link {
-display: inline-block; padding: 5px 15px; background-color: #eee; border-radius: 20px; text-decoration: none; color: #333; font-size: 12px;
-}
-.wiki-link:hover { background-color: #ddd; }
-
-/*テーマカラー*/
-body.theme-dark{--bg-color:#121212;--text-color:#ffffff;}
-body.theme-sakura{--bg-color:#fff0f5;--text-color:#5d4037;}
-body.theme-ocean{--bg-color:#e0f7fa;--text-color:#004d40;}
-body.theme-blue{--bg-color:#e3f2fd;--text-color:#0d47a1;}
-body.theme-dark .tile{border-color:#555;}
-body.theme-dark .key{background-color:#444;color:#fff;}
-body.theme-sakura .key{background-color:#ffcdd2;color:#5d4037;}
-body.theme-ocean .key{background-color:#b2ebf2;color:#004d40;}
-body.theme-dark header{border-bottom-color:#333;}
-body.theme-dark .modal-content{background-color:#222;color:#fff;}
-body.theme-green{--bg-color:#e8f5e9;--text-color:#1b5e20;}
-body.theme-orange{--bg-color:#fff3e0;--text-color:#e65100;}
-body.theme-red{--bg-color:#ffebee;--text-color:#b71c1c;}
-body.theme-purple{--bg-color:#f3e5f5;--text-color:#4a148c;}
-body.theme-green .key{background-color:#c8e6c9;color:#1b5e20;}
-body.theme-orange .key{background-color:#ffe0b2;color:#e65100;}
-body.theme-red .key{background-color:#ffcdd2;color:#b71c1c;}
-body.theme-blue .key{background-color:#bbdefb;color:#0d47a1;}
-body.theme-purple .key{background-color:#e1bee7;color:#4a148c;}
-
-/*行事日エフェクト*/
-#event-container{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9999;overflow:hidden;}
-.particle{position:absolute;top:-20px;animation:fall linear 1 forwards;}
-@keyframes fall{to{transform:translateY(110vh) rotate(360deg);}}
-
-/* 直接背景色を変えるのではなく、テーマ変数を上書きすることでダイアログとも色を連動させます */
-/* エイプリルフールのタイトル反転演出 */
-body.event-aprilfool h1{transform:rotate(180deg);transition:transform 0.5s;}
-/* ハロウィンのテーマカラー */
-body.event-halloween{
-  --bg-color:#2c1b18;
-  --text-color:#ff9800;
-}
-body.event-halloween .tile{
-  border-color:#ff9800;
-}
-body.event-halloween .key { 
-  background-color: #3d2721; 
-  color: #ff9800; 
-}
-/* バレンタインのテーマカラー */
-body.event-valentine{
-  --bg-color:#3e2723;
-  --text-color:#ffcdd2;
-}
-body.event-valentine .tile{
-  border-color:#ffcdd2;
-}
-body.event-valentine .key { 
-  background-color: #5d4037; 
-  color: #ffcdd2; 
-}
-/* クリスマスのテーマカラー */
-body.event-christmas{
-  --bg-color:#0f3024;
-  --text-color:#e8f5e9;
-}
-body.event-christmas .tile{
-  border-color:#d32f2f;
-}
-body.event-christmas .key { 
-  background-color: #1b4d3e; 
-  color: #e8f5e9; 
-}
-/* ひなまつりのテーマカラー */
-body.event-hinamatsuri{
-  --bg-color:#fff0f5;
-  --text-color:#c2185b;
-}
-body.event-hinamatsuri .tile{
-  border-color:#f48fb1;
-}
-body.event-hinamatsuri .key { 
-  background-color: #f8bbd0; 
-  color: #c2185b; 
-}
-/* 子どもの日のテーマカラー */
-body.event-kodomo{
-  --bg-color:#f1f8e9;
-  --text-color:#33691e;
-}
-body.event-kodomo .tile{
-  border-color:#aed581;
-}
-body.event-kodomo .key { 
-  background-color: #dcedc8; 
-  color: #33691e; 
-}
-/* 七夕のテーマカラー */
-body.event-tanabata{
-  --bg-color:#0d1b2a;
-  --text-color:#fff9c4;
-}
-body.event-tanabata .tile{
-  border-color:#415a77;
-}
-body.event-tanabata .key{
-  background-color:#1b263b;
-  color:#e0e1dd;
+  width: 95%; max-width: 350px;
+  text-align: left; font-size: 14px;
+  max-height: 90vh; overflow-y: auto;
 }
 
-/* 元旦・お正月用のテーマカラー */
-body.event-newyear {
-  --bg-color: #fffaf0; /* ほんのり温かみのある白 */
-  --text-color: #b71c1c; /* おめでたい深い赤 */
-}
-body.event-newyear .tile {
-  border-color: #e53935;
-}
-body.event-newyear .key {
-  background-color: #ffcdd2;
-  color: #b71c1c;
+/* 閉じるボタン（×） */
+.modal-close {
+  position: absolute; top: 10px; right: 15px;
+  cursor: pointer; font-size: 24px; color: #aaa;
 }
 
-/* 大晦日用の特別なプレミアムテーマカラー */
-body.event-nye {
-  --bg-color: #161219;
-  --text-color: #d1c7bd;
+/* モーダル内のパーツ */
+.modal-divider { border: none; border-top: 1px solid #eee; margin: 15px 0; }
+.text-correct { color: var(--correct-color); }
+.text-present { color: var(--present-color); }
+.text-diacritic { color: var(--diacritic-color); }
+.text-danger { color: #d32f2f; }
+
+/* ヘルプ画面用 */
+.help-list { padding-left: 20px; line-height: 1.6; margin-bottom: 15px; }
+.help-subtitle { font-weight: bold; font-size: 15px; margin-bottom: 5px; }
+.help-example-text { margin-top: 0; font-size: 13px; font-weight: bold; }
+.help-tiles { display: flex; gap: 5px; margin-bottom: 5px; }
+.help-tile { width: 40px; height: 40px; line-height: 40px; font-size: 18px; border: none; min-width: 40px; }
+.help-desc { margin-top: 0; margin-bottom: 15px; font-size: 13px; }
+.help-notes { font-size: 11px; color: #888; line-height: 1.5; }
+
+/* 結果画面用 */
+.result-content { text-align: center; overflow-x: hidden; }
+#modal-title { margin-top: 0; }
+#modal-desc { font-size: 18px; font-weight: bold; margin-bottom: 5px; }
+#modal-grid { letter-spacing: 2px; line-height: 1.2; margin: 15px 0; font-size: 18px; }
+#stats-container { display: flex; justify-content: space-around; margin: 15px 0; font-size: 12px; text-align: center; }
+.stat-box span { font-size: 20px; font-weight: bold; }
+#guess-distribution { text-align: left; font-size: 12px; margin-bottom: 15px; }
+.modal-buttons { display: flex; gap: 10px; justify-content: center; margin-bottom: 15px; }
+
+/* スクロールバーのデザイン（はみ出し対策） */
+.modal-content::-webkit-scrollbar { width: 6px; }
+.modal-content::-webkit-scrollbar-track { background: transparent; margin: 12px 0; }
+.modal-content::-webkit-scrollbar-thumb { background-color: var(--correct-color); opacity: 0.5; border-radius: 10px; }
+
+/* サイドメニュー */
+#side-menu-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 900; }
+#side-menu {
+  position: fixed; top: 0; right: -250px;
+  width: 250px; height: 100%;
+  background: #fff; z-index: 901;
+  transition: right 0.3s ease;
+  box-shadow: -2px 0 5px rgba(0,0,0,0.2);
+  padding: 20px; box-sizing: border-box;
 }
-body.event-nye .tile {
-  border-color: #36303d;
+.side-menu-header {
+  font-size: 18px; font-weight: bold; border-bottom: 2px solid #6aaa64;
+  padding-bottom: 10px; margin-bottom: 15px;
+  display: flex; justify-content: space-between; align-items: center;
 }
-body.event-nye .key {
-  background-color: #25202b;
-  color: #d1c7bd;
-}
+.side-menu-list { list-style: none; padding: 0; margin: 0; line-height: 3; font-size: 14px; font-weight: bold; }
+.side-menu-list li { border-bottom: 1px solid #eee; }
+.side-menu-list a { text-decoration: none; color: #333; }
 
 /* ==========================================
-結果ウィンドウのスクロールバーはみ出し対策
+   6. ロード画面のアニメーション
 ========================================== */
-/* スクロールバー全体の横幅を少し細くしてスタイリッシュにします */
-.modal-content::-webkit-scrollbar {
-  width: 6px;
-}
-
-/* スクロールバーが走るレーン（トラック）の設定 */
-.modal-content::-webkit-scrollbar-track {
-  background: transparent;
-  /* 【ここがポイント】上下に12pxの余白を作ることで、丸角のカーブ部分にバーが進入するのを防ぎます */
-  margin: 12px 0;
-}
-
-/* スクロールバーの動くつまみ（ハンドル）の設定 */
-.modal-content::-webkit-scrollbar-thumb {
-  /* 現在のボタン色（緑など）をうっすら透かせた色にして画面に馴染ませます */
-  background-color: var(--correct-color);
-  opacity: 0.5;
-  /* つまみ自体の角も丸めることで、枠線との干渉を完全に無くします */
-  border-radius: 10px;
-}
-
-
-/* ==========================================
-結果ウィンドウのスクロールバーはみ出し対策
-========================================== */
-/* 画面全体を覆うクリーンな背景 */
 #loading-screen {
-  position: fixed;
-  top: 0; left: 0;
-  width: 100vw; height: 100vh;
-  background-color: #f4f7f6; /* 少しグレーがかった目に優しい白 */
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
+  position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+  background-color: #f4f7f6;
+  display: flex; flex-direction: column; justify-content: center; align-items: center;
   z-index: 9999;
   transition: opacity 0.5s ease, visibility 0.5s;
 }
-
-/* 非表示にする時のクラス */
-#loading-screen.hidden {
-  opacity: 0;
-  visibility: hidden;
-}
-
-.loading-content {
-  width: 80%;
-  max-width: 400px;
-  text-align: center;
-}
-
-.loading-title {
-  font-size: 24px;
-  font-weight: bold;
-  color: #2c3e50;
-  margin-bottom: 25px;
-  letter-spacing: 2px;
-}
-
-/* 線路（背景のバー） */
-.track-container {
-  position: relative;
-  width: 100%;
-  height: 8px;
-  background-color: #e0e0e0;
-  border-radius: 4px;
-  margin-bottom: 15px;
-}
-
-/* 伸びる進捗バー */
+#loading-screen.hidden { opacity: 0; visibility: hidden; }
+.loading-content { width: 80%; max-width: 400px; text-align: center; }
+.loading-title { font-size: 24px; font-weight: bold; color: #2c3e50; margin-bottom: 25px; letter-spacing: 2px; }
+.track-container { position: relative; width: 100%; height: 8px; background-color: #e0e0e0; border-radius: 4px; margin-bottom: 15px; }
 #progress-bar {
-  position: absolute;
-  top: 0; left: 0;
-  height: 100%;
-  width: 0%; /* JSでパーセンテージを操作します */
-  background-color: #3498db;
-  border-radius: 4px;
-  transition: width 0.4s ease-out; /* なめらかに伸びるアニメーション */
+  position: absolute; top: 0; left: 0; height: 100%; width: 0%;
+  background-color: #3498db; border-radius: 4px; transition: width 0.4s ease-out;
 }
-
-/* 走る電車のアイコン */
-/* 走る電車のアイコン（アニメーション追加版） */
 #train-icon {
-  position: absolute;
-  top: -28px;
-  left: 0%;
-  font-size: 24px;
-  transition: left 0.4s ease-out; /* 前に進むなめらかな動き */
-  animation: gatagoto 0.4s infinite; /* 常にガタゴト揺れるアニメーションを実行 */
+  position: absolute; top: -28px; left: 0%; font-size: 24px;
+  transition: left 0.4s ease-out;
+  animation: gatagoto 0.4s infinite;
 }
-
-/* ガタゴト動くアニメーションの設計図（上下の揺れとわずかな傾き） */
 @keyframes gatagoto {
   0% { transform: translateX(-50%) translateY(0) rotate(0deg); }
   25% { transform: translateX(-50%) translateY(-1px) rotate(1deg); }
@@ -328,48 +371,75 @@ body.event-nye .key {
   75% { transform: translateX(-50%) translateY(-0.5px) rotate(-1deg); }
   100% { transform: translateX(-50%) translateY(0) rotate(0deg); }
 }
-
-/* 状況を知らせるテキスト */
-#loading-text {
-  font-size: 14px;
-  color: #7f8c8d;
-  margin: 0;
-  font-weight: bold;
-}
-
+#loading-text { font-size: 14px; color: #7f8c8d; margin: 0; font-weight: bold; }
 
 /* ==========================================
-   駅ロケ風：押し込める立体ボタンデザイン（駅ドル用）
+   7. テーマカラー・行事エフェクト
 ========================================== */
-.btn {
-    border-radius: 8px !important;
-    font-weight: bold;
-    cursor: pointer;
-    box-sizing: border-box;
-    transition: transform 0.1s ease, border-bottom-width 0.1s ease !important;
-    outline: none !important;
-    border: none !important; /* HTMLに直接書かれている枠線を上書き消去します */
-    border-bottom: 4px solid rgba(0,0,0,0.2) !important;
-}
+/* テーマカラーの変数上書き */
+body.theme-dark { --bg-color:#121212; --text-color:#ffffff; }
+body.theme-dark .tile { border-color:#555; }
+body.theme-dark .key { background-color:#444; color:#fff; }
+body.theme-dark header { border-bottom-color:#333; }
+body.theme-dark .modal-content { background-color:#222; color:#fff; }
 
-/* ボタンを押した瞬間に影をなくして下に沈ませる */
-.btn:active:not([disabled]) {
-    transform: translateY(4px);
-    border-bottom-width: 0px !important;
-}
+body.theme-sakura { --bg-color:#fff0f5; --text-color:#5d4037; }
+body.theme-sakura .key { background-color:#ffcdd2; color:#5d4037; }
 
-/* ------------------------------------------
-   特定ボタンの影色（厚み部分）の個別調整
------------------------------------------- */
-/* メイン画面の操作ボタン */
-#clear-btn, #back-btn {
-    border-bottom: 4px solid #c0392b !important;
-}
-#enter-btn {
-    border-bottom: 4px solid #0288d1 !important;
-}
+body.theme-ocean { --bg-color:#e0f7fa; --text-color:#004d40; }
+body.theme-ocean .key { background-color:#b2ebf2; color:#004d40; }
 
+body.theme-blue { --bg-color:#e3f2fd; --text-color:#0d47a1; }
+body.theme-blue .key { background-color:#bbdefb; color:#0d47a1; }
 
-/* ==========================================
-   結果ウィンドウのシェアボタンを平面的にする
-========================================== */
+body.theme-green { --bg-color:#e8f5e9; --text-color:#1b5e20; }
+body.theme-green .key { background-color:#c8e6c9; color:#1b5e20; }
+
+body.theme-orange { --bg-color:#fff3e0; --text-color:#e65100; }
+body.theme-orange .key { background-color:#ffe0b2; color:#e65100; }
+
+body.theme-red { --bg-color:#ffebee; --text-color:#b71c1c; }
+body.theme-red .key { background-color:#ffcdd2; color:#b71c1c; }
+
+body.theme-purple { --bg-color:#f3e5f5; --text-color:#4a148c; }
+body.theme-purple .key { background-color:#e1bee7; color:#4a148c; }
+
+/* 行事エフェクト（パーティクル） */
+#event-container { position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:9999; overflow:hidden; }
+.particle { position:absolute; top:-20px; animation:fall linear 1 forwards; }
+@keyframes fall { to { transform:translateY(110vh) rotate(360deg); } }
+
+/* イベントごとの専用カラー */
+body.event-aprilfool h1 { transform:rotate(180deg); transition:transform 0.5s; }
+
+body.event-halloween { --bg-color:#2c1b18; --text-color:#ff9800; }
+body.event-halloween .tile { border-color:#ff9800; }
+body.event-halloween .key { background-color:#3d2721; color:#ff9800; }
+
+body.event-valentine { --bg-color:#3e2723; --text-color:#ffcdd2; }
+body.event-valentine .tile { border-color:#ffcdd2; }
+body.event-valentine .key { background-color:#5d4037; color:#ffcdd2; }
+
+body.event-christmas { --bg-color:#0f3024; --text-color:#e8f5e9; }
+body.event-christmas .tile { border-color:#d32f2f; }
+body.event-christmas .key { background-color:#1b4d3e; color:#e8f5e9; }
+
+body.event-hinamatsuri { --bg-color:#fff0f5; --text-color:#c2185b; }
+body.event-hinamatsuri .tile { border-color:#f48fb1; }
+body.event-hinamatsuri .key { background-color:#f8bbd0; color:#c2185b; }
+
+body.event-kodomo { --bg-color:#f1f8e9; --text-color:#33691e; }
+body.event-kodomo .tile { border-color:#aed581; }
+body.event-kodomo .key { background-color:#dcedc8; color:#33691e; }
+
+body.event-tanabata { --bg-color:#0d1b2a; --text-color:#fff9c4; }
+body.event-tanabata .tile { border-color:#415a77; }
+body.event-tanabata .key { background-color:#1b263b; color:#e0e1dd; }
+
+body.event-newyear { --bg-color:#fffaf0; --text-color:#b71c1c; }
+body.event-newyear .tile { border-color:#e53935; }
+body.event-newyear .key { background-color:#ffcdd2; color:#b71c1c; }
+
+body.event-nye { --bg-color:#161219; --text-color:#d1c7bd; }
+body.event-nye .tile { border-color:#36303d; }
+body.event-nye .key { background-color:#25202b; color:#d1c7bd; }
