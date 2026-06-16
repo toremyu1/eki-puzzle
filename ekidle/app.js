@@ -565,7 +565,7 @@ async function selectTodayStation() {
     s.companies && s.companies.length > 0 &&
     !(s.companies.length === 1 && s.companies[0] === "日本貨物鉄道") &&
     s.address !== "" &&
-    s.min_km !== null
+    s.min_km != null
   );
 
   if (strictModeStations.length === 0) {
