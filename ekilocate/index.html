@@ -47,13 +47,13 @@
 <div id="remaining-guesses-display" style="display:none; font-weight:bold; color:#e74c3c; margin-top:10px; font-size:16px;">残り回答可能数：10 回</div>
 </header>
 
-<div id="endless-status-bar" style="display:none; justify-content:space-between; align-items:center; width:100%; max-width:600px; padding:8px 12px; background-color:#f8fafc; border:2px solid #e2e8f0; border-radius:8px; margin-top:10px; box-sizing:border-box;">
-  <div style="font-weight:bold; color:#334155; font-size:14px; line-height:1.4;">
-    スコア: <span id="endless-score-display" style="color:#3498db; font-size:18px;">0</span>
-    <span id="badge-score-best" style="display:none; background:#ff9800; color:white; font-size:10px; padding:2px 4px; border-radius:4px; margin-left:4px; vertical-align:middle; animation: proximityGlow 1s infinite alternate;">BEST!</span><br>
-    コンボ: <span id="endless-combo-display" style="color:#e74c3c; font-size:16px;">0</span>
-    <span id="badge-combo-best" style="display:none; background:#ff9800; color:white; font-size:10px; padding:2px 4px; border-radius:4px; margin-left:4px; vertical-align:middle; animation: proximityGlow 1s infinite alternate;">BEST!</span>
-  </div>
+<div id="endless-status-bar" class="endless-bar" style="display:none; justify-content:space-between; align-items:center; width:100%; max-width:600px; padding:8px 12px; border:2px solid #e2e8f0; border-radius:8px; margin-top:10px; box-sizing:border-box;">
+  <div class="endless-bar-text" style="font-weight:bold; font-size:14px; line-height:1.4;">
+    スコア: <span id="endless-score-display" class="endless-val-score" style="font-size:18px;">0</span>
+  <span id="badge-score-best" style="display:none; background:#ff9800; color:white; font-size:10px; padding:2px 4px; border-radius:4px; margin-left:4px; vertical-align:middle; animation: proximityGlow 1s infinite alternate;">BEST!</span><br>
+    コンボ: <span id="endless-combo-display" class="endless-val-combo" style="font-size:16px;">0</span>
+  <span id="badge-combo-best" style="display:none; background:#ff9800; color:white; font-size:10px; padding:2px 4px; border-radius:4px; margin-left:4px; vertical-align:middle; animation: proximityGlow 1s infinite alternate;">BEST!</span>
+</div>
   <div style="display:flex; gap:6px;">
     <button id="skip-endless-btn" class="btn" style="background-color:#3498db; color:#fff; padding:6px 10px; border-bottom:3px solid #2980b9 !important; font-size:12px; white-space:nowrap; flex-shrink:0;"><b>Skip<br>(-3手)</b></button>
     <button id="giveup-endless-btn" class="btn" style="background-color:#e74c3c; color:#fff; padding:6px 10px; border-bottom:3px solid #c0392b !important; font-size:12px; white-space:nowrap; flex-shrink:0;"><b>終了</b></button>
@@ -87,16 +87,16 @@
     <p style="font-size:14px; color:#7f8c8d; font-weight:bold;">正解は「<span id="endless-answer-station" style="color:#2c3e50; font-size:18px;"></span>」でした</p>
     <hr style="border:none; border-top:1px solid #eee; margin:15px 0;">
     
-    <div style="font-size:24px; font-weight:bold; color:#3498db; margin-bottom:10px;">
+    <div class="endless-res-score" style="font-size:24px; font-weight:bold; margin-bottom:10px;">
       最終スコア: <span id="endless-final-score">0</span>
       <span id="endless-result-score-new" style="display:none; font-size:12px; background:#ff9800; color:white; padding:2px 6px; border-radius:4px; vertical-align:middle; animation: proximityGlow 1s infinite alternate;">New Record!</span>
-    </div>
-    <div style="display:flex; justify-content:space-around; font-size:14px; font-weight:bold; color:#334155; margin-bottom:15px;">
-      <div>最高連勝: <br>
-        <span id="endless-final-combo" style="font-size:20px; color:#e74c3c;">0</span>
-        <div id="endless-result-combo-new" style="display:none; font-size:10px; background:#ff9800; color:white; padding:2px 4px; border-radius:4px; margin-top:4px; animation: proximityGlow 1s infinite alternate;">New Record!</div>
       </div>
-      <div>到達駅数: <br><span id="endless-final-cleared" style="font-size:20px; color:#6aaa64;">0</span></div>
+    <div class="endless-res-panel" style="display:flex; justify-content:space-around; font-size:14px; font-weight:bold; margin-bottom:15px;">
+      <div>最高連勝: <br>
+      <span id="endless-final-combo" class="endless-val-combo" style="font-size:20px;">0</span>
+      <div id="endless-result-combo-new" style="display:none; font-size:10px; background:#ff9800; color:white; padding:2px 4px; border-radius:4px; margin-top:4px; animation: proximityGlow 1s infinite alternate;">New Record!</div>
+    </div>
+      <div>到達駅数: <br><span id="endless-final-cleared" class="endless-val-cleared" style="font-size:20px;">0</span></div>
     </div>
 
     <div class="flat-share-cluster" style="display:flex; gap:4px; justify-content:center; margin-bottom:20px;">
@@ -299,16 +299,16 @@ Inspired by Wordle<br>
     </div>
 
     <div id="stats-view-endless" style="display:none; text-align:center;">
-      <div style="background:#fff3e0; border:2px solid #ffb74d; border-radius:8px; padding:20px; margin-bottom:15px;">
-        <div style="font-size:14px; color:#e65100; font-weight:bold; margin-bottom:5px;">🏆 ハイスコア (BEST)</div>
-        <div style="font-size:36px; font-weight:900; color:#f57c00;" id="st-e-score">0</div>
-      </div>
-      <div style="background:#e3f2fd; border:2px solid #64b5f6; border-radius:8px; padding:20px;">
-        <div style="font-size:14px; color:#1565c0; font-weight:bold; margin-bottom:5px;">🔥 最高連勝 (MAX COMBO)</div>
-        <div style="font-size:28px; font-weight:900; color:#1976d2;" id="st-e-combo">0</div>
+      <div class="endless-stat-box box-score" style="border:2px solid #ffb74d; border-radius:8px; padding:20px; margin-bottom:15px;">
+        <div class="endless-stat-label label-score" style="font-size:14px; font-weight:bold; margin-bottom:5px;">🏆 ハイスコア (BEST)</div>
+          <div class="stat-value" style="font-size:36px; font-weight:900;" id="st-e-score">0</div>
+          </div>
+        <div class="endless-stat-box box-combo" style="border:2px solid #64b5f6; border-radius:8px; padding:20px;">
+          <div class="endless-stat-label label-combo" style="font-size:14px; font-weight:bold; margin-bottom:5px;">🔥 最高連勝 (MAX COMBO)</div>
+          <div class="stat-value" style="font-size:28px; font-weight:900;" id="st-e-combo">0</div>
+        </div>
       </div>
     </div>
-  </div>
 </div>
 
 <script>
