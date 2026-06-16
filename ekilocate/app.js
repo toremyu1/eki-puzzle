@@ -234,8 +234,11 @@ async function initLocaGame() {
 
       // バックアップすら無い（完全な初回プレイで通信エラー等）場合の致命的エラー画面
       if (!isRecovered) {
-        // エラー内容を画面全体に大きく表示し、指定のルートフォルダ(/ekilocate/)へ戻るボタンを配置する
-        document.body.innerHTML = "<div style='position:fixed;top:0;left:0;width:100vw;height:100vh;background:#f8fafc;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;box-sizing:border-box;z-index:99999;'><div style='font-size:48px;margin-bottom:10px;'>⚠️</div><h3 style='color:#e53935;margin:0 0 10px 0;'>駅データの読み込みに失敗しました</h3><p style='font-size:14px;color:#475569;text-align:center;max-width:400px;line-height:1.5;'>通信環境が不安定か、サーバーでエラーが発生しています。<br><span style='font-size:12px;color:#94a3b8;'>詳細: " + err.message + "</span></p><div style='display:flex;gap:10px;margin-top:20px;'><button onclick='location.reload()' style='padding:12px 24px;font-size:16px;font-weight:bold;background:#3498db;color:#fff;border:none;border-radius:8px;cursor:pointer;box-shadow:0 4px 6px rgba(0,0,0,0.1);'>再読み込み</button><button onclick=\"location.href='/ekilocate/'\" style='padding:12px 24px;font-size:16px;font-weight:bold;background:#64748b;color:#fff;border:none;border-radius:8px;cursor:pointer;box-shadow:0 4px 6px rgba(0,0,0,0.1);'>トップへ戻る</button></div></div>";
+        // ★ エラー時の戻り先URLをここで設定します
+        const ERROR_RETURN_URL = "/stationdle";
+
+        // エラー内容を画面全体に大きく表示し、指定のルートフォルダへ戻るボタンを配置する
+        document.body.innerHTML = "<div style='position:fixed;top:0;left:0;width:100vw;height:100vh;background:#f8fafc;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;box-sizing:border-box;z-index:99999;'><div style='font-size:48px;margin-bottom:10px;'>⚠️</div><h3 style='color:#e53935;margin:0 0 10px 0;'>駅データの読み込みに失敗しました</h3><p style='font-size:14px;color:#475569;text-align:center;max-width:400px;line-height:1.5;'>通信環境が不安定か、サーバーでエラーが発生しています。<br><span style='font-size:12px;color:#94a3b8;'>詳細: " + err.message + "</span></p><div style='display:flex;gap:10px;margin-top:20px;'><button onclick='location.reload()' style='padding:12px 24px;font-size:16px;font-weight:bold;background:#3498db;color:#fff;border:none;border-radius:8px;cursor:pointer;box-shadow:0 4px 6px rgba(0,0,0,0.1);'>再読み込み</button><button onclick=\"location.href='" + ERROR_RETURN_URL + "'\" style='padding:12px 24px;font-size:16px;font-weight:bold;background:#64748b;color:#fff;border:none;border-radius:8px;cursor:pointer;box-shadow:0 4px 6px rgba(0,0,0,0.1);'>トップへ戻る</button></div></div>";
         return; // ゲームの起動処理を完全に止める
       }
     }
