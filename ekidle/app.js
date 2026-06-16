@@ -450,8 +450,21 @@ updateHelpContent(); // 起動時に説明文を現在の設定に合わせる
     document.getElementById("btn-normal-mode").addEventListener("click", () => {
       // 通常モードが選ばれたら、タイトル画面を非表示にして裏のゲーム盤を見せる
       document.getElementById("title-screen").style.display = "none";
+      // ★追加：裏に隠しておいたゲーム画面（キーボードやマス目）を表示する
+      document.getElementById("game-screen").classList.remove("hidden");
       // ゲーム画面に入ってから、行事日のポップアップなどを開始する
       checkSpecialEvent();
+    });
+
+    // ★追加：タイトル画面の「これまでの記録を見る」ボタンの動作
+    document.getElementById("btn-stats-title").addEventListener("click", () => {
+      // 上のグラフアイコンと同じく、ゲーム終了済みなら結果を表示
+      let st = savedState[isPlayingRandom ? "random" : currentMode];
+      if(st && st.isOver) {
+        showResultModal(st.isWin, true);
+      } else {
+        showMessage("ゲームクリア後に見ることができます");
+      }
     });
 
     document.getElementById("btn-reverse-mode").addEventListener("click", () => {
