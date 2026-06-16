@@ -765,3 +765,17 @@ body.event-nye #diff-title {
     color: var(--modal-text, #2c3e50);
     opacity: 0.65; /* 文字を少し透過させることで、どの背景色でも自然になじむ薄さになります */
 }
+
+
+/* * ダークモード時に、HTMLに直接書かれた黒・グレー系の文字色を
+ * 自動的に白（#ffffff）へ反転させる処理 
+ */
+body.theme-dark [style*="color:#334155"], body.theme-dark [style*="color: #334155"],
+body.theme-dark [style*="color:#2c3e50"], body.theme-dark [style*="color: #2c3e50"],
+body.theme-dark [style*="color:#333"], body.theme-dark [style*="color: #333"],
+body.theme-dark [style*="color:#666"], body.theme-dark [style*="color: #666"],
+body.theme-dark [style*="color:#888"], body.theme-dark [style*="color: #888"],
+body.theme-dark [style*="color:#7f8c8d"], body.theme-dark [style*="color: #7f8c8d"],
+body.theme-dark [style*="color:#475569"], body.theme-dark [style*="color: #475569"] {
+    color: #ffffff !important;
+}
