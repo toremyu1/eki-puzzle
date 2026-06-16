@@ -2299,6 +2299,9 @@ function showEndlessResultModal() {
   document.getElementById("endless-final-combo").textContent = locaEndlessState.maxCombo;
   document.getElementById("endless-final-cleared").textContent = locaEndlessState.clearedCount;
 
+  // 過去のハイスコアから最高ランクのデータを計算して変数に入れておく（エラー回避用）
+  const bestRankData = getEndlessRank(locaEndlessHighScore);
+
   // ウィンドウ内に過去の最高連勝、過去の最高スコアを動的に追加
   const recordDiv = document.createElement("div");
   recordDiv.style.marginTop = "15px";
