@@ -37,6 +37,10 @@ def generate_answers():
             continue
         if len(companies) == 1 and companies[0] == "日本貨物鉄道":
             continue
+        # 廃駅を除外
+        if s.get('is_abolished_confirmed') is True:
+            continue
+            
         valid_stations.append(s)
 
     # 基準日（Day 0）と今日の日付インデックスの計算
