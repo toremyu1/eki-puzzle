@@ -274,7 +274,7 @@ def fetch_station_details(url):
         "latitude": None,          # 緯度
         "longitude": None,         # 経度
         "adjacent_stations": [],   # 隣駅リスト（辞書形式: name, link）
-        "transfer_stations": []    # 乗換駅リスト（辞書形式: name, link）
+        "transfer_stations": [],    # 乗換駅リスト（辞書形式: name, link）
         "is_abolished_confirmed": False # ★追加：確実に廃止された証拠を掴んだかどうかのフラグ
     }
 
