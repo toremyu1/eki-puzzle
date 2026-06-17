@@ -602,37 +602,36 @@ function loadStats(){
     localStorage.setItem("ekiPuzzleStatsV2",JSON.stringify(userStats));
   }
 }
+
 //今回のゲーム結果をこれまでのデータに加算して新しく保存する
 function saveStats(isWin,actualGuesses){
-  // ランダムモード中は「random」の枠に集計する
-  let currentState = savedState[isPlayingRandom ? "random" : currentMode];
-  let targetMode = isPlayingRandom ? "random" : currentMode;
-  let st=userStats[targetMode];
-  if(!st) st={played:0,won:0,currentStreak:0,maxStreak:0,dist:[0,0,0,0,0,0,0,0,0,0]};
-  if(!st.dist) st.dist=[0,0,0,0,0,0,0,0,0,0];
+  let stateKey = isPlayingRandom ? "random" : currentMode;
+  let currentState = savedState[stateKey];
+  
+  // 保存先のキーを決定する（ハードモードなら "4_hard" などの専用の箱にする）
+  let targetMode = stateKey;
+  if (!isPlayingRandom && currentState && currentState.isHardMode) {
+    targetMode = currentMode + "_hard";
+  }
+
+  let st = userStats[targetMode];
+  if(!st) st = {played:0,won:0,currentStreak:0,maxStreak:0,dist:[0,0,0,0,0,0,0,0,0,0]};
+  if(!st.dist) st.dist = [0,0,0,0,0,0,0,0,0,0];
   
   st.played++;
   if(isWin){
-    st.won++; st.currentStreak++;
-    if(st.currentStreak>st.maxStreak)st.maxStreak=st.currentStreak;
-    st.dist[actualGuesses]=(st.dist[actualGuesses]||0)+1;
-    // 【ここから追加】
-    // プレイ状態を取得し、最後までハードモードを維持していたか判定する
-    let currentState = savedState[isPlayingRandom ? "random" : currentMode];
-    
-    if (currentState && currentState.isHardMode) {
-      
-      // ハードモードでのクリア回数（hardWon）をカウントアップする
-      // データが存在しない場合は0からスタートさせる
-      st.hardWon = (st.hardWon || 0) + 1;
-      
-    }
-    // 【ここまで追加】
-  }else{ st.currentStreak=0; }
+    st.won++; 
+    st.currentStreak++;
+    if(st.currentStreak > st.maxStreak) st.maxStreak = st.currentStreak;
+    st.dist[actualGuesses] = (st.dist[actualGuesses] || 0) + 1;
+  }else{ 
+    st.currentStreak = 0; 
+  }
   
-  userStats[targetMode]=st;
-  localStorage.setItem("ekiPuzzleStatsV2",JSON.stringify(userStats));
+  userStats[targetMode] = st;
+  localStorage.setItem("ekiPuzzleStatsV2", JSON.stringify(userStats));
 }
+
 //過去に遊んだアーカイブ情報を読み込む
 function loadArchive(){
 const saved=localStorage.getItem("ekiPuzzleArchiveV1");
@@ -1327,14 +1326,23 @@ box.style.boxShadow=shadow;
 box.classList.remove("hidden");
 clearTimeout(msgTimeout); msgTimeout=setTimeout(()=>box.classList.add("hidden"),2000);
 }
+
 //ゲーム終了時に、正解の駅名、Wikipediaへのリンク、旅行サイトへの広告、過去の戦績グラフをまとめて表示する大きな画面を作る
 function showResultModal(isWin,isRestore){
   // 難易度ごとに戦績グラフや勝率を別々に集計・表示するための切り替え
-  let currentState = savedState[isPlayingRandom ? "random" : currentMode];
-  let targetMode = isPlayingRandom ? "random" : currentMode;
+  let stateKey = isPlayingRandom ? "random" : currentMode;
+  let currentState = savedState[stateKey];
+  
+  // ここでも、ハードモードなら専用の箱からデータを読み込むようにする
+  let targetMode = stateKey;
+  if (!isPlayingRandom && currentState && currentState.isHardMode) {
+    targetMode = currentMode + "_hard";
+  }
+  
   let st = userStats[targetMode];
   if(!st) st = {played:0,won:0,currentStreak:0,maxStreak:0,dist:[0,0,0,0,0,0,0,0,0,0]};
   if(!st.dist) st.dist=[0,0,0,0,0,0,0,0,0,0];
+
   document.getElementById("modal-title").textContent=isWin?"正解！おめでとう！":"残念！ゲームオーバー";
   document.getElementById("modal-desc").innerHTML = `
     <span style="font-size:18px; font-weight:bold;">${todayStation.kanji}</span><br>
