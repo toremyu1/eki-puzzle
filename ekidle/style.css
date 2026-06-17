@@ -473,12 +473,14 @@ body.theme-dark #title-stats-modal .btn {
   color: #000000 !important;
 }
 
-/* 【立体感の改善】黒背景でも白色ボタンが埋もれないように調整 */
+/* 黒テーマ（ダークモード）用の立体影の最適化 */
+body.theme-dark .btn {
+  box-shadow: 0 4px 0 rgba(0, 0, 0, 0.6) !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+}
 body.theme-dark .btn-outline {
-  /* ボタンの土台を純白からほんの少しだけ暗いグレーにし、文字の白浮きと眩しさを抑えます */
-  background-color: #e5e5e5 !important;
-  border-color: #888888 !important;
-  /* 影の色を、真っ黒な背景（#121212）よりも「少し明るいダークグレー」にすることで、
-     暗闇の中でもカチッとした厚み（立体感）がはっきりと浮き出るようになります */
-  box-shadow: 0 4px 0 #3a3a3a !important;
+  background-color: #2a2a2a !important;
+  color: #ffffff !important;
+  border-color: #555555 !important;
+  box-shadow: 0 4px 0 #1a1a1a !important;
 }
