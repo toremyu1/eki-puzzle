@@ -206,7 +206,9 @@ body.theme-dark #title-stats-modal .btn {
 ========================================== */
 #game-board {
   display: grid;
-  grid-template-rows: repeat(6, 1fr);
+  /* ❌【修正前】grid-template-rows: repeat(6, 1fr); */
+  /* ⭕️【修正後】JavaScriptから設定された回答回数（--row-count）に合わせて、行数を自動変化させます */
+  grid-template-rows: repeat(var(--row-count, 6), 1fr);
   gap: 5px;
   margin-bottom: 20px;
   position: relative;
