@@ -326,13 +326,19 @@ try{
   
   // メニューの三本線（サイドメニューボタン）が押されたときの処理
   document.getElementById("menu-btn").addEventListener("click", () => {
+    // 操作する対象（メニュー本体）をプログラムに認識させる
     const sideMenu = document.getElementById("side-menu");
+    
+    // ▼▼ ここを追加：「overlay」とは暗転背景のことであるとプログラムに教える ▼▼
+    const overlay = document.getElementById("side-menu-overlay");
     
     // 【トグル処理】もしすでに右端が「0（開いている状態）」ならメニューを閉じます
     if (sideMenu.style.right === "0px") {
       closeSideMenu();
     } else {
-      overlay.classList.remove("hidden"); // hiddenクラスを除去して背景を暗転させる
+      // プログラムが overlay を認識できたので、エラーにならずに背景を暗転できます
+      overlay.classList.remove("hidden"); 
+      
       // 閉じている状態なら、通常通りメニューを開きます
       setTimeout(() => sideMenu.style.right = "0", 10);
     }
