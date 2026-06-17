@@ -136,6 +136,11 @@ header {
   transition: transform 0.1s ease, box-shadow 0.1s ease;
 }
 
+/* テーマカラーが黒の時のみ、ボタンの影を専用の色にします */
+body.theme-dark .btn-icon, .mode-btn {
+   box-shadow: 0 4px 0 rgba(0, 125, 125, 0.6);
+}
+
 /* ボタンが押された瞬間の沈み込みアクション */
 .btn:active:not([disabled]) {
   transform: translateY(4px);
