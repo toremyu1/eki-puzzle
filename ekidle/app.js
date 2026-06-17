@@ -327,13 +327,20 @@ setTimeout(()=>document.getElementById("side-menu-overlay").style.display="none"
 };
 document.getElementById("close-menu-btn").addEventListener("click",closeSideMenu);
 document.getElementById("side-menu-overlay").addEventListener("click",closeSideMenu);
-//「？」ボタンが押されたら遊び方の説明画面を開き、×ボタンで閉じる
-document.getElementById("help-btn").addEventListener("click",()=>{
-document.getElementById("help-modal").style.display="flex";
-});
-document.getElementById("close-help-btn").addEventListener("click",()=>{
-document.getElementById("help-modal").style.display="none";
-});
+// 「？」ボタンが押されたら、hiddenクラスを消して説明画面を表示する
+  document.getElementById("help-btn").addEventListener("click", () => {
+    document.getElementById("help-modal").classList.remove("hidden");
+  });
+
+  // 説明画面の×ボタンが押されたら、hiddenクラスをつけて非表示にする
+  document.getElementById("close-help-btn").addEventListener("click", () => {
+    document.getElementById("help-modal").classList.add("hidden");
+  });
+
+  // 結果画面の「×（閉じる）」ボタンが押されたら、hiddenクラスをつけて非表示にする
+  document.getElementById("close-modal-btn").addEventListener("click", () => {
+    document.getElementById("result-modal").classList.add("hidden");
+  });
 //「グラフ」ボタンが押されたとき、ゲームが終わっていれば結果ウィンドウを表示
 document.getElementById("stats-btn").addEventListener("click",()=>{
 if(savedState[currentMode].isOver) showResultModal(savedState[currentMode].isWin, true);
@@ -930,20 +937,23 @@ return btn;
 
 //モード変更時、パネルをまっさらにして前回の状態を綺麗に復元する
 function restoreBoard(){
-currentGuess=""; guessesSubmitted=0; gridHistory=[]; keyColors={};
-availableStations=stations.filter(s=>s.yomi.length===currentMode);
-drawBoard(); buildKeyboard();
-const box=document.getElementById("message-box");
-if(box) box.classList.add("hidden");
-const modal=document.getElementById("result-modal");
-if(modal) modal.style.display="none";
-let stateKey = isPlayingRandom ? "random" : currentMode;
-let st=savedState[stateKey];
-// セーブデータが存在する場合のみ、過去の回答を盤面に1手ずつ再現して復元します
-if (st && st.guesses) {
-  st.guesses.forEach(g=>{ currentGuess=g; submitGuess(true); });
-}
-currentGuess="";
+  currentGuess=""; guessesSubmitted=0; gridHistory=[]; keyColors={};
+  availableStations=stations.filter(s=>s.yomi.length===currentMode);
+  drawBoard(); buildKeyboard();
+  const box=document.getElementById("message-box");
+  if(box) box.classList.add("hidden");
+  // モード切り替え時、結果画面にhiddenクラスをつけて確実に隠す
+    const modal = document.getElementById("result-modal");
+    if (modal) {
+      modal.classList.add("hidden");
+    }
+  let stateKey = isPlayingRandom ? "random" : currentMode;
+  let st=savedState[stateKey];
+  // セーブデータが存在する場合のみ、過去の回答を盤面に1手ずつ再現して復元します
+  if (st && st.guesses) {
+    st.guesses.forEach(g=>{ currentGuess=g; submitGuess(true); });
+  }
+  currentGuess="";
   // 盤面復元時、既にプレイ中であればそのゲームのハードモード状態にスイッチを合わせる
   let currentSt = savedState[isPlayingRandom ? "random" : currentMode];
   if (currentSt && currentSt.guesses && currentSt.guesses.length > 0) {
@@ -1435,7 +1445,8 @@ function showResultModal(isWin,isRestore){
   }).join("<br>");
   grid.innerHTML=gridHTML;
   // ランダムモード中は、日々の勝率や戦績グラフなどの要素を非表示にしてスッキリさせる
-  document.getElementById("result-modal").style.display="flex"; // ←元からあるコード
+  // 結果画面のhiddenクラスを消して、画面中央に表示させます
+  document.getElementById("result-modal").classList.remove("hidden");
 }
 
 // 結果画面でシェアボタンが押されたとき、文字と絵文字のパズル結果を組み立てて各SNSの投稿画面を開く
