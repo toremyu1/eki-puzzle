@@ -1995,101 +1995,6 @@ function toggleDarkMode() {
 
 
 // ==========================================
-// 駅ドル・クアッド（4画面）モードのコアロジック
-// ==========================================
-
-// 1. クアッドモード用の状態変数
-let isQuadMode = false;
-let quadStations = []; // 4つの正解駅を格納する箱
-let quadSolved = [false, false, false, false]; // 各盤面がクリアされたかを記憶する箱（trueなら終了）
-let quadKeyColors = {}; // キーボードの各文字の「4分割色」を記憶する箱
-
-// 2. 4つの駅をランダムに選ぶ関数（通常モードのロック期間を共有し、70%制限を適用）
-function selectQuadStations(modeLength) {
-  // 指定された文字数の駅だけをプール（候補リスト）として抽出
-  const pool = stations.filter(s => s.hiragana.length === modeLength);
-  
-  // 通常モードの「出禁（ロック）リスト」の鍵名を取得し、データを読み込む
-  const rngStateKey = `ekidle_rng_state_${modeLength}`;
-  let usedList = JSON.parse(localStorage.getItem(rngStateKey) || "[]");
-
-  // 出禁リストが候補駅全体の70%を超えないように調整する
-  const maxLocked = Math.floor(pool.length * 0.7);
-  if (usedList.length > maxLocked) {
-    // 70%を超えている場合、超えた分だけ古い記録（配列の先頭側）を削除し、出禁を解除する
-    usedList = usedList.slice(usedList.length - maxLocked);
-  }
-
-  // 現在出禁になっていない、選ばれる資格のある駅のリストを作成
-  let validPool = pool.filter(s => !usedList.includes(s.kanji));
-
-  quadStations = [];
-  for (let i = 0; i < 4; i++) {
-    // 万が一、出禁解除が追いつかず候補が足りなくなった場合は、一時的に出禁を無視して全駅から選ぶ安全装置
-    if (validPool.length === 0) {
-      validPool = pool.filter(s => !quadStations.map(q => q.kanji).includes(s.kanji));
-    }
-    
-    // ランダムに1駅選ぶ
-    const r = Math.floor(Math.random() * validPool.length);
-    const selectedStation = validPool[r];
-    quadStations.push(selectedStation);
-    
-    // 選んだ駅を今回の候補から外し、出禁リストに追加する
-    validPool.splice(r, 1);
-    usedList.push(selectedStation.kanji);
-  }
-
-  // 4駅追加した後、再度70%制限を超えていないかチェックして保存する
-  if (usedList.length > maxLocked) {
-    usedList = usedList.slice(usedList.length - maxLocked);
-  }
-  localStorage.setItem(rngStateKey, JSON.stringify(usedList));
-}
-
-// 3. 色の強さ（優先度）を判定する関数（緑 ＞ 黄 ＞ 紫 ＞ 灰 ＞ 未入力 の順で強い）
-function getStrongerColor(currentColor, newColor) {
-  const priority = { "correct": 4, "present": 3, "diacritic": 2, "absent": 1, "default": 0 };
-  const currentLevel = priority[currentColor] || 0;
-  const newLevel = priority[newColor] || 0;
-  // 新しい色の方が優先度が高ければ上書きし、そうでなければ元の色を維持する
-  return newLevel > currentLevel ? newColor : currentColor;
-}
-
-// 4. キーボードの「4分割カラー」を更新する処理
-function updateQuadKeyboard(guessStr, resultsArray) {
-  // guessStr: プレイヤーが入力した単語
-  // resultsArray: 4つの盤面ごとの色判定結果が詰まった配列
-  
-  for (let i = 0; i < guessStr.length; i++) {
-    let char = guessStr[i];
-    
-    // 初めて入力された文字なら、4つとも「初期色（default）」の箱を用意する
-    if (!quadKeyColors[char]) {
-      quadKeyColors[char] = ["default", "default", "default", "default"];
-    }
-    
-    // 4つの盤面それぞれについて、より強い色に上書きする
-    for (let boardIdx = 0; boardIdx < 4; boardIdx++) {
-      let color = resultsArray[boardIdx][i];
-      quadKeyColors[char][boardIdx] = getStrongerColor(quadKeyColors[char][boardIdx], color);
-    }
-    
-    // HTMLのキーボードボタンにCSSの変数を流し込んで、4分割色を適用する
-    const keyBtn = document.getElementById(`key-${char}`);
-    if (keyBtn) {
-      keyBtn.classList.add("quad-mode");
-      // 先ほどCSSで作った --c1 〜 --c4 の変数にカラーコードをセットする
-      keyBtn.style.setProperty("--c1", getQuadColorCode(quadKeyColors[char][0])); // 左上
-      keyBtn.style.setProperty("--c2", getQuadColorCode(quadKeyColors[char][1])); // 右上
-      keyBtn.style.setProperty("--c3", getQuadColorCode(quadKeyColors[char][2])); // 左下
-      keyBtn.style.setProperty("--c4", getQuadColorCode(quadKeyColors[char][3])); // 右下
-    }
-  }
-}
-
-
-// ==========================================
 // 駅ドル・クアッド（4画面）モードの全処理システム
 // ==========================================
 
@@ -2350,7 +2255,6 @@ document.getElementById("btn-quad-mode").addEventListener("click", () => {
   document.getElementById("game-screen").classList.remove("hidden");
   startQuadMode();
 });
-
 
 // 内部の色名を実際のカラーコード（CSS変数）に変換する関数
 function getQuadColorCode(colorName) {
