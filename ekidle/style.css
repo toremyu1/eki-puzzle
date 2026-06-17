@@ -489,7 +489,7 @@ body.theme-dark #title-stats-modal .btn {
 body.theme-dark .btn {
   border-color: rgba(255, 255, 255, 0.15) !important;
 }
-body.theme-dark .btn-outline {
+body.theme-dark {
   background-color: #2a2a2a !important;
   color: #ffffff !important;
   border-color: #555555 !important;
