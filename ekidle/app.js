@@ -492,6 +492,71 @@ updateHelpContent(); // 起動時に説明文を現在の設定に合わせる
     e.preventDefault(); 
     returnToTitleScreen();
   });
+
+
+  // ==========================================
+  // タイトル画面の「これまでの記録」モーダル制御
+  // ==========================================
+
+  // タイトル画面の記録ボタンが押されたらモーダルを開く
+  document.getElementById("btn-stats-title").addEventListener("click", () => {
+    document.getElementById("title-stats-modal").classList.remove("hidden");
+    updateTitleStatsDisplay("normal"); // 初期状態はノーマルタブを表示
+  });
+
+  // モーダルの閉じるボタン
+  document.getElementById("close-title-stats-btn").addEventListener("click", () => {
+    document.getElementById("title-stats-modal").classList.add("hidden");
+  });
+
+  // タブボタンが押されたときの処理
+  document.getElementById("tab-normal").addEventListener("click", () => updateTitleStatsDisplay("normal"));
+  document.getElementById("tab-hard").addEventListener("click", () => updateTitleStatsDisplay("hard"));
+
+  // ノーマル・ハードの記録を計算して表示する関数
+  function updateTitleStatsDisplay(mode) {
+    const tabNormal = document.getElementById("tab-normal");
+    const tabHard = document.getElementById("tab-hard");
+    
+    // 押されたタブの色（見た目）を切り替える
+    if (mode === "normal") {
+      tabNormal.className = "btn btn-small btn-primary";
+      tabHard.className = "btn btn-small btn-outline";
+    } else {
+      tabNormal.className = "btn btn-small btn-outline";
+      tabHard.className = "btn btn-small btn-danger"; // ハードは赤色で強調
+    }
+
+    // 4文字・5文字・6文字すべての成績を合算するための変数
+    let totalPlayed = 0;
+    let totalWon = 0;
+    let maxCurrentStreak = 0;
+    let maxMaxStreak = 0;
+    
+    // モードに応じて読み込むセーブデータのキーを変える
+    const keys = mode === "normal" ? [4, 5, 6] : ["4_hard", "5_hard", "6_hard"];
+    
+    // 各文字数のデータをループして足し合わせる
+    keys.forEach(k => {
+      let st = userStats[k];
+      if (st) {
+        totalPlayed += st.played || 0;
+        totalWon += st.won || 0;
+        // 連勝は合算できないため、各文字数の中で一番高い連勝記録を抽出して表示する
+        if ((st.currentStreak || 0) > maxCurrentStreak) maxCurrentStreak = st.currentStreak;
+        if ((st.maxStreak || 0) > maxMaxStreak) maxMaxStreak = st.maxStreak;
+      }
+    });
+
+    // 勝率を計算（プレイ回数が0の場合は0%にする）
+    let winrate = totalPlayed > 0 ? Math.round((totalWon / totalPlayed) * 100) : 0;
+
+    // 計算した数値をHTMLの該当箇所に当てはめる
+    document.getElementById("ts-played").textContent = totalPlayed;
+    document.getElementById("ts-winrate").textContent = winrate;
+    document.getElementById("ts-streak").textContent = maxCurrentStreak;
+    document.getElementById("ts-maxstreak").textContent = maxMaxStreak;
+  }
   
     // 【ここを追加：⑤ 完了・画面を閉じる】
     updateLoadingProgress(100, "出発進行！");
