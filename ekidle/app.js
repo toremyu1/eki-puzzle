@@ -1970,6 +1970,20 @@ function incrementClearAchievements(actualGuesses, clearTimeMs) {
   localStorage.setItem("ekiClearedDays", JSON.stringify(clearedData));
 }
 
+// テーマカラー切り替え時のラグ解消
+function toggleDarkMode() {
+  // 1. アニメーション無効化クラスを付ける
+  document.body.classList.add('preload-transitions');
+  
+  // 2. ダークモードのクラスを切り替える
+  document.body.classList.toggle('theme-dark');
+  
+  // 3. 少しだけ待ってから（ブラウザに色変更を認識させてから）、無効化クラスを外す
+  setTimeout(() => {
+    document.body.classList.remove('preload-transitions');
+  }, 10);
+}
+
 
 // ==========================================
 // データのエクスポートとインポート（改ざん防止機能付き）
