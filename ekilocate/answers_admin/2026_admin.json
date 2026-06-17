@@ -113,548 +113,548 @@
     },
     "2026-06-21": {
         "normal": {
-            "kanji": "甲斐大泉駅",
-            "yomi": "かいおおいずみ",
-            "pref": "山梨県",
-            "municipality": "北杜市"
+            "kanji": "新金谷駅",
+            "yomi": "しんかなや",
+            "pref": "静岡県",
+            "municipality": "島田市"
         },
         "hard": {
-            "kanji": "八郎潟駅",
-            "yomi": "はちろうがた",
-            "pref": "秋田県",
-            "municipality": "八郎潟町"
+            "kanji": "中込駅",
+            "yomi": "なかごみ",
+            "pref": "長野県",
+            "municipality": "佐久市"
         }
     },
     "2026-06-22": {
         "normal": {
-            "kanji": "尾鷲駅",
-            "yomi": "おわせ",
-            "pref": "三重県",
-            "municipality": "尾鷲市"
+            "kanji": "那珂湊駅",
+            "yomi": "なかみなと",
+            "pref": "茨城県",
+            "municipality": "ひたちなか市"
         },
         "hard": {
-            "kanji": "北小松駅",
-            "yomi": "きたこまつ",
-            "pref": "滋賀県",
-            "municipality": "大津市"
+            "kanji": "笠置駅",
+            "yomi": "かさぎ",
+            "pref": "京都府",
+            "municipality": "笠置町"
         }
     },
     "2026-06-23": {
         "normal": {
-            "kanji": "鳴子北駅",
-            "yomi": "なるこきた",
-            "pref": "愛知県",
-            "municipality": "名古屋市"
+            "kanji": "逆瀬川駅",
+            "yomi": "さかせがわ",
+            "pref": "兵庫県",
+            "municipality": "宝塚市"
         },
         "hard": {
-            "kanji": "三谷駅 (岡山県)",
-            "yomi": "みたに",
-            "pref": "岡山県",
-            "municipality": "矢掛町"
+            "kanji": "矢幅駅",
+            "yomi": "やはば",
+            "pref": "岩手県",
+            "municipality": "矢巾町"
         }
     },
     "2026-06-24": {
         "normal": {
-            "kanji": "宇治山田駅",
-            "yomi": "うじやまだ",
-            "pref": "三重県",
-            "municipality": "伊勢市"
+            "kanji": "豊田駅",
+            "yomi": "とよだ",
+            "pref": "東京都",
+            "municipality": "日野市"
         },
         "hard": {
-            "kanji": "真幸駅",
-            "yomi": "まさき",
-            "pref": "宮崎県",
-            "municipality": "えびの市"
+            "kanji": "北鹿沼駅",
+            "yomi": "きたかぬま",
+            "pref": "栃木県",
+            "municipality": "鹿沼市"
         }
     },
     "2026-06-25": {
         "normal": {
-            "kanji": "えびの上江駅",
-            "yomi": "えびのうわえ",
-            "pref": "宮崎県",
-            "municipality": "えびの市"
+            "kanji": "江尻停留場",
+            "yomi": "えじり",
+            "pref": "富山県",
+            "municipality": "高岡市"
         },
         "hard": {
-            "kanji": "松塚駅",
-            "yomi": "まつづか",
-            "pref": "奈良県",
-            "municipality": "大和高田市"
+            "kanji": "川辺駅",
+            "yomi": "かわべ",
+            "pref": "秋田県",
+            "municipality": "由利本荘市"
         }
     },
     "2026-06-26": {
         "normal": {
-            "kanji": "三国駅 (大阪府)",
-            "yomi": "みくに",
-            "pref": "大阪府",
-            "municipality": "大阪市"
+            "kanji": "虫川大杉駅",
+            "yomi": "むしがわおおすぎ",
+            "pref": "新潟県",
+            "municipality": "上越市"
         },
         "hard": {
-            "kanji": "二条駅",
-            "yomi": "にじょう",
-            "pref": "京都府",
-            "municipality": "京都市"
+            "kanji": "免田駅",
+            "yomi": "めんでん",
+            "pref": "石川県",
+            "municipality": "宝達志水町"
         }
     },
     "2026-06-27": {
         "normal": {
-            "kanji": "太閤通駅",
-            "yomi": "たいこうどおり",
-            "pref": "愛知県",
-            "municipality": "名古屋市"
-        },
-        "hard": {
-            "kanji": "杭瀬駅",
-            "yomi": "くいせ",
-            "pref": "兵庫県",
-            "municipality": "尼崎市"
-        }
-    },
-    "2026-06-28": {
-        "normal": {
-            "kanji": "粟津駅 (滋賀県)",
-            "yomi": "あわづ",
-            "pref": "滋賀県",
-            "municipality": "大津市"
-        },
-        "hard": {
-            "kanji": "柳本駅",
-            "yomi": "やなぎもと",
-            "pref": "奈良県",
-            "municipality": "天理市"
-        }
-    },
-    "2026-06-29": {
-        "normal": {
-            "kanji": "波瀬駅",
-            "yomi": "はぜ",
-            "pref": "佐賀県",
-            "municipality": "伊万里市"
-        },
-        "hard": {
-            "kanji": "小作駅",
-            "yomi": "おざく",
-            "pref": "東京都",
-            "municipality": "羽村市"
-        }
-    },
-    "2026-06-30": {
-        "normal": {
-            "kanji": "峠駅",
-            "yomi": "とうげ",
-            "pref": "山形県",
-            "municipality": "米沢市"
-        },
-        "hard": {
-            "kanji": "浅利駅",
-            "yomi": "あさり",
+            "kanji": "湯里駅",
+            "yomi": "ゆさと",
             "pref": "島根県",
-            "municipality": "江津市"
-        }
-    },
-    "2026-07-01": {
-        "normal": {
-            "kanji": "保々駅",
-            "yomi": "ほぼ",
-            "pref": "三重県",
-            "municipality": "四日市市"
+            "municipality": "大田市"
         },
         "hard": {
-            "kanji": "蓮駅",
-            "yomi": "はちす",
-            "pref": "長野県",
-            "municipality": "飯山市"
-        }
-    },
-    "2026-07-02": {
-        "normal": {
-            "kanji": "生地駅",
-            "yomi": "いくじ",
-            "pref": "富山県",
-            "municipality": "黒部市"
-        },
-        "hard": {
-            "kanji": "喜多灘駅",
-            "yomi": "きたなだ",
-            "pref": "愛媛県",
-            "municipality": "大洲市"
-        }
-    },
-    "2026-07-03": {
-        "normal": {
-            "kanji": "道上駅",
-            "yomi": "みちのうえ",
-            "pref": "広島県",
-            "municipality": "福山市"
-        },
-        "hard": {
-            "kanji": "河内国分駅",
-            "yomi": "かわちこくぶ",
-            "pref": "大阪府",
-            "municipality": "柏原市"
-        }
-    },
-    "2026-07-04": {
-        "normal": {
-            "kanji": "ユーカリが丘駅",
-            "yomi": "ユーカリがおか",
-            "pref": "千葉県",
-            "municipality": "佐倉市"
-        },
-        "hard": {
-            "kanji": "泉駅 (福島市)",
-            "yomi": "いずみ",
-            "pref": "福島県",
-            "municipality": "福島市"
-        }
-    },
-    "2026-07-05": {
-        "normal": {
-            "kanji": "久留米大学前駅",
-            "yomi": "くるめだいがくまえ",
-            "pref": "福岡県",
-            "municipality": "久留米市"
-        },
-        "hard": {
-            "kanji": "我孫子駅 (大阪府)",
-            "yomi": "あびこ",
+            "kanji": "津守駅",
+            "yomi": "つもり",
             "pref": "大阪府",
             "municipality": "大阪市"
         }
     },
-    "2026-07-06": {
+    "2026-06-28": {
         "normal": {
-            "kanji": "東松江駅 (和歌山県)",
-            "yomi": "ひがしまつえ",
-            "pref": "和歌山県",
-            "municipality": "和歌山市"
+            "kanji": "三郷駅 (埼玉県)",
+            "yomi": "みさと",
+            "pref": "埼玉県",
+            "municipality": "三郷市"
         },
         "hard": {
-            "kanji": "土橋駅 (愛媛県)",
-            "yomi": "どばし",
-            "pref": "愛媛県",
-            "municipality": "松山市"
+            "kanji": "筑前岩屋駅",
+            "yomi": "ちくぜんいわや",
+            "pref": "福岡県",
+            "municipality": "東峰村"
+        }
+    },
+    "2026-06-29": {
+        "normal": {
+            "kanji": "梅ケ沢駅",
+            "yomi": "うめがさわ",
+            "pref": "宮城県",
+            "municipality": "登米市"
+        },
+        "hard": {
+            "kanji": "柴島駅",
+            "yomi": "くにじま",
+            "pref": "大阪府",
+            "municipality": "大阪市"
+        }
+    },
+    "2026-06-30": {
+        "normal": {
+            "kanji": "自由ヶ丘駅",
+            "yomi": "じゆうがおか",
+            "pref": "愛知県",
+            "municipality": "名古屋市"
+        },
+        "hard": {
+            "kanji": "袖ケ浦駅",
+            "yomi": "そでがうら",
+            "pref": "千葉県",
+            "municipality": "袖ケ浦市"
+        }
+    },
+    "2026-07-01": {
+        "normal": {
+            "kanji": "笹塚駅",
+            "yomi": "ささづか",
+            "pref": "東京都",
+            "municipality": "渋谷区"
+        },
+        "hard": {
+            "kanji": "本川内駅",
+            "yomi": "ほんかわち",
+            "pref": "長崎県",
+            "municipality": "長与町"
+        }
+    },
+    "2026-07-02": {
+        "normal": {
+            "kanji": "奥沢駅",
+            "yomi": "おくさわ",
+            "pref": "東京都",
+            "municipality": "世田谷区"
+        },
+        "hard": {
+            "kanji": "金野駅",
+            "yomi": "きんの",
+            "pref": "長野県",
+            "municipality": "飯田市"
+        }
+    },
+    "2026-07-03": {
+        "normal": {
+            "kanji": "西舞子駅",
+            "yomi": "にしまいこ",
+            "pref": "兵庫県",
+            "municipality": "神戸市"
+        },
+        "hard": {
+            "kanji": "高蔵寺駅",
+            "yomi": "こうぞうじ",
+            "pref": "愛知県",
+            "municipality": "春日井市"
+        }
+    },
+    "2026-07-04": {
+        "normal": {
+            "kanji": "東旭川駅",
+            "yomi": "ひがしあさひかわ",
+            "pref": "北海道",
+            "municipality": "旭川市"
+        },
+        "hard": {
+            "kanji": "近文駅",
+            "yomi": "ちかぶみ",
+            "pref": "北海道",
+            "municipality": "旭川市"
+        }
+    },
+    "2026-07-05": {
+        "normal": {
+            "kanji": "立野駅 (佐賀県)",
+            "yomi": "たての",
+            "pref": "佐賀県",
+            "municipality": "基山町"
+        },
+        "hard": {
+            "kanji": "西入善駅",
+            "yomi": "にしにゅうぜん",
+            "pref": "富山県",
+            "municipality": "入善町"
+        }
+    },
+    "2026-07-06": {
+        "normal": {
+            "kanji": "半蔵門駅",
+            "yomi": "はんぞうもん",
+            "pref": "東京都",
+            "municipality": "千代田区"
+        },
+        "hard": {
+            "kanji": "越後曽根駅",
+            "yomi": "えちごそね",
+            "pref": "新潟県",
+            "municipality": "新潟市"
         }
     },
     "2026-07-07": {
         "normal": {
-            "kanji": "京成高砂駅",
-            "yomi": "けいせいたかさご",
-            "pref": "東京都",
-            "municipality": "葛飾区"
+            "kanji": "押切駅",
+            "yomi": "おしきり",
+            "pref": "新潟県",
+            "municipality": "長岡市"
         },
         "hard": {
-            "kanji": "市川本町駅",
-            "yomi": "いちかわほんまち",
-            "pref": "山梨県",
-            "municipality": "市川三郷町"
+            "kanji": "高擶駅",
+            "yomi": "たかたま",
+            "pref": "山形県",
+            "municipality": "天童市"
         }
     },
     "2026-07-08": {
         "normal": {
-            "kanji": "郡津駅",
-            "yomi": "こうづ",
-            "pref": "大阪府",
-            "municipality": "交野市"
+            "kanji": "古口駅",
+            "yomi": "ふるくち",
+            "pref": "山形県",
+            "municipality": "戸沢村"
         },
         "hard": {
-            "kanji": "坂出駅",
-            "yomi": "さかいで",
-            "pref": "香川県",
-            "municipality": "坂出市"
+            "kanji": "長与駅",
+            "yomi": "ながよ",
+            "pref": "長崎県",
+            "municipality": "長与町"
         }
     },
     "2026-07-09": {
         "normal": {
-            "kanji": "千代崎駅",
-            "yomi": "ちよざき",
-            "pref": "三重県",
-            "municipality": "鈴鹿市"
+            "kanji": "八日市場駅",
+            "yomi": "ようかいちば",
+            "pref": "千葉県",
+            "municipality": "匝瑳市"
         },
         "hard": {
-            "kanji": "幕別駅",
-            "yomi": "まくべつ",
-            "pref": "北海道",
-            "municipality": "幕別町"
+            "kanji": "西里駅",
+            "yomi": "にしさと",
+            "pref": "熊本県",
+            "municipality": "熊本市"
         }
     },
     "2026-07-10": {
         "normal": {
-            "kanji": "下井草駅",
-            "yomi": "しもいぐさ",
-            "pref": "東京都",
-            "municipality": "杉並区"
+            "kanji": "市城駅",
+            "yomi": "いちしろ",
+            "pref": "群馬県",
+            "municipality": "中之条町"
         },
         "hard": {
-            "kanji": "新横浜駅",
-            "yomi": "しんよこはま",
-            "pref": "神奈川県",
-            "municipality": "横浜市"
+            "kanji": "善光寺駅",
+            "yomi": "ぜんこうじ",
+            "pref": "山梨県",
+            "municipality": "甲府市"
         }
     },
     "2026-07-11": {
         "normal": {
-            "kanji": "安芸駅",
-            "yomi": "あき",
-            "pref": "高知県",
-            "municipality": "安芸市"
+            "kanji": "相見駅",
+            "yomi": "あいみ",
+            "pref": "愛知県",
+            "municipality": "幸田町"
         },
         "hard": {
-            "kanji": "高知橋停留場",
-            "yomi": "こうちばし",
-            "pref": "高知県",
-            "municipality": "高知市"
+            "kanji": "永和駅",
+            "yomi": "えいわ",
+            "pref": "愛知県",
+            "municipality": "愛西市"
         }
     },
     "2026-07-12": {
         "normal": {
-            "kanji": "石上駅",
-            "yomi": "いしがみ",
-            "pref": "神奈川県",
-            "municipality": "藤沢市"
+            "kanji": "下北駅",
+            "yomi": "しもきた",
+            "pref": "青森県",
+            "municipality": "むつ市"
         },
         "hard": {
-            "kanji": "蒲生四丁目駅",
-            "yomi": "がもうよんちょうめ",
+            "kanji": "野田阪神駅",
+            "yomi": "のだはんしん",
             "pref": "大阪府",
             "municipality": "大阪市"
         }
     },
     "2026-07-13": {
         "normal": {
-            "kanji": "南小谷駅",
-            "yomi": "みなみおたり",
-            "pref": "長野県",
-            "municipality": "小谷村"
+            "kanji": "八幡浜駅",
+            "yomi": "やわたはま",
+            "pref": "愛媛県",
+            "municipality": "八幡浜市"
         },
         "hard": {
-            "kanji": "駿河徳山駅",
-            "yomi": "するがとくやま",
-            "pref": "静岡県",
-            "municipality": "川根本町"
+            "kanji": "めじろ台駅",
+            "yomi": "めじろだい",
+            "pref": "東京都",
+            "municipality": "八王子市"
         }
     },
     "2026-07-14": {
         "normal": {
-            "kanji": "沼袋駅",
-            "yomi": "ぬまぶくろ",
+            "kanji": "武蔵小金井駅",
+            "yomi": "むさしこがねい",
             "pref": "東京都",
-            "municipality": "中野区"
+            "municipality": "小金井市"
         },
         "hard": {
-            "kanji": "東海駅",
-            "yomi": "とうかい",
-            "pref": "茨城県",
-            "municipality": "東海村"
+            "kanji": "関下有知駅",
+            "yomi": "せきしもうち",
+            "pref": "岐阜県",
+            "municipality": "関市"
         }
     },
     "2026-07-15": {
         "normal": {
-            "kanji": "京ケ瀬駅",
-            "yomi": "きょうがせ",
-            "pref": "新潟県",
-            "municipality": "阿賀野市"
+            "kanji": "三代橋駅",
+            "yomi": "みだいばし",
+            "pref": "佐賀県",
+            "municipality": "有田町"
         },
         "hard": {
-            "kanji": "いずみ中央駅",
-            "yomi": "いずみちゅうおう",
-            "pref": "神奈川県",
-            "municipality": "横浜市"
+            "kanji": "加治木駅",
+            "yomi": "かじき",
+            "pref": "鹿児島県",
+            "municipality": "姶良市"
         }
     },
     "2026-07-16": {
         "normal": {
-            "kanji": "住吉駅 (阪神)",
-            "yomi": "すみよし",
-            "pref": "兵庫県",
-            "municipality": "神戸市"
-        },
-        "hard": {
-            "kanji": "天竜二俣駅",
-            "yomi": "てんりゅうふたまた",
+            "kanji": "塩郷駅",
+            "yomi": "しおごう",
             "pref": "静岡県",
-            "municipality": "浜松市"
-        }
-    },
-    "2026-07-17": {
-        "normal": {
-            "kanji": "福井駅停留場",
-            "yomi": "ふくいえき",
-            "pref": "福井県",
-            "municipality": "福井市"
+            "municipality": "川根本町"
         },
         "hard": {
-            "kanji": "新原駅",
-            "yomi": "しんばる",
-            "pref": "福岡県",
-            "municipality": "須恵町"
-        }
-    },
-    "2026-07-18": {
-        "normal": {
-            "kanji": "幕張本郷駅",
-            "yomi": "まくはりほんごう",
-            "pref": "千葉県",
-            "municipality": "千葉市"
-        },
-        "hard": {
-            "kanji": "日比野駅 (名古屋市)",
-            "yomi": "ひびの",
-            "pref": "愛知県",
-            "municipality": "名古屋市"
-        }
-    },
-    "2026-07-19": {
-        "normal": {
-            "kanji": "長門粟野駅",
-            "yomi": "ながとあわの",
-            "pref": "山口県",
-            "municipality": "下関市"
-        },
-        "hard": {
-            "kanji": "月島駅",
-            "yomi": "つきしま",
-            "pref": "東京都",
-            "municipality": "中央区"
-        }
-    },
-    "2026-07-20": {
-        "normal": {
-            "kanji": "舞阪駅",
-            "yomi": "まいさか",
-            "pref": "静岡県",
-            "municipality": "浜松市"
-        },
-        "hard": {
-            "kanji": "舞木駅",
-            "yomi": "もうぎ",
+            "kanji": "安積永盛駅",
+            "yomi": "あさかながもり",
             "pref": "福島県",
             "municipality": "郡山市"
         }
     },
-    "2026-07-21": {
+    "2026-07-17": {
         "normal": {
-            "kanji": "南中川駅",
-            "yomi": "みなみなかがわ",
-            "pref": "山口県",
-            "municipality": "山陽小野田市"
+            "kanji": "黒磯駅",
+            "yomi": "くろいそ",
+            "pref": "栃木県",
+            "municipality": "那須塩原市"
         },
         "hard": {
-            "kanji": "川部駅",
-            "yomi": "かわべ",
-            "pref": "青森県",
-            "municipality": "田舎館村"
+            "kanji": "たけふ新駅",
+            "yomi": "たけふしん",
+            "pref": "福井県",
+            "municipality": "越前市"
+        }
+    },
+    "2026-07-18": {
+        "normal": {
+            "kanji": "新井薬師前駅",
+            "yomi": "あらいやくしまえ",
+            "pref": "東京都",
+            "municipality": "中野区"
+        },
+        "hard": {
+            "kanji": "桐生球場前駅",
+            "yomi": "きりゅうきゅうじょうまえ",
+            "pref": "群馬県",
+            "municipality": "桐生市"
+        }
+    },
+    "2026-07-19": {
+        "normal": {
+            "kanji": "立野駅 (熊本県)",
+            "yomi": "たての",
+            "pref": "熊本県",
+            "municipality": "南阿蘇村"
+        },
+        "hard": {
+            "kanji": "南荒尾駅",
+            "yomi": "みなみあらお",
+            "pref": "熊本県",
+            "municipality": "荒尾市"
+        }
+    },
+    "2026-07-20": {
+        "normal": {
+            "kanji": "甲南駅",
+            "yomi": "こうなん",
+            "pref": "滋賀県",
+            "municipality": "甲賀市"
+        },
+        "hard": {
+            "kanji": "北安城駅",
+            "yomi": "きたあんじょう",
+            "pref": "愛知県",
+            "municipality": "安城市"
+        }
+    },
+    "2026-07-21": {
+        "normal": {
+            "kanji": "東府中駅",
+            "yomi": "ひがしふちゅう",
+            "pref": "東京都",
+            "municipality": "府中市"
+        },
+        "hard": {
+            "kanji": "小浦駅",
+            "yomi": "こうら",
+            "pref": "長崎県",
+            "municipality": "佐々町"
         }
     },
     "2026-07-22": {
         "normal": {
-            "kanji": "宮ノ越駅",
-            "yomi": "みやのこし",
-            "pref": "長野県",
-            "municipality": "木曽町"
+            "kanji": "瑞浪駅",
+            "yomi": "みずなみ",
+            "pref": "岐阜県",
+            "municipality": "瑞浪市"
         },
         "hard": {
-            "kanji": "朝地駅",
-            "yomi": "あさじ",
-            "pref": "大分県",
-            "municipality": "豊後大野市"
+            "kanji": "上下浜駅",
+            "yomi": "じょうげはま",
+            "pref": "新潟県",
+            "municipality": "上越市"
         }
     },
     "2026-07-23": {
         "normal": {
-            "kanji": "三毛門駅",
-            "yomi": "みけかど",
-            "pref": "福岡県",
-            "municipality": "豊前市"
+            "kanji": "栗山駅",
+            "yomi": "くりやま",
+            "pref": "北海道",
+            "municipality": "栗山町"
         },
         "hard": {
-            "kanji": "愛甲石田駅",
-            "yomi": "あいこういしだ",
-            "pref": "神奈川県",
-            "municipality": "厚木市"
+            "kanji": "木津用水駅",
+            "yomi": "こつようすい",
+            "pref": "愛知県",
+            "municipality": "扶桑町"
         }
     },
     "2026-07-24": {
         "normal": {
-            "kanji": "河内長野駅",
-            "yomi": "かわちながの",
-            "pref": "大阪府",
-            "municipality": "河内長野市"
+            "kanji": "弁天島駅",
+            "yomi": "べんてんじま",
+            "pref": "静岡県",
+            "municipality": "浜松市"
         },
         "hard": {
-            "kanji": "下山駅 (京都府)",
-            "yomi": "しもやま",
-            "pref": "京都府",
-            "municipality": "京丹波町"
+            "kanji": "星ヶ丘駅 (大阪府)",
+            "yomi": "ほしがおか",
+            "pref": "大阪府",
+            "municipality": "枚方市"
         }
     },
     "2026-07-25": {
         "normal": {
-            "kanji": "越後赤塚駅",
-            "yomi": "えちごあかつか",
-            "pref": "新潟県",
-            "municipality": "新潟市"
+            "kanji": "八木原駅",
+            "yomi": "やぎはら",
+            "pref": "群馬県",
+            "municipality": "渋川市"
         },
         "hard": {
-            "kanji": "江戸橋駅",
-            "yomi": "えどばし",
-            "pref": "三重県",
-            "municipality": "津市"
+            "kanji": "純心学園前停留場",
+            "yomi": "じゅんしんがくえんまえ",
+            "pref": "鹿児島県",
+            "municipality": "鹿児島市"
         }
     },
     "2026-07-26": {
         "normal": {
-            "kanji": "中萩駅",
-            "yomi": "なかはぎ",
-            "pref": "愛媛県",
-            "municipality": "新居浜市"
+            "kanji": "武蔵境駅",
+            "yomi": "むさしさかい",
+            "pref": "東京都",
+            "municipality": "武蔵野市"
         },
         "hard": {
-            "kanji": "青森駅",
-            "yomi": "あおもり",
-            "pref": "青森県",
-            "municipality": "青森市"
+            "kanji": "前浜駅",
+            "yomi": "まえはま",
+            "pref": "長崎県",
+            "municipality": "松浦市"
         }
     },
     "2026-07-27": {
         "normal": {
-            "kanji": "一戸駅",
-            "yomi": "いちのへ",
-            "pref": "岩手県",
-            "municipality": "一戸町"
+            "kanji": "大和朝倉駅",
+            "yomi": "やまとあさくら",
+            "pref": "奈良県",
+            "municipality": "桜井市"
         },
         "hard": {
-            "kanji": "元山駅 (千葉県)",
-            "yomi": "もとやま",
-            "pref": "千葉県",
-            "municipality": "松戸市"
+            "kanji": "余部駅",
+            "yomi": "よべ",
+            "pref": "兵庫県",
+            "municipality": "姫路市"
         }
     },
     "2026-07-28": {
         "normal": {
-            "kanji": "美園駅",
-            "yomi": "みその",
-            "pref": "北海道",
-            "municipality": "札幌市"
+            "kanji": "養老渓谷駅",
+            "yomi": "ようろうけいこく",
+            "pref": "千葉県",
+            "municipality": "市原市"
         },
         "hard": {
-            "kanji": "辛皮駅",
-            "yomi": "からかわ",
-            "pref": "京都府",
-            "municipality": "宮津市"
+            "kanji": "松久駅",
+            "yomi": "まつひさ",
+            "pref": "埼玉県",
+            "municipality": "美里町"
         }
     },
     "2026-07-29": {
         "normal": {
-            "kanji": "広川ビーチ駅",
-            "yomi": "ひろかわビーチ",
-            "pref": "和歌山県",
-            "municipality": "広川町"
+            "kanji": "下唯野駅",
+            "yomi": "しもゆいの",
+            "pref": "福井県",
+            "municipality": "大野市"
         },
         "hard": {
-            "kanji": "三口駅",
-            "yomi": "みつくち",
-            "pref": "石川県",
-            "municipality": "金沢市"
+            "kanji": "仙北町駅",
+            "yomi": "せんぼくちょう",
+            "pref": "岩手県",
+            "municipality": "盛岡市"
         }
     }
 }
