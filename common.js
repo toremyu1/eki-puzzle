@@ -56,6 +56,104 @@ function generateChecksum(str) {
   return hash.toString(36);
 }
 
+
+// ==========================================
+// 共通UI・システム処理（追加分）
+// ==========================================
+
+// 1. プログレスバーの更新を共通化
+// IDを柔軟に指定できるようにし、どのゲームのロード画面でも動くようにします
+function updateSharedLoading(percent, text, barId = "circular-progress-bar", textId = "loading-text", pctId = "loading-percentage") {
+  const bar = document.getElementById(barId);
+  const textEl = document.getElementById(textId);
+  const pctEl = document.getElementById(pctId);
+
+  if (textEl && text) textEl.textContent = text;
+  if (pctEl) pctEl.textContent = `${Math.floor(percent)}%`;
+  
+  // 円形プログレスバーのグラデーション更新
+  if (bar) bar.style.background = `conic-gradient(#3498db ${percent}%, #e2e8f0 ${percent}%)`;
+}
+
+// 2. 駅データの基本フィルタリングを共通化
+// どのゲームでも「絶対に弾くべきエラーデータや貨物駅」をここで一掃します
+function getCleanStations(rawStations) {
+  return rawStations.filter(s => {
+    // 緯度経度などの必須データがない、または完全に廃止された駅を除外
+    if (s.is_abolished_confirmed === true) return false;
+    if (!s.pref || s.pref === "") return false;
+    if (!s.address || s.address === "") return false;
+    if (s.min_km == null) return false;
+    // 貨物専用駅を除外
+    if (s.companies && s.companies.length === 1 && s.companies[0] === "日本貨物鉄道") return false;
+    
+    return true;
+  });
+}
+
+// 3. サイドメニューの開閉イベントの共通化
+// 指定したIDのボタンとメニュー要素を自動で紐付けます
+function setupSharedSideMenu(menuBtnId, menuId, overlayId, closeBtnId) {
+  const menuBtn = document.getElementById(menuBtnId);
+  const sideMenu = document.getElementById(menuId);
+  const overlay = document.getElementById(overlayId);
+  const closeBtn = document.getElementById(closeBtnId);
+
+  const closeMenu = () => {
+    if (sideMenu && overlay) {
+      sideMenu.style.right = "-250px";
+      setTimeout(() => overlay.classList.add("hidden"), 300);
+    }
+  };
+
+  if (menuBtn) {
+    menuBtn.addEventListener("click", () => {
+      if (sideMenu && overlay) {
+        overlay.classList.remove("hidden");
+        setTimeout(() => sideMenu.style.right = "0", 10);
+      }
+    });
+  }
+  if (closeBtn) closeBtn.addEventListener("click", closeMenu);
+  if (overlay) overlay.addEventListener("click", closeMenu);
+}
+
+// 4. モーダル（説明画面や結果画面）の開閉を共通化
+// ヘッダーにある btn-icon（？ボタンなど）にこの関数を適用します
+function setupSharedModal(openBtnId, modalId, closeBtnId) {
+  const openBtn = document.getElementById(openBtnId);
+  const modal = document.getElementById(modalId);
+  const closeBtn = document.getElementById(closeBtnId);
+
+  if (openBtn && modal) {
+    openBtn.addEventListener("click", () => modal.classList.remove("hidden"));
+  }
+  if (closeBtn && modal) {
+    closeBtn.addEventListener("click", () => {
+      modal.classList.add("hidden");
+      modal.style.display = ""; // 念のためのスタイルリセット
+    });
+  }
+}
+
+// 5. SNSシェア機能の共通化
+// プラットフォームの指定と、生成済みのテキスト・URLを受け取って送信します
+function executeSharedShare(platform, shareText, shareUrl) {
+  const encodedText = encodeURIComponent(shareText);
+  const encodedUrl = encodeURIComponent(shareUrl);
+  
+  if (platform === "twitter") {
+    window.open(`https://twitter.com/intent/tweet?text=${encodedText}&url=${encodedUrl}`, '_blank');
+  } else if (platform === "line") {
+    window.open(`https://line.me/R/msg/text/?${encodedText}%20${encodedUrl}`, '_blank');
+  } else if (platform === "copy") {
+    navigator.clipboard.writeText(`${shareText} ${shareUrl}`).then(() => {
+      alert("結果をクリップボードにコピーしました！");
+    });
+  }
+}
+
+
 // ------------------------------------------
 // イベントポップアップ順番待ちシステム（共通化）
 // ------------------------------------------
