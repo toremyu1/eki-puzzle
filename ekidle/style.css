@@ -545,3 +545,68 @@ body.event-nye .key { background-color:#25202b; color:#d1c7bd; }
   color: white !important;
   text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8), -1px -1px 2px rgba(0, 0, 0, 0.8) !important;
 }
+
+
+/* ==========================================
+   駅ドル・クアッド（4画面）モード用のレイアウト
+========================================== */
+/* 2×2のグリッドで4つの盤面を美しく配置する大枠 */
+#quad-board-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  width: 100%;
+  max-width: 450px;
+  margin-bottom: 15px;
+}
+
+/* 各盤面（タイルの隙間を通常より狭くしてコンパクトにします） */
+.quad-board {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  background-color: rgba(0, 0, 0, 0.02);
+  padding: 4px;
+  border-radius: 6px;
+}
+.quad-board .board-row {
+  display: grid;
+  grid-template-columns: repeat(var(--row-length, 4), 1fr);
+  gap: 3px;
+}
+
+/* 4画面用の縮小された専用タイル */
+.quad-board .tile {
+  width: 9vw;
+  height: 9vw;
+  max-width: 38px;
+  max-height: 38px;
+  font-size: 15px;
+  border-width: 1px;
+}
+
+/* すでに正解してクリアされた盤面を識別しやすくする暗転エフェクト */
+.quad-board.cleared {
+  opacity: 0.35;
+  filter: grayscale(60%);
+  transition: opacity 0.5s ease;
+}
+
+/* キーボードの4分割グラデーション用（conic-gradientで4つの盤面の状態を表現） */
+.key.quad-mode {
+  --c1: #d3d6da; /* 左上：盤面0 */
+  --c2: #d3d6da; /* 右上：盤面1 */
+  --c3: #d3d6da; /* 左下：盤面2 */
+  --c4: #d3d6da; /* 右下：盤面3 */
+  
+  background: conic-gradient(
+    var(--c2) 0deg 90deg,
+    var(--c4) 90deg 180deg,
+    var(--c3) 180deg 270deg,
+    var(--c1) 270deg 360deg
+  ) !important;
+  
+  border: 1px solid rgba(0, 0, 0, 0.2) !important;
+  color: white !important;
+  text-shadow: 1px 1px 1px rgba(0,0,0,0.8), -1px -1px 1px rgba(0,0,0,0.8) !important;
+}
