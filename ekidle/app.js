@@ -342,10 +342,18 @@ document.getElementById("side-menu-overlay").addEventListener("click",closeSideM
     document.getElementById("result-modal").classList.add("hidden");
   });
 //「グラフ」ボタンが押されたとき、ゲームが終わっていれば結果ウィンドウを表示
-document.getElementById("stats-btn").addEventListener("click",()=>{
-if(savedState[currentMode].isOver) showResultModal(savedState[currentMode].isWin, true);
-else showMessage("ゲームクリア後に見ることができます");
-});
+  document.getElementById("stats-btn").addEventListener("click", () => {
+    let stateKey = isPlayingRandom ? "random" : currentMode;
+    let st = savedState[stateKey];
+    if (st && st.isOver) {
+      // 古い表示システム（style.display）が残ってバグるのを防ぐため、強制リセットします
+      const resModal = document.getElementById("result-modal");
+      resModal.style.display = ""; 
+      showResultModal(st.isWin, true);
+    } else {
+      showMessage("ゲームクリア後に見ることができます");
+    }
+  });
 //「4文字」「5文字」「6文字」の切り替えボタンが押されたときの処理
 [4,5,6].forEach(num=>{
 document.getElementById(`mode-${num}`).addEventListener("click", async ()=>{
@@ -368,11 +376,12 @@ document.getElementById("share-btn").addEventListener("click",()=>shareResult("t
 document.getElementById("line-btn").addEventListener("click",()=>shareResult("line"));
 document.getElementById("fb-btn").addEventListener("click",()=>shareResult("facebook"));
 document.getElementById("copy-btn").addEventListener("click",()=>shareResult("copy"));
-// 結果画面の「×（閉じる）」ボタンが押されたときの処理
-document.getElementById("close-modal-btn").addEventListener("click",()=>{
-    // 結果画面を非表示にする
-    document.getElementById("result-modal").style.display="none";
-});
+// 結果画面の「×（閉じる）」ボタンが押されたら、hiddenクラスをつけて非表示にする
+  document.getElementById("close-modal-btn").addEventListener("click", () => {
+    const resModal = document.getElementById("result-modal");
+    resModal.style.display = ""; // ここでもバグ防止の強制リセットを行います
+    resModal.classList.add("hidden");
+  });
 // 【メモ】データのバックアップ（コード発行）ボタンを押したときの動き
 document.getElementById("export-data-btn").addEventListener("click", (e) => {
     // リンクのデフォルト動作（画面の一番上へジャンプしてしまう挙動）を無効化
@@ -1445,8 +1454,11 @@ function showResultModal(isWin,isRestore){
   }).join("<br>");
   grid.innerHTML=gridHTML;
   // ランダムモード中は、日々の勝率や戦績グラフなどの要素を非表示にしてスッキリさせる
+  // ランダムモード中は、日々の勝率や戦績グラフなどの要素を非表示にしてスッキリさせる
   // 結果画面のhiddenクラスを消して、画面中央に表示させます
-  document.getElementById("result-modal").classList.remove("hidden");
+  const resModal = document.getElementById("result-modal");
+  resModal.style.display = ""; // 古い透明化の呪縛を強制解除
+  resModal.classList.remove("hidden");
 }
 
 // 結果画面でシェアボタンが押されたとき、文字と絵文字のパズル結果を組み立てて各SNSの投稿画面を開く
