@@ -446,64 +446,56 @@ updateHelpContent(); // 起動時に説明文を現在の設定に合わせる
     await selectTodayStation(); 
     restoreBoard(); 
 
-    // タイトル画面のボタンが押されたときの動作を設定する
-    document.getElementById("btn-normal-mode").addEventListener("click", () => {
-      // 通常モードが選ばれたら、タイトル画面を非表示にして裏のゲーム盤を見せる
-      document.getElementById("title-screen").style.display = "none";
-      // ★追加：裏に隠しておいたゲーム画面（キーボードやマス目）を表示する
-      document.getElementById("game-screen").classList.remove("hidden");
-      // 【追加】ゲーム画面に入ったので、ハードモードのチェックボックスを表示します
-      document.querySelector(".hardmode-container").classList.remove("hidden");
-      // 【修正】ゲーム画面に入ったので、モード選択ボタンとハードモードを同時に表示します
-      document.querySelector(".mode-selector").classList.remove("hidden");
-      // ゲーム画面に入ってから、行事日のポップアップなどを開始する
-      checkSpecialEvent();
-    });
-
-    // ★追加：タイトル画面の「これまでの記録を見る」ボタンの動作
-    document.getElementById("btn-stats-title").addEventListener("click", () => {
-      // 上のグラフアイコンと同じく、ゲーム終了済みなら結果を表示
-      let st = savedState[isPlayingRandom ? "random" : currentMode];
-      if(st && st.isOver) {
-        showResultModal(st.isWin, true);
-      } else {
-        showMessage("ゲームクリア後に見ることができます");
-      }
-    });
-
-    document.getElementById("btn-reverse-mode").addEventListener("click", () => {
-      // リバースモードは現在準備中のためアラートを出す
-      alert("リバースモードは現在開発中です！お楽しみに！");
-    });
-
-    // タイトル画面へ戻るための共通関数
-    const returnToTitleScreen = () => {
-      document.getElementById("title-screen").classList.remove("hidden");
-      document.getElementById("game-screen").classList.add("hidden");
+  // ==========================================
+  // タイトル画面とゲーム画面の行き来を制御する処理
+  // ==========================================
+  
+  // 通常モードで遊ぶボタンが押されたときの動作
+  document.getElementById("btn-normal-mode").addEventListener("click", () => {
+    document.getElementById("title-screen").classList.add("hidden");
+    document.getElementById("game-screen").classList.remove("hidden");
     
-      // 【修正】タイトル画面に戻ったので、モード選択ボタンとハードモードを再び隠します
-      document.querySelector(".mode-selector").classList.add("hidden");
-      document.querySelector(".hardmode-container").classList.add("hidden");
+    // ゲーム画面に入ったので、モード選択ボタンとハードモードを表示します
+    document.querySelector(".mode-selector").classList.remove("hidden");
+    document.querySelector(".hardmode-container").classList.remove("hidden");
     
-      // もしサイドメニューが開いていたら、右側に隠してオーバーレイも消します
-      document.getElementById("side-menu").style.right = "-250px";
-      setTimeout(() => {
-        document.getElementById("side-menu-overlay").style.display = "none";
-      }, 300);
-    };
+    checkSpecialEvent();
+  });
 
-    // ヘッダーの「🏠」ボタンが押されたらタイトルに戻る
-    document.getElementById("home-btn").addEventListener("click", returnToTitleScreen);
+  document.getElementById("btn-reverse-mode").addEventListener("click", () => {
+    alert("リバースモードは現在開発中です！お楽しみに！");
+  });
 
-    // サイドメニューの「タイトル画面に戻る」が押されたらタイトルに戻る
-    document.getElementById("menu-home-btn").addEventListener("click", (e) => {
-      e.preventDefault(); // リンクの標準動作（画面最上部へのジャンプなど）を防止
-      returnToTitleScreen();
-    });
+  // タイトル画面へ戻るための共通関数
+  const returnToTitleScreen = () => {
+    const titleScreen = document.getElementById("title-screen");
+    titleScreen.classList.remove("hidden");
+    
+    // 【重要】過去の強力な非表示命令が残っていた場合、ここで強制的に解除します
+    titleScreen.style.display = ""; 
+    
+    // ゲーム画面の要素を隠します
+    document.getElementById("game-screen").classList.add("hidden");
+    document.querySelector(".mode-selector").classList.add("hidden");
+    document.querySelector(".hardmode-container").classList.add("hidden");
+    
+    // サイドメニューが開いていたら閉じます
+    document.getElementById("side-menu").style.right = "-250px";
+    setTimeout(() => {
+      document.getElementById("side-menu-overlay").style.display = "none";
+    }, 300);
+  };
 
+  // 戻るボタンが押されたときの処理
+  document.getElementById("home-btn").addEventListener("click", returnToTitleScreen);
+  document.getElementById("menu-home-btn").addEventListener("click", (e) => {
+    e.preventDefault(); 
+    returnToTitleScreen();
+  });
+  
     // 【ここを追加：⑤ 完了・画面を閉じる】
     updateLoadingProgress(100, "出発進行！");
-  // ロード画面が消えると、下に配置したタイトル画面（title-screen）が現れる仕組み
+    // ロード画面が消えると、下に配置したタイトル画面（title-screen）が現れる仕組み
     setTimeout(hideLoadingScreen, 600);
   
   }catch(e){ console.error("データエラー:",e); }
