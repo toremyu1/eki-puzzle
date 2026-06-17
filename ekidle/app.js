@@ -315,6 +315,15 @@ try{
   document.getElementById("enter-btn").addEventListener("click",()=>handleKeyPress("ENTER"));
   document.getElementById("back-btn").addEventListener("click",()=>handleKeyPress("BACK"));
   document.getElementById("clear-btn").addEventListener("click",()=>handleKeyPress("CLEAR"));
+
+  // メニューの外側や閉じるボタンが押されたらメニューを右側に隠す関数
+  const closeSideMenu = () => {
+    document.getElementById("side-menu").style.right = "-250px";
+    setTimeout(() => {
+      document.getElementById("side-menu-overlay").classList.add("hidden"); // hiddenクラスを再付与して暗転を隠す
+    }, 300);
+  };
+  
   // メニューの三本線（サイドメニューボタン）が押されたときの処理
   document.getElementById("menu-btn").addEventListener("click", () => {
     const sideMenu = document.getElementById("side-menu");
@@ -328,15 +337,11 @@ try{
       setTimeout(() => sideMenu.style.right = "0", 10);
     }
   });
-  // メニューの外側や閉じるボタンが押されたらメニューを右側に隠す関数
-  const closeSideMenu = () => {
-    document.getElementById("side-menu").style.right = "-250px";
-    setTimeout(() => {
-      document.getElementById("side-menu-overlay").classList.add("hidden"); // hiddenクラスを再付与して暗転を隠す
-    }, 300);
-  };
+  
+  // 閉じるイベントの紐付け
   document.getElementById("close-menu-btn").addEventListener("click",closeSideMenu);
   document.getElementById("side-menu-overlay").addEventListener("click",closeSideMenu);
+  
   // 「？」ボタンが押されたら、hiddenクラスを消して説明画面を表示する
   document.getElementById("help-btn").addEventListener("click", () => {
     document.getElementById("help-modal").classList.remove("hidden");
