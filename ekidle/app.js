@@ -312,7 +312,14 @@ try{
   updateLoadingProgress(60, "今日の答えを準備中...");
   
   //画面下部の「回答」「1字消す」「全削除」ボタンの動作
-  document.getElementById("enter-btn").addEventListener("click",()=>handleKeyPress("ENTER"));
+  // 【修正】回答ボタンが押されたとき、クアッドモードなら専用の処理、通常なら通常の処理を呼び出す
+  document.getElementById("enter-btn").addEventListener("click", () => {
+    if (isQuadMode) {
+      submitQuadGuess();
+    } else {
+      submitGuess();
+    }
+  });
   document.getElementById("back-btn").addEventListener("click",()=>handleKeyPress("BACK"));
   document.getElementById("clear-btn").addEventListener("click",()=>handleKeyPress("CLEAR"));
 
@@ -2080,6 +2087,270 @@ function updateQuadKeyboard(guessStr, resultsArray) {
     }
   }
 }
+
+
+// ==========================================
+// 駅ドル・クアッド（4画面）モードの全処理システム
+// ==========================================
+
+let isQuadMode = false;              // 現在クアッドモードかどうか
+let quadStations = [];               // 4つの正解駅オブジェクトを格納する配列
+let quadSolved = [false, false, false, false]; // 各盤面がクリアされたかを管理するフラグ
+let quadKeyColors = {};              // キーボード用の4分割色ログ
+
+// クアッドモードを開始する処理
+function startQuadMode() {
+  isQuadMode = true;
+  isPlayingRandom = false;
+  guessesSubmitted = 0;
+  maxGuesses = 11; // 4画面攻略のため、通常より多めの「11手」を上限に設定
+  quadSolved = [false, false, false, false];
+  quadKeyColors = {};
+  currentGuess = "";
+
+  // 既存の1画面用ボードを隠し、4画面用コンテナを表示
+  document.getElementById("game-board").classList.add("hidden");
+  document.getElementById("quad-board-container").classList.remove("hidden");
+  document.querySelector(".mode-selector").classList.remove("hidden");
+
+  // 4つの正解駅をランダムに抽選（通常モードの出禁データを共有）
+  selectQuadStations(currentMode);
+  
+  // 4つのゲーム盤面をHTML上に組み立てる
+  buildQuadBoards();
+  
+  // キーボードのリセット
+  resetKeyboardStyles();
+}
+
+// 4つの駅をランダムに選択する処理（通常モードの出禁リストを読み込んで70%ルールを共有）
+function selectQuadStations(modeLength) {
+  const pool = stations.filter(s => s.hiragana.length === modeLength);
+  const rngStateKey = `ekidle_rng_state_${modeLength}`;
+  let usedList = JSON.parse(localStorage.getItem(rngStateKey) || "[]");
+
+  // 出禁駅リストが全体の70%を超えたら、古いものから順に忘れる（解除する）
+  const maxLocked = Math.floor(pool.length * 0.7);
+  if (usedList.length > maxLocked) {
+    usedList = usedList.slice(usedList.length - maxLocked);
+  }
+
+  // まだ出禁になっていないクリーンな駅を抽出
+  let validPool = pool.filter(s => !usedList.includes(s.kanji));
+
+  quadStations = [];
+  for (let i = 0; i < 4; i++) {
+    if (validPool.length === 0) {
+      // 候補が足りなくなった場合は、今回選んだ駅以外から再選定する安全装置
+      validPool = pool.filter(s => !quadStations.map(q => q.kanji).includes(s.kanji));
+    }
+    const r = Math.floor(Math.random() * validPool.length);
+    const selected = validPool[r];
+    quadStations.push(selected);
+
+    validPool.splice(r, 1);
+    usedList.push(selected.kanji); // 通常モードと共通の出禁リストへ登録
+  }
+
+  // 最終的な出禁リストを保存
+  if (usedList.length > maxLocked) {
+    usedList = usedList.slice(usedList.length - maxLocked);
+  }
+  localStorage.setItem(rngStateKey, JSON.stringify(usedList));
+}
+
+// 4つの空のゲーム盤を画面に生成する関数
+function buildQuadBoards() {
+  for (let b = 0; b < 4; b++) {
+    const board = document.getElementById(`quad-board-${b}`);
+    board.className = "quad-board"; // クリア状態をリセット
+    board.innerHTML = "";
+    board.style.setProperty("--row-length", currentMode);
+
+    for (let i = 0; i < maxGuesses; i++) {
+      const row = document.createElement("div");
+      row.className = "board-row";
+      for (let j = 0; j < currentMode; j++) {
+        const tile = document.createElement("div");
+        tile.className = "tile";
+        row.appendChild(tile);
+      }
+      board.appendChild(row);
+    }
+  }
+}
+
+// キーボードのスタイルをリセットする補助関数
+function resetKeyboardStyles() {
+  document.querySelectorAll(".key").forEach(k => {
+    k.className = "key";
+    k.style.removeProperty("--c1");
+    k.style.removeProperty("--c2");
+    k.style.removeProperty("--c3");
+    k.style.removeProperty("--c4");
+  });
+}
+
+// 【ゲームの花形】プレイヤーが回答（エンター）を押した時の4画面同時判定処理
+function submitQuadGuess() {
+  if (currentGuess.length !== currentMode) {
+    showMessage("文字数が足りません");
+    return;
+  }
+
+  // 実在する駅名かどうかの辞書チェック
+  const guessExists = stations.some(s => s.hiragana === currentGuess);
+  if (!guessExists) {
+    showMessage("実在しない駅名です");
+    return;
+  }
+
+  // 各盤面の色結果を集約するための多次元配列
+  let allBoardResults = [];
+
+  // 4つの盤面をループ処理して1つずつ色を判定していく
+  for (let b = 0; b < 4; b++) {
+    const board = document.getElementById(`quad-board-${b}`);
+    const row = board.children[guessesSubmitted];
+    const targetStation = quadStations[b];
+
+    // すでにその盤面がクリア済みの場合は、灰色文字のスキップ表示にする
+    if (quadSolved[b]) {
+      const skipColors = Array(currentMode).fill("absent");
+      allBoardResults.push(skipColors);
+      
+      for (let j = 0; j < currentMode; j++) {
+        const tile = row.children[j];
+        tile.textContent = currentGuess[j];
+        tile.classList.add("absent");
+        tile.style.opacity = "0.3"; // クリア済みスキップ枠は薄く見せる
+      }
+      continue;
+    }
+
+    // 内部の判定ロジックを呼び出して色の配列を取得
+    //（既存の通常モードにある色判定アルゴリズムをそのまま活用します）
+    const rowColors = checkRowColors(currentGuess, targetStation.hiragana);
+    allBoardResults.push(rowColors);
+
+    // 盤面のタイルに文字と色を反映
+    for (let j = 0; j < currentMode; j++) {
+      const tile = row.children[j];
+      tile.textContent = currentGuess[j];
+      tile.classList.add(rowColors[j]);
+    }
+
+    // もし全ての文字が「correct（緑）」なら、この盤面はクリア！
+    const isCorrectAll = rowColors.every(c => c === "correct");
+    if (isCorrectAll) {
+      quadSolved[b] = true;
+      board.classList.add("cleared"); // 盤面全体をグレーアウト
+    }
+  }
+
+  // 4色ブレンドキーボードの表示更新
+  updateQuadKeyboardLogic(currentGuess, allBoardResults);
+
+  // 手数を1つ進め、入力欄を空にする
+  guessesSubmitted++;
+  currentGuess = "";
+
+  // 勝敗の判定
+  const isAllCleared = quadSolved.every(s => s === true);
+  if (isAllCleared) {
+    setTimeout(() => alert("🎉 すべての盤面をクリア！おめでとうございます！"), 500);
+  } else if (guessesSubmitted >= maxGuesses) {
+    const answers = quadStations.map(q => q.kanji).join("、");
+    setTimeout(() => alert(`💀 ゲームオーバー。正解は [ ${answers} ] でした。`), 500);
+  }
+}
+
+// 通常モードの色判定処理を流用するためのラッパー（濁点・位置判定）
+function checkRowColors(guess, answer) {
+  let results = Array(guess.length).fill("absent");
+  let answerLetters = answer.split("");
+  let guessLetters = guess.split("");
+
+  // 1巡目：位置も文字も合っている（緑色）の判定
+  for (let i = 0; i < guess.length; i++) {
+    if (guessLetters[i] === answerLetters[i]) {
+      results[i] = "correct";
+      answerLetters[i] = null;
+      guessLetters[i] = null;
+    }
+  }
+  // 2巡目：位置違い（黄色）の判定
+  for (let i = 0; i < guess.length; i++) {
+    if (guessLetters[i] === null) continue;
+    const idx = answerLetters.indexOf(guessLetters[i]);
+    if (idx !== -1) {
+      results[i] = "present";
+      answerLetters[idx] = null;
+      guessLetters[i] = null;
+    }
+  }
+  // 3巡目：濁点違い（紫色）の判定
+  for (let i = 0; i < guess.length; i++) {
+    if (guessLetters[i] === null) continue;
+    // getBaseChar などの既存のグループ判定関数がグローバルにある前提
+    const gGroup = typeof getBaseChar === "function" ? getBaseChar(guessLetters[i]) : guessLetters[i];
+    
+    for (let j = 0; j < answerLetters.length; j++) {
+      if (answerLetters[j] === null) continue;
+      const aGroup = typeof getBaseChar === "function" ? getBaseChar(answerLetters[j]) : answerLetters[j];
+      if (gGroup === aGroup) {
+        results[i] = "diacritic";
+        answerLetters[j] = null;
+        break;
+      }
+    }
+  }
+  return results;
+}
+
+// 色の優先強度の判定（緑 ＞ 黄 ＞ 紫 ＞ 灰）
+function getQuadStrongerColor(curr, next) {
+  const p = { "correct": 4, "present": 3, "diacritic": 2, "absent": 1, "default": 0 };
+  return (p[next] || 0) > (p[curr] || 0) ? next : curr;
+}
+
+// キーボードの4分割色を割り当ててCSS変数を書き換える処理
+function updateQuadKeyboardLogic(guessStr, resultsArray) {
+  for (let i = 0; i < guessStr.length; i++) {
+    let char = guessStr[i];
+    if (!quadKeyColors[char]) {
+      quadKeyColors[char] = ["default", "default", "default", "default"];
+    }
+    for (let b = 0; b < 4; b++) {
+      let color = resultsArray[b][i];
+      quadKeyColors[char][b] = getQuadStrongerColor(quadKeyColors[char][b], color);
+    }
+    const keyBtn = document.getElementById(`key-${char}`);
+    if (keyBtn) {
+      keyBtn.classList.add("quad-mode");
+      keyBtn.style.setProperty("--c1", getQuadColorCodeStr(quadKeyColors[char][0])); // 左上
+      keyBtn.style.setProperty("--c2", getQuadColorCodeStr(quadKeyColors[char][1])); // 右上
+      keyBtn.style.setProperty("--c3", getQuadColorCodeStr(quadKeyColors[char][2])); // 左下
+      keyBtn.style.setProperty("--c4", getQuadColorCodeStr(quadKeyColors[char][3])); // 右下
+    }
+  }
+}
+
+function getQuadColorCodeStr(name) {
+  if (name === "correct") return "var(--correct-color)";
+  if (name === "present") return "var(--present-color)";
+  if (name === "diacritic") return "var(--diacritic-color)";
+  if (name === "absent") return "var(--absent-color)";
+  return "#d3d6da";
+}
+
+// タイトル画面で「クアッドモードで遊ぶ」が押された時のクリックイベント登録
+document.getElementById("btn-quad-mode").addEventListener("click", () => {
+  document.getElementById("title-screen").classList.add("hidden");
+  document.getElementById("game-screen").classList.remove("hidden");
+  startQuadMode();
+});
+
 
 // 内部の色名を実際のカラーコード（CSS変数）に変換する関数
 function getQuadColorCode(colorName) {
