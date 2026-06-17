@@ -433,3 +433,31 @@ body.event-newyear .key { background-color:#ffcdd2; color:#b71c1c; }
 body.event-nye { --bg-color:#161219; --text-color:#d1c7bd; }
 body.event-nye .tile { border-color:#36303d; }
 body.event-nye .key { background-color:#25202b; color:#d1c7bd; }
+
+
+/* ==========================================
+   シェアボタンのレイアウト調整（1行集約＆自動折り返し）
+========================================== */
+.modal-buttons {
+  display: flex;
+  /* 画面幅が狭すぎる場合は、はみ出さずに自動で次の行への改行を許可します */
+  flex-wrap: wrap;         
+  /* ボタン同士の隙間を少し狭くして、1行に収まりやすくします */
+  gap: 6px;                
+  justify-content: center;
+  width: 100%;
+}
+
+/* .modal-buttons の中にあるシェアボタン群に一括でスタイルを適用 */
+.modal-buttons .btn {
+  /* 1行のスペースの中で、4つのボタンが均等に横幅を分け合って並びます */
+  flex: 1;                 
+  /* これ以上ボタンが狭くなると文字が潰れてしまうため、綺麗に改行させる最小幅の境界線です */
+  min-width: 65px;         
+  /* 左右の内側余白を2pxにスリム化し、ボタンの中で文字がはみ出さないようにします */
+  padding: 10px 2px;       
+  /* 文字サイズを少しコンパクト（11px）にして、1行にギュッと収めます */
+  font-size: 11px;         
+  /* ボタンの内部で予期せぬテキスト改行が発生するのを防ぎます */
+  white-space: nowrap;     
+}
