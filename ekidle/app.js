@@ -1978,10 +1978,12 @@ function toggleDarkMode() {
   // 2. ダークモードのクラスを切り替える
   document.body.classList.toggle('theme-dark');
   
-  // 3. 少しだけ待ってから（ブラウザに色変更を認識させてから）、無効化クラスを外す
-  setTimeout(() => {
-    document.body.classList.remove('preload-transitions');
-  }, 100);
+  // 3. 【追加】ここでブラウザに現在の高さを読み取らせることで、
+  // 強制的に「アニメーションなしの状態」を一度計算（確定）させます。
+  document.body.offsetHeight; 
+  
+  // 4. その後、無効化クラスを外す（setTimeoutは不要になります）
+  document.body.classList.remove('preload-transitions');
 }
 
 
