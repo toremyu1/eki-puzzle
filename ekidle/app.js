@@ -400,17 +400,25 @@ document.getElementById(`mode-${num}`).addEventListener("click", async ()=>{
   
   document.querySelectorAll(".mode-btn").forEach(b=>b.classList.remove("active"));
   document.getElementById(`mode-${num}`).classList.add("active");
-  currentMode=num; rowLength=num; maxGuesses=(num===4)?8:6;
-  document.getElementById("game-board").style.setProperty("--row-length",num);
-  await selectTodayStation(); restoreBoard();
+  currentMode=num; rowLength=num; 
+  // ⭕️【修正】一番上で設定した変数から、該当する回答回数を自動でセットします
+    if(num === 4) maxGuesses = CONFIG_MAX_GUESSES_4;
+    else if(num === 5) maxGuesses = CONFIG_MAX_GUESSES_5;
+    else if(num === 6) maxGuesses = CONFIG_MAX_GUESSES_6;
+    document.getElementById("game-board").style.setProperty("--row-length",num);
+    // ★追加：縦のマス目（行数）もCSSに伝えて自動で枠を伸縮させます
+    document.getElementById("game-board").style.setProperty("--row-count", maxGuesses);
+    document.getElementById("game-board").innerHTML = "";
+    await selectTodayStation(); restoreBoard();
+    });
   });
-});
-//結果ウィンドウにある各種SNSへのシェアボタンやコピーボタンの動作
-document.getElementById("share-btn").addEventListener("click",()=>shareResult("twitter"));
-document.getElementById("line-btn").addEventListener("click",()=>shareResult("line"));
-document.getElementById("fb-btn").addEventListener("click",()=>shareResult("facebook"));
-document.getElementById("copy-btn").addEventListener("click",()=>shareResult("copy"));
-// 結果画面の「×（閉じる）」ボタンが押されたら、hiddenクラスをつけて非表示にする
+  
+  //結果ウィンドウにある各種SNSへのシェアボタンやコピーボタンの動作
+  document.getElementById("share-btn").addEventListener("click",()=>shareResult("twitter"));
+  document.getElementById("line-btn").addEventListener("click",()=>shareResult("line"));
+  document.getElementById("fb-btn").addEventListener("click",()=>shareResult("facebook"));
+  document.getElementById("copy-btn").addEventListener("click",()=>shareResult("copy"));
+  // 結果画面の「×（閉じる）」ボタンが押されたら、hiddenクラスをつけて非表示にする
   document.getElementById("close-modal-btn").addEventListener("click", () => {
     const resModal = document.getElementById("result-modal");
     resModal.style.display = ""; // ここでもバグ防止の強制リセットを行います
@@ -2014,7 +2022,7 @@ function startQuadMode() {
   isQuadMode = true;
   isPlayingRandom = false;
   guessesSubmitted = 0;
-  maxGuesses = 11; // 4画面攻略のため、通常より多めの「11手」を上限に設定
+  maxGuesses = CONFIG_MAX_GUESSES_QUAD;  
   quadSolved = [false, false, false, false];
   quadKeyColors = {};
   currentGuess = "";
