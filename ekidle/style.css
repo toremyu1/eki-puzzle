@@ -107,9 +107,12 @@ header {
 }
 
 /* ==========================================
-   立体ボタンの設計（ガタつき完全防止版）
+   立体ボタンの設計（サイズ復元・ガタつき完全防止版）
 ========================================== */
 .btn {
+  /* 【修正】抜けていた内側の余白を復活し、押しやすいサイズに戻します */
+  padding: 10px 16px; 
+  
   border-radius: 8px;
   font-weight: bold;
   cursor: pointer;
@@ -118,19 +121,14 @@ header {
   user-select: none;
   outline: none;
   
-  /* 【工夫1】ボタン本体の枠線は2pxで完全に固定し、高さを変えません */
   border: 2px solid rgba(0, 0, 0, 0.1);
-  
-  /* 【工夫2】厚み部分は「影（box-shadow）」で表現します。影は下の要素を押し出しません */
   box-shadow: 0 4px 0 rgba(0, 0, 0, 0.2);
-  
   transition: transform 0.1s ease, box-shadow 0.1s ease;
 }
 
 /* ボタンが押された瞬間の沈み込みアクション */
 .btn:active:not([disabled]) {
-  transform: translateY(4px); /* 4px下に移動 */
-  /* 【工夫3】厚み（影）だけを消します。本体の2pxの枠線は残るため見栄えが良いです！ */
+  transform: translateY(4px);
   box-shadow: 0 0 0 transparent !important;
 }
 
@@ -141,13 +139,33 @@ header {
 }
 
 /* ------------------------------------------
-   色のバリエーション（枠線色と影色を個別に指定）
+   色のバリエーション（そのまま）
 ------------------------------------------ */
 .btn-green { background-color: var(--correct-color); color: white; border-color: #4a7c46; box-shadow: 0 4px 0 #4a7c46; }
 .btn-gray  { background-color: #95a5a6; color: white; border-color: #7f8c8d; box-shadow: 0 4px 0 #7f8c8d; }
 .btn-outline{background-color: #ffffff; color: var(--text-color); border-color: #d3d6da; box-shadow: 0 4px 0 #bdc3c7; }
 
-/* ゲーム画面のコントロールボタン群 */
+/* ------------------------------------------
+   各ボタンのサイズ調整（ここも修正）
+------------------------------------------ */
+/* 【修正】ヘッダーのアイコンボタンも指で押しやすい大きさに拡大（32px → 40px） */
+.btn-icon {
+  width: 40px; height: 40px;
+  font-size: 18px;
+  padding: 0;
+  display: flex; justify-content: center; align-items: center;
+  background-color: #e3e3e1; color: var(--text-color);
+}
+
+/* 【修正】ゲーム画面のコントロールボタン群の余白を増やし、以前の堂々とした大きさに戻します */
+.control-buttons {
+  display: flex; justify-content: center; gap: 8px;
+  margin: 10px auto 15px; width: 95%; max-width: 400px;
+}
+.btn-small { flex: 1; padding: 12px 0; font-size: 14px; }
+.btn-medium { flex: 2; padding: 12px 0; font-size: 18px; }
+
+/* ゲーム画面ボタンの色指定 */
 .btn-danger { background-color: #fff; color: #e53935; border-color: #e53935; box-shadow: 0 4px 0 #c0392b; }
 .btn-primary{ background-color: #fff; color: #03a9f4; border-color: #03a9f4; box-shadow: 0 4px 0 #0288d1; }
 
