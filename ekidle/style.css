@@ -479,3 +479,69 @@ body.event-nye .key { background-color:#25202b; color:#d1c7bd; }
 .preload-transitions * {
   transition: none !important;
 }
+
+
+/* ==========================================
+   駅ドル・クアッド（4画面）モード用のレイアウト
+========================================== */
+/* 2×2のグリッドで4つの盤面を配置する大枠 */
+#quad-board-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr; /* 左右2列に均等分割 */
+  gap: 15px; /* 盤面同士の隙間 */
+  width: 100%;
+  margin-bottom: 20px;
+}
+
+/* 各盤面の中身（タイルの隙間を通常より狭くして密度を上げる） */
+.quad-board {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.quad-board .board-row {
+  display: grid;
+  grid-template-columns: repeat(var(--row-length, 4), 1fr);
+  gap: 3px;
+}
+
+/* 4画面用の小さなタイル */
+.quad-board .tile {
+  width: 10vw;
+  height: 10vw;
+  max-width: 40px;
+  max-height: 40px;
+  font-size: 16px; /* 文字も少し小さく */
+  border-width: 1px; /* 枠線もスッキリと細く */
+}
+
+/* 正解してクリア済みの盤面を暗くするエフェクト */
+.quad-board.cleared {
+  opacity: 0.4;
+  pointer-events: none;
+  filter: grayscale(50%); /* 色をくすませて終わった感を出す */
+}
+
+/* ==========================================
+   キーボードの4分割カラーリング（クアッドモード用）
+========================================== */
+.key.quad-mode {
+  /* プログラム側から流し込む4色の変数（最初はすべて未入力のグレー） */
+  --c1: #d3d6da; /* 左上（盤面0） */
+  --c2: #d3d6da; /* 右上（盤面1） */
+  --c3: #d3d6da; /* 左下（盤面2） */
+  --c4: #d3d6da; /* 右下（盤面3） */
+  
+  /* 中心点から時計回りに4分割で色を塗る描画処理 */
+  background: conic-gradient(
+    var(--c2) 0deg 90deg,
+    var(--c4) 90deg 180deg,
+    var(--c3) 180deg 270deg,
+    var(--c1) 270deg 360deg
+  ) !important;
+  
+  /* 色が4つ混ざってもキーの文字が読みやすいように、文字に黒い縁取りの影をつける */
+  border: 1px solid rgba(0, 0, 0, 0.2) !important;
+  color: white !important;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8), -1px -1px 2px rgba(0, 0, 0, 0.8) !important;
+}
