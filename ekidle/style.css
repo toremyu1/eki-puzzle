@@ -107,7 +107,7 @@ header {
 }
 
 /* ==========================================
-   3. 立体ボタンの設計（全ボタン共通）
+   立体ボタンの設計（ガタつき完全防止版）
 ========================================== */
 .btn {
   border-radius: 8px;
@@ -115,21 +115,23 @@ header {
   cursor: pointer;
   box-sizing: border-box;
   text-align: center;
-  user-select: none; /* スマホで長押し選択されるのを防ぐ */
+  user-select: none;
   outline: none;
-  border: none;
   
-  /* 立体感（厚み）を出すための下枠線 */
-  border-bottom: 4px solid rgba(0,0,0,0.2);
-  /* 押した時にフワッと動くアニメーション設定 */
-  transition: transform 0.1s ease, border-bottom-width 0.1s ease;
+  /* 【工夫1】ボタン本体の枠線は2pxで完全に固定し、高さを変えません */
+  border: 2px solid rgba(0, 0, 0, 0.1);
+  
+  /* 【工夫2】厚み部分は「影（box-shadow）」で表現します。影は下の要素を押し出しません */
+  box-shadow: 0 4px 0 rgba(0, 0, 0, 0.2);
+  
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
 }
 
-/* ボタンを押した瞬間に下に沈ませる（ガタつき防止＆枠線キープ版） */
-.btn:active:not([disabled]) { 
-  /* 3px下に沈め、下枠線を1px残すことで、ボタンの下端（ボトムライン）の位置を完全に固定します */
-  transform: translateY(3px);
-  border-bottom-width: 1px !important;
+/* ボタンが押された瞬間の沈み込みアクション */
+.btn:active:not([disabled]) {
+  transform: translateY(4px); /* 4px下に移動 */
+  /* 【工夫3】厚み（影）だけを消します。本体の2pxの枠線は残るため見栄えが良いです！ */
+  box-shadow: 0 0 0 transparent !important;
 }
 
 /* 無効化（グレーアウト）時のボタン */
@@ -139,61 +141,20 @@ header {
 }
 
 /* ------------------------------------------
-   ボタンのサイズと色のバリエーション
+   色のバリエーション（枠線色と影色を個別に指定）
 ------------------------------------------ */
-/* アイコン用の小さいボタン（ヘッダー等） */
-.btn-icon {
-  width: 32px; height: 32px;
-  font-size: 16px;
-  padding: 0;
-  display: flex; justify-content: center; align-items: center;
-  background-color: #e3e3e1; color: var(--text-color);
-}
-
-/* モード切り替えボタン */
-.mode-btn {
-  background-color: #e3e3e1;
-  color: var(--text-color);
-  padding: 8px 12px;
-  font-size: 14px;
-}
-.mode-btn.active {
-  background-color: var(--correct-color);
-  color: white;
-  border-bottom-color: #4a7c46; /* 緑ボタン専用の影色 */
-}
-
-/* タイトル画面用の巨大ボタン */
-.btn-large {
-  width: 80%; max-width: 320px;
-  padding: 20px;
-  font-size: 20px;
-  margin-bottom: 20px;
-}
-
-/* 色のバリエーション */
-.btn-green { background-color: var(--correct-color); color: white; border-bottom-color: #4a7c46; }
-.btn-gray { background-color: #95a5a6; color: white; border-bottom-color: #7f8c8d; }
-.btn-outline { background-color: #ffffff; color: var(--text-color); border: 2px solid #d3d6da; border-bottom: 4px solid #d3d6da; }
+.btn-green { background-color: var(--correct-color); color: white; border-color: #4a7c46; box-shadow: 0 4px 0 #4a7c46; }
+.btn-gray  { background-color: #95a5a6; color: white; border-color: #7f8c8d; box-shadow: 0 4px 0 #7f8c8d; }
+.btn-outline{background-color: #ffffff; color: var(--text-color); border-color: #d3d6da; box-shadow: 0 4px 0 #bdc3c7; }
 
 /* ゲーム画面のコントロールボタン群 */
-.control-buttons {
-  display: flex; justify-content: center; gap: 8px;
-  margin: 10px auto 15px; width: 95%; max-width: 400px;
-}
-.btn-small { flex: 1; padding: 8px 0; font-size: 14px; }
-.btn-medium { flex: 2; padding: 8px 0; font-size: 18px; }
-.btn-danger { background-color: #fff; color: #e53935; border: 2px solid #e53935; border-bottom: 4px solid #c0392b; }
-.btn-primary { background-color: #fff; color: #03a9f4; border: 2px solid #03a9f4; border-bottom: 4px solid #0288d1; }
+.btn-danger { background-color: #fff; color: #e53935; border-color: #e53935; box-shadow: 0 4px 0 #c0392b; }
+.btn-primary{ background-color: #fff; color: #03a9f4; border-color: #03a9f4; box-shadow: 0 4px 0 #0288d1; }
 
 /* 結果画面のシェアボタン等（平面的なデザイン） */
 .btn-flat {
-  border-radius: 4px;
-  padding: 8px 12px;
-  font-size: 14px;
-  color: white;
-  /* 平面にするため、影と沈み込みアニメーションをキャンセル */
-  border-bottom: none;
+  border: none !important;
+  box-shadow: none !important;
   transition: opacity 0.2s;
 }
 .btn-flat:active:not([disabled]) {
