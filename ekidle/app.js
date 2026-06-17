@@ -315,10 +315,18 @@ try{
   document.getElementById("enter-btn").addEventListener("click",()=>handleKeyPress("ENTER"));
   document.getElementById("back-btn").addEventListener("click",()=>handleKeyPress("BACK"));
   document.getElementById("clear-btn").addEventListener("click",()=>handleKeyPress("CLEAR"));
-  //メニューの三本線が押されたときにサイドメニューを出す
-  document.getElementById("menu-btn").addEventListener("click",()=>{
-  document.getElementById("side-menu-overlay").style.display="block";
-  setTimeout(()=>document.getElementById("side-menu").style.right="0",10);
+  // メニューの三本線（サイドメニューボタン）が押されたときの処理
+  document.getElementById("menu-btn").addEventListener("click", () => {
+    const sideMenu = document.getElementById("side-menu");
+    
+    // 【トグル処理】もしすでに右端が「0（開いている状態）」ならメニューを閉じます
+    if (sideMenu.style.right === "0px") {
+      closeSideMenu();
+    } else {
+      // 閉じている状態なら、通常通りメニューを開きます
+      document.getElementById("side-menu-overlay").style.display = "block";
+      setTimeout(() => sideMenu.style.right = "0", 10);
+    }
   });
 //メニューの外側や閉じるボタンが押されたらメニューを右側に隠す
 const closeSideMenu=()=>{
@@ -507,6 +515,17 @@ updateHelpContent(); // 起動時に説明文を現在の設定に合わせる
   document.getElementById("menu-home-btn").addEventListener("click", (e) => {
     e.preventDefault(); 
     returnToTitleScreen();
+  });
+  // 【新設】サイドメニューの「これまでの記録を見る」が押されたときの動作
+  document.getElementById("menu-stats-btn").addEventListener("click", (e) => {
+    e.preventDefault(); // 画面最上部へのジャンプを防止
+    closeSideMenu();    // 開いているサイドメニューを一旦閉じます
+    
+    // 記録モーダルを画面に表示し、初期状態としてノーマルタブの戦績を計算・表示します
+    document.getElementById("title-stats-modal").classList.remove("hidden");
+    if (typeof updateTitleStatsDisplay === "function") {
+      updateTitleStatsDisplay("normal");
+    }
   });
 
 
