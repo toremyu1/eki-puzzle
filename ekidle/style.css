@@ -137,8 +137,14 @@ header {
 }
 
 /* テーマカラーが黒の時のみ、ボタンの影を専用の色にします */
-body.theme-dark .btn-icon, .mode-btn {
+body.theme-dark .btn-icon, body.theme-dark .mode-btn {
    box-shadow: 0 4px 0 rgba(225, 225, 225, 0.8);
+}
+
+/* 黒背景のとき、記録ボタンとノーマル・ハードのボタンの文字を強制的に黒色にします */
+body.theme-dark #btn-stats-title,
+body.theme-dark #title-stats-modal .btn {
+  color: #000000 !important;
 }
 
 /* ボタンが押された瞬間の沈み込みアクション */
@@ -472,11 +478,6 @@ body.event-nye .key { background-color:#25202b; color:#d1c7bd; }
 /* ==========================================
    ダークテーマ（黒背景）時のボタン・立体感調整
 ========================================== */
-/* 黒背景のとき、記録ボタンとノーマル・ハードのボタンの文字を強制的に黒色にします */
-body.theme-dark #btn-stats-title,
-body.theme-dark #title-stats-modal .btn {
-  color: #000000 !important;
-}
 
 /* 黒テーマ（ダークモード）用の立体影の最適化 */
 /*body.theme-dark .btn {
