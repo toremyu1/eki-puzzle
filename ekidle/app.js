@@ -323,19 +323,21 @@ try{
     if (sideMenu.style.right === "0px") {
       closeSideMenu();
     } else {
+      overlay.classList.remove("hidden"); // hiddenクラスを除去して背景を暗転させる
       // 閉じている状態なら、通常通りメニューを開きます
-      document.getElementById("side-menu-overlay").style.display = "block";
       setTimeout(() => sideMenu.style.right = "0", 10);
     }
   });
-//メニューの外側や閉じるボタンが押されたらメニューを右側に隠す
-const closeSideMenu=()=>{
-document.getElementById("side-menu").style.right="-250px";
-setTimeout(()=>document.getElementById("side-menu-overlay").style.display="none",300);
-};
-document.getElementById("close-menu-btn").addEventListener("click",closeSideMenu);
-document.getElementById("side-menu-overlay").addEventListener("click",closeSideMenu);
-// 「？」ボタンが押されたら、hiddenクラスを消して説明画面を表示する
+  // メニューの外側や閉じるボタンが押されたらメニューを右側に隠す関数
+  const closeSideMenu = () => {
+    document.getElementById("side-menu").style.right = "-250px";
+    setTimeout(() => {
+      document.getElementById("side-menu-overlay").classList.add("hidden"); // hiddenクラスを再付与して暗転を隠す
+    }, 300);
+  };
+  document.getElementById("close-menu-btn").addEventListener("click",closeSideMenu);
+  document.getElementById("side-menu-overlay").addEventListener("click",closeSideMenu);
+  // 「？」ボタンが押されたら、hiddenクラスを消して説明画面を表示する
   document.getElementById("help-btn").addEventListener("click", () => {
     document.getElementById("help-modal").classList.remove("hidden");
   });
@@ -510,12 +512,31 @@ updateHelpContent(); // 起動時に説明文を現在の設定に合わせる
     }, 300);
   };
 
-  // 戻るボタンが押されたときの処理
-  document.getElementById("home-btn").addEventListener("click", returnToTitleScreen);
+  // ヘッダーの矢印ボタン（←）を押したとき、「前の画面に戻る」動作にする処理
+  document.getElementById("home-btn").addEventListener("click", () => {
+    const gameScreen = document.getElementById("game-screen");
+    
+    // もしゲーム画面が表示されている（hiddenクラスがない）なら、タイトル画面へ戻す
+    if (!gameScreen.classList.contains("hidden")) {
+      returnToTitleScreen();
+    } else {
+      // すでにタイトル画面にいる場合は、ゲームのルートフォルダ（FALLBACK_URL）へ移動させる
+      window.location.href = FALLBACK_URL;
+    }
+  });
+
+  // サイドメニューの「タイトル画面に戻る」が押されたときの処理
   document.getElementById("menu-home-btn").addEventListener("click", (e) => {
     e.preventDefault(); 
     returnToTitleScreen();
   });
+
+  // 【新設】サイドメニューの「総合TOPへ」が押されたときの移動処理
+  document.getElementById("menu-top-btn").addEventListener("click", (e) => {
+    e.preventDefault();
+    window.location.href = FALLBACK_URL;
+  });
+  
   // 【新設】サイドメニューの「これまでの記録を見る」が押されたときの動作
   document.getElementById("menu-stats-btn").addEventListener("click", (e) => {
     e.preventDefault(); // 画面最上部へのジャンプを防止
@@ -1462,15 +1483,20 @@ function showResultModal(isWin,isRestore){
   let maxDist=Math.max(...st.dist);
   const barColors=["#6aaa64","#42a5f5","#26c6da","#ffca28","#ffa726","#ff7043","#ec407a","#ab47bc"];
   for(let i=1;i<=maxGuesses;i++){
-  let count=st.dist[i]||0;
-  let w=maxDist>0?Math.max(8,Math.round((count/maxDist)*100)):8;
-  let bg=barColors[i-1]||"#6aaa64";
-  distHTML+=`<div style="display:flex;align-items:center;margin-bottom:4px;">
-    <div style="width:15px;font-weight:bold;text-align:right;margin-right:5px;font-size:12px;">${i}</div>
-    <div style="flex:1;background-color:#f0f2f5;border-radius:2px;">
-    <div style="background-color:${bg};height:18px;width:${w}%;color:white;text-align:right;padding-right:5px;font-size:11px;line-height:18px;border-radius:2px;box-sizing:border-box;">${count}</div>
-    </div>
-    </div>`;
+    let count=st.dist[i]||0;
+    let w=maxDist>0?Math.max(8,Math.round((count/maxDist)*100)):8;
+    let bg=barColors[i-1]||"#6aaa64";
+    
+    // 【新設】今日かかった手数の棒グラフだけを美しく縁取るスタイル
+    let isTodayRow = (i === gridHistory.length);
+    let borderStyle = isTodayRow ? "border: 2px solid #ffd700; box-shadow: 0 0 4px #ff8c00; font-weight: bold;" : "";
+    
+    distHTML+=`<div style="display:flex;align-items:center;margin-bottom:4px;">
+      <div style="width:15px;font-weight:bold;text-align:right;margin-right:5px;font-size:12px;">${i}</div>
+      <div style="flex:1;background-color:#f0f2f5;border-radius:2px;">
+      <div style="background-color:${bg};height:18px;width:${w}%;color:white;text-align:right;padding-right:5px;font-size:11px;line-height:18px;border-radius:2px;box-sizing:border-box; ${borderStyle}">${count}</div>
+      </div>
+      </div>`;
   }
   document.getElementById("guess-distribution").innerHTML=distHTML;
   //タイルの色の結果を四角い絵文字（🟩🟨🟪⬛）の並びに変換し、結果画面の中央に配置する
