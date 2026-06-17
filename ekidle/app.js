@@ -454,6 +454,8 @@ updateHelpContent(); // 起動時に説明文を現在の設定に合わせる
       document.getElementById("game-screen").classList.remove("hidden");
       // 【追加】ゲーム画面に入ったので、ハードモードのチェックボックスを表示します
       document.querySelector(".hardmode-container").classList.remove("hidden");
+      // 【修正】ゲーム画面に入ったので、モード選択ボタンとハードモードを同時に表示します
+      document.querySelector(".mode-selector").classList.remove("hidden");
       // ゲーム画面に入ってから、行事日のポップアップなどを開始する
       checkSpecialEvent();
     });
@@ -474,12 +476,13 @@ updateHelpContent(); // 起動時に説明文を現在の設定に合わせる
       alert("リバースモードは現在開発中です！お楽しみに！");
     });
 
-    // 【新設】タイトル画面へ戻るための共通関数
+    // タイトル画面へ戻るための共通関数
     const returnToTitleScreen = () => {
       document.getElementById("title-screen").classList.remove("hidden");
       document.getElementById("game-screen").classList.add("hidden");
     
-      // タイトル画面に戻ったので、ハードモードのチェックボックスを再び隠します
+      // 【修正】タイトル画面に戻ったので、モード選択ボタンとハードモードを再び隠します
+      document.querySelector(".mode-selector").classList.add("hidden");
       document.querySelector(".hardmode-container").classList.add("hidden");
     
       // もしサイドメニューが開いていたら、右側に隠してオーバーレイも消します
