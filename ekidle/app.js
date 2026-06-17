@@ -6,7 +6,6 @@ const CONFIG_MAX_GUESSES_5 = 6;     // 5文字モードの回答回数
 const CONFIG_MAX_GUESSES_6 = 6;     // 6文字モードの回答回数
 const CONFIG_MAX_GUESSES_QUAD = 11; // クアッドモードの回答回数
 
-let stations=[];              //すべての駅データの入れる箱
 let stations=[];　　　　　　　//すべての駅データの入れる箱
 let availableStations=[];　　//選択文字数に一致する駅を入れる箱
 let todayStation=null;　　　 //今日の正解駅
@@ -51,7 +50,6 @@ function getJSTDateString() {
   return jstObj.getFullYear() + "-" + String(jstObj.getMonth() + 1).padStart(2, '0') + "-" + String(jstObj.getDate()).padStart(2, '0');
 }
 
-
 // priority(数値)が小さい順に表示されます。
 // 基準： 10(サイト周年), 20(エイプリル), 30(ユーザー周年), 99(将来のその他用)
 function registerEventPopup(priority, actionFunc) {
@@ -71,6 +69,221 @@ function showNextEventPopup() {
     nextPopup.action();
   } else {
     isPopupRunning = false; // 列が空になったら待機状態に戻す
+  }
+}
+
+
+// ==========================================
+// 共通UI制御処理（他のゲームでも流用可能）
+// ==========================================
+// サイドメニュー、各種モーダル、画面遷移のイベントをまとめて登録する関数です。
+function setupCommonUI() {
+  // ----------------------------------------
+  // サイドメニューの制御
+  // ----------------------------------------
+  // メニューを画面右側に隠し、暗転用の背景を消す処理
+  const closeSideMenu = () => {
+    const sideMenu = document.getElementById("side-menu");
+    const overlay = document.getElementById("side-menu-overlay");
+    
+    if (sideMenu && overlay) {
+      sideMenu.style.right = "-250px"; // 画面外にスライドアウト
+      // スライドアニメーションが終わる頃に背景を隠す
+      setTimeout(() => {
+        overlay.classList.add("hidden"); 
+      }, 300);
+    }
+  };
+
+  // メニューボタン（三本線）が押された時の開閉処理
+  const menuBtn = document.getElementById("menu-btn");
+  if (menuBtn) {
+    menuBtn.addEventListener("click", () => {
+      const sideMenu = document.getElementById("side-menu");
+      const overlay = document.getElementById("side-menu-overlay");
+      
+      if (sideMenu && overlay) {
+        // すでに開いている場合は閉じる
+        if (sideMenu.style.right === "0px") {
+          closeSideMenu();
+        } else {
+          // 閉じている場合は背景を表示し、メニューをスライドインさせる
+          overlay.classList.remove("hidden");
+          setTimeout(() => sideMenu.style.right = "0", 10);
+        }
+      }
+    });
+  }
+
+  // メニュー内の閉じるボタンや、暗転背景を押したときにも閉じるように紐付け
+  const closeMenuBtn = document.getElementById("close-menu-btn");
+  if (closeMenuBtn) closeMenuBtn.addEventListener("click", closeSideMenu);
+  
+  const sideMenuOverlay = document.getElementById("side-menu-overlay");
+  if (sideMenuOverlay) sideMenuOverlay.addEventListener("click", closeSideMenu);
+
+  // ----------------------------------------
+  // 各種モーダル（説明・リザルト）の制御
+  // ----------------------------------------
+  // 「？」ボタンを押したときに説明画面を表示
+  const helpBtn = document.getElementById("help-btn");
+  if (helpBtn) {
+    helpBtn.addEventListener("click", () => {
+      const helpModal = document.getElementById("help-modal");
+      if (helpModal) helpModal.classList.remove("hidden");
+    });
+  }
+
+  // 説明画面の「×」ボタンを押したときに非表示にする
+  const closeHelpBtn = document.getElementById("close-help-btn");
+  if (closeHelpBtn) {
+    closeHelpBtn.addEventListener("click", () => {
+      const helpModal = document.getElementById("help-modal");
+      if (helpModal) helpModal.classList.add("hidden");
+    });
+  }
+
+  // 結果画面の「×」ボタンを押したときの処理（複数ある場合に対応）
+  const closeModalBtns = document.querySelectorAll("#close-modal-btn");
+  closeModalBtns.forEach(btn => {
+    btn.addEventListener("click", () => {
+      const resModal = document.getElementById("result-modal");
+      if (resModal) {
+        resModal.style.display = ""; // 古い表示システムによるバグを防ぐためスタイルをリセット
+        resModal.classList.add("hidden");
+      }
+    });
+  });
+
+  // ----------------------------------------
+  // タイトル画面とゲーム画面の遷移制御
+  // ----------------------------------------
+  // タイトル画面へ戻るための共通処理
+  const returnToTitleScreen = () => {
+    const titleScreen = document.getElementById("title-screen");
+    const gameScreen = document.getElementById("game-screen");
+    
+    if (titleScreen && gameScreen) {
+      titleScreen.classList.remove("hidden");
+      titleScreen.style.display = ""; // 強制非表示を解除
+      gameScreen.classList.add("hidden");
+      
+      // ゲーム中のUIパーツを隠す
+      const modeSelector = document.querySelector(".mode-selector");
+      if (modeSelector) modeSelector.classList.add("hidden");
+      const hardmodeContainer = document.querySelector(".hardmode-container");
+      if (hardmodeContainer) hardmodeContainer.classList.add("hidden");
+      
+      closeSideMenu(); // 遷移時は必ずサイドメニューを閉じる
+    }
+  };
+
+  // 「通常モードで遊ぶ」ボタンの処理
+  const btnNormalMode = document.getElementById("btn-normal-mode");
+  if (btnNormalMode) {
+    btnNormalMode.addEventListener("click", () => {
+      document.getElementById("title-screen").classList.add("hidden");
+      document.getElementById("game-screen").classList.remove("hidden");
+      
+      const modeSelector = document.querySelector(".mode-selector");
+      if (modeSelector) modeSelector.classList.remove("hidden");
+      const hardmodeContainer = document.querySelector(".hardmode-container");
+      if (hardmodeContainer) hardmodeContainer.classList.remove("hidden");
+      
+      // イベント行事のチェック関数があれば実行
+      if (typeof checkSpecialEvent === "function") checkSpecialEvent();
+    });
+  }
+
+  // 「リバースモードで遊ぶ」ボタンの処理
+  const btnReverseMode = document.getElementById("btn-reverse-mode");
+  if (btnReverseMode) {
+    btnReverseMode.addEventListener("click", () => {
+      alert("リバースモードは現在開発中です！お楽しみに！");
+    });
+  }
+
+  // ヘッダーの戻る（家）ボタンの処理
+  const homeBtn = document.getElementById("home-btn");
+  if (homeBtn) {
+    homeBtn.addEventListener("click", () => {
+      const gameScreen = document.getElementById("game-screen");
+      // ゲーム中ならタイトルへ、タイトルにいるなら総合TOPへ戻す
+      if (gameScreen && !gameScreen.classList.contains("hidden")) {
+        returnToTitleScreen();
+      } else {
+        if (typeof FALLBACK_URL !== "undefined") window.location.href = FALLBACK_URL;
+      }
+    });
+  }
+
+  // メニュー内のリンク群の処理
+  const menuHomeBtn = document.getElementById("menu-home-btn");
+  if (menuHomeBtn) {
+    menuHomeBtn.addEventListener("click", (e) => {
+      e.preventDefault(); // 画面上部へのジャンプを防ぐ
+      returnToTitleScreen();
+    });
+  }
+
+  const menuTopBtn = document.getElementById("menu-top-btn");
+  if (menuTopBtn) {
+    menuTopBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      if (typeof FALLBACK_URL !== "undefined") window.location.href = FALLBACK_URL;
+    });
+  }
+
+  const menuStatsBtn = document.getElementById("menu-stats-btn");
+  if (menuStatsBtn) {
+    menuStatsBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      closeSideMenu();
+      const titleStatsModal = document.getElementById("title-stats-modal");
+      if (titleStatsModal) {
+        titleStatsModal.classList.remove("hidden");
+        // 成績表示の更新関数があれば初期化（ノーマルタブ）
+        if (typeof updateTitleStatsDisplay === "function") {
+          updateTitleStatsDisplay("normal");
+        }
+      }
+    });
+  }
+
+  // ----------------------------------------
+  // タイトル画面の「これまでの記録」モーダル制御
+  // ----------------------------------------
+  const btnStatsTitle = document.getElementById("btn-stats-title");
+  if (btnStatsTitle) {
+    btnStatsTitle.addEventListener("click", () => {
+      const titleStatsModal = document.getElementById("title-stats-modal");
+      if (titleStatsModal) {
+        titleStatsModal.classList.remove("hidden");
+        if (typeof updateTitleStatsDisplay === "function") updateTitleStatsDisplay("normal");
+      }
+    });
+  }
+
+  const closeTitleStatsBtn = document.getElementById("close-title-stats-btn");
+  if (closeTitleStatsBtn) {
+    closeTitleStatsBtn.addEventListener("click", () => {
+      const titleStatsModal = document.getElementById("title-stats-modal");
+      if (titleStatsModal) titleStatsModal.classList.add("hidden");
+    });
+  }
+
+  // タブの切り替え処理
+  const tabNormal = document.getElementById("tab-normal");
+  const tabHard = document.getElementById("tab-hard");
+  if (tabNormal) {
+    tabNormal.addEventListener("click", () => { 
+      if(typeof updateTitleStatsDisplay === "function") updateTitleStatsDisplay("normal"); 
+    });
+  }
+  if (tabHard) {
+    tabHard.addEventListener("click", () => { 
+      if(typeof updateTitleStatsDisplay === "function") updateTitleStatsDisplay("hard"); 
+    });
   }
 }
 
@@ -181,479 +394,7 @@ function hideLoadingScreen() {
 }
 
 
-// ==========================================
-// ゲーム初期化処理
-// ==========================================
-
-//画面読み込み時に最初に実行され、データ準備やボタン登録などを行う
-async function initGame(){
-try{
-  // 【ここを追加：① 最初のシステム起動】
-  updateLoadingProgress(10, "システムを起動中...");
-  // 現在のデータ構造のバージョンを記録（将来のバグ防止用）
-  if (!localStorage.getItem("ekiSystemVersion")) localStorage.setItem("ekiSystemVersion", "1.0");
-  // URLの末尾に「?emergency_reset=true」がついている場合の処理
-  if (new URLSearchParams(window.location.search).get("emergency_reset") === "true") {
-    if (confirm("これまでのプレイ実績や設定がすべて消去されます。本当に初期化しますか？")) {
-      localStorage.clear();
-      alert("データを初期化しました。");  
-    }
-    window.location.href = window.location.origin + window.location.pathname;
-    return;
-  }
-  loadStats();
-  updateLoginStreak();
-
-  // 【ここを追加：② データのダウンロード開始】
-  updateLoadingProgress(30, "駅データをダウンロード中...");
-
-  // 【究極版】データ取得失敗時の安全装置（Cache APIを使った非同期の大容量バックアップ）
-  let raw = [];
-  try {
-    // 常に最新を取りに行く
-    const res = await fetch('/stations.json', { cache: "no-store" });
-    if (!res.ok) throw new Error(`通信エラーが発生しました (ステータス: ${res.status})`);
-
-    // ファイルの全体サイズを取得（サーバー側が対応している場合）
-    const contentLength = res.headers.get('content-length');
-    const totalBytes = contentLength ? parseInt(contentLength, 10) : 0;
-    let loadedBytes = 0;
-
-    // データを少しずつ読み込むためのリーダーを取得する
-    const reader = res.body.getReader();
-    const chunks = [];
-
-    // データのダウンロードが終わるまでループで少しずつ受け取る
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break; // 読み込み完了でループを抜ける
-
-      // 受け取ったデータの欠片（チャンク）を保存し、読み込み済みのバイト数を加算する
-      chunks.push(value);
-      loadedBytes += value.length;
-
-      // 進捗バーの更新計算
-      if (totalBytes) {
-        // 全体サイズが分かる場合は、30%〜60%の間で正確に進捗を進める
-        const percent = 30 + (loadedBytes / totalBytes) * 30;
-        updateLoadingProgress(percent, `駅データをダウンロード中... (${Math.floor(percent)}%)`);
-      } else {
-        // Cloudflare等の圧縮環境で全体サイズが分からない場合のフェイク進捗
-        const mb = (loadedBytes / (1024 * 1024)).toFixed(1);
-        updateLoadingProgress(45, `駅データをダウンロード中... (${mb}MB)`); 
-      }
-    }
-
-    // 【進捗60%】保管完了
-    updateLoadingProgress(60, "データを展開・保管中...");
-
-    // バラバラに受け取ったデータの欠片を1つの箱に結合する
-    const allChunks = new Uint8Array(loadedBytes);
-    let position = 0;
-    for (const chunk of chunks) {
-      allChunks.set(chunk, position);
-      position += chunk.length;
-    }
-
-    // バイトデータを文字列（テキスト）に変換する
-    const textData = new TextDecoder("utf-8").decode(allChunks);
-
-    // エラーページ（HTML）などを誤って読み込んでいないか確認する
-    if (textData.trim().startsWith("<")) {
-      throw new Error("JSONの代わりにエラー画面が読み込まれました。");
-    }
-
-    // 文字列をJSONデータとして変換する
-    raw = JSON.parse(textData);
-
-    // Cache APIを使って非同期でバックアップ保存
-    if ('caches' in window) {
-      const cache = await caches.open('eki-backup-v1');
-      const resToCache = new Response(textData, { headers: { 'Content-Type': 'application/json' } });
-      cache.put('stations.json', resToCache).catch(e => console.warn("キャッシュ保存スキップ:", e));
-    }
-  } catch (err) {
-    console.warn("最新データの取得に失敗。Cache APIのバックアップを使用します。", err);
-    
-    let isRecovered = false;
-    // 通信エラー時は、Cache APIの金庫から過去のデータを引っ張り出す
-    if ('caches' in window) {
-      const cache = await caches.open('eki-backup-v1');
-      const cachedRes = await cache.match('stations.json');
-      if (cachedRes) {
-        raw = await cachedRes.json();
-        isRecovered = true;
-
-        // 画面上部に「バックアップ起動中」の警告バナーを動的に表示する
-        if (!document.getElementById("offline-warning-banner")) {
-          document.body.insertAdjacentHTML("afterbegin", `
-            <div id="offline-warning-banner" style="background-color: #fff3e0; color: #e65100; font-size: 11px; font-weight: bold; text-align: center; padding: 6px; border-bottom: 1px solid #ffcc80; width: 100%; box-sizing: border-box;">
-              ⚠️ バックアップデータで運行中。通常の出題と答えが異なる場合があります。
-            </div>
-          `);
-        }
-      }
-    }
-    
-    // バックアップすら無い（完全な初回プレイで通信エラー）場合の致命的エラー画面
-    if (!isRecovered) {
-      // 画面全体をエラー表示に書き換え、変数で設定したルートURLへ戻るボタンを配置する
-      document.body.innerHTML = `
-        <div style="text-align:center; padding:50px; font-family:sans-serif; background-color:#f0f2f5; height:100vh; display:flex; flex-direction:column; justify-content:center; align-items:center;">
-          <h3 style="color:#e53935; font-size:24px; margin-bottom:15px;">駅データの読み込みに失敗しました</h3>
-          <p style="font-size:14px; color:#555; margin-bottom:30px;">通信環境が不安定です。<br>電波の良いところで再度お試しください。</p>
-          <button onclick="window.location.href='${FALLBACK_URL}'" style="padding:15px 30px; font-size:18px; font-weight:bold; background:#3498db; color:#fff; border:none; border-radius:8px; cursor:pointer; box-shadow: 0 4px 0 #2980b9;">
-            トップページへ戻る
-          </button>
-        </div>`;
-      return; // 処理を完全に止める
-    }
-  }
-
-  //貨物専用駅を除外し、駅名の読みを全てひらがなに整えて保存
-  stations=raw.filter(s=>!(s.companies&&s.companies.length===1&&s.companies[0]==="日本貨物鉄道")).map(s=>({...s,yomi:toHiragana(s.yomi)}));
-  if(stations.length===0)return;
-
-  // 【ここを追加：③ 画面UIの構築準備】
-  updateLoadingProgress(60, "今日の答えを準備中...");
-  
-  //画面下部の「回答」「1字消す」「全削除」ボタンの動作
-  // 【修正】回答ボタンが押されたとき、クアッドモードなら専用の処理、通常なら通常の処理を呼び出す
-  document.getElementById("enter-btn").addEventListener("click", () => {
-    if (isQuadMode) {
-      submitQuadGuess();
-    } else {
-      submitGuess();
-    }
-  });
-  document.getElementById("back-btn").addEventListener("click",()=>handleKeyPress("BACK"));
-  document.getElementById("clear-btn").addEventListener("click",()=>handleKeyPress("CLEAR"));
-
-  // メニューの外側や閉じるボタンが押されたらメニューを右側に隠す関数
-  const closeSideMenu = () => {
-    document.getElementById("side-menu").style.right = "-250px";
-    setTimeout(() => {
-      document.getElementById("side-menu-overlay").classList.add("hidden"); // hiddenクラスを再付与して暗転を隠す
-    }, 300);
-  };
-  
-  // メニューの三本線（サイドメニューボタン）が押されたときの処理
-  document.getElementById("menu-btn").addEventListener("click", () => {
-    // 操作する対象（メニュー本体）をプログラムに認識させる
-    const sideMenu = document.getElementById("side-menu");
-    
-    // ▼▼ ここを追加：「overlay」とは暗転背景のことであるとプログラムに教える ▼▼
-    const overlay = document.getElementById("side-menu-overlay");
-    
-    // 【トグル処理】もしすでに右端が「0（開いている状態）」ならメニューを閉じます
-    if (sideMenu.style.right === "0px") {
-      closeSideMenu();
-    } else {
-      // プログラムが overlay を認識できたので、エラーにならずに背景を暗転できます
-      overlay.classList.remove("hidden"); 
-      
-      // 閉じている状態なら、通常通りメニューを開きます
-      setTimeout(() => sideMenu.style.right = "0", 10);
-    }
-  });
-  
-  // 閉じるイベントの紐付け
-  document.getElementById("close-menu-btn").addEventListener("click",closeSideMenu);
-  document.getElementById("side-menu-overlay").addEventListener("click",closeSideMenu);
-  
-  // 「？」ボタンが押されたら、hiddenクラスを消して説明画面を表示する
-  document.getElementById("help-btn").addEventListener("click", () => {
-    document.getElementById("help-modal").classList.remove("hidden");
-  });
-
-  // 説明画面の×ボタンが押されたら、hiddenクラスをつけて非表示にする
-  document.getElementById("close-help-btn").addEventListener("click", () => {
-    document.getElementById("help-modal").classList.add("hidden");
-  });
-
-  // 結果画面の「×（閉じる）」ボタンが押されたら、hiddenクラスをつけて非表示にする
-  document.getElementById("close-modal-btn").addEventListener("click", () => {
-    document.getElementById("result-modal").classList.add("hidden");
-  });
-//「グラフ」ボタンが押されたとき、ゲームが終わっていれば結果ウィンドウを表示
-  document.getElementById("stats-btn").addEventListener("click", () => {
-    let stateKey = isPlayingRandom ? "random" : currentMode;
-    let st = savedState[stateKey];
-    if (st && st.isOver) {
-      // 古い表示システム（style.display）が残ってバグるのを防ぐため、強制リセットします
-      const resModal = document.getElementById("result-modal");
-      resModal.style.display = ""; 
-      showResultModal(st.isWin, true);
-    } else {
-      showMessage("ゲームクリア後に見ることができます");
-    }
-  });
-//「4文字」「5文字」「6文字」の切り替えボタンが押されたときの処理
-[4,5,6].forEach(num=>{
-document.getElementById(`mode-${num}`).addEventListener("click", async ()=>{
-  isPlayingRandom = false; 
-  isAprilFoolMode = false; // 【追加】エイプリルフールフラグを解除する
-  
-  // 【追加】ハードモードスイッチの操作不可（グレーアウト）状態を解除する
-  const hs = document.getElementById("hardmode-switch");
-  if(hs) hs.disabled = false;
-  
-  document.querySelectorAll(".mode-btn").forEach(b=>b.classList.remove("active"));
-  document.getElementById(`mode-${num}`).classList.add("active");
-  currentMode=num; rowLength=num; 
-  // ⭕️【修正】一番上で設定した変数から、該当する回答回数を自動でセットします
-    if(num === 4) maxGuesses = CONFIG_MAX_GUESSES_4;
-    else if(num === 5) maxGuesses = CONFIG_MAX_GUESSES_5;
-    else if(num === 6) maxGuesses = CONFIG_MAX_GUESSES_6;
-    document.getElementById("game-board").style.setProperty("--row-length",num);
-    // ★追加：縦のマス目（行数）もCSSに伝えて自動で枠を伸縮させます
-    document.getElementById("game-board").style.setProperty("--row-count", maxGuesses);
-    document.getElementById("game-board").innerHTML = "";
-    await selectTodayStation(); restoreBoard();
-    });
-  });
-  
-  //結果ウィンドウにある各種SNSへのシェアボタンやコピーボタンの動作
-  document.getElementById("share-btn").addEventListener("click",()=>shareResult("twitter"));
-  document.getElementById("line-btn").addEventListener("click",()=>shareResult("line"));
-  document.getElementById("fb-btn").addEventListener("click",()=>shareResult("facebook"));
-  document.getElementById("copy-btn").addEventListener("click",()=>shareResult("copy"));
-  // 結果画面の「×（閉じる）」ボタンが押されたら、hiddenクラスをつけて非表示にする
-  document.getElementById("close-modal-btn").addEventListener("click", () => {
-    const resModal = document.getElementById("result-modal");
-    resModal.style.display = ""; // ここでもバグ防止の強制リセットを行います
-    resModal.classList.add("hidden");
-  });
-// 【メモ】データのバックアップ（コード発行）ボタンを押したときの動き
-document.getElementById("export-data-btn").addEventListener("click", (e) => {
-    // リンクのデフォルト動作（画面の一番上へジャンプしてしまう挙動）を無効化
-    e.preventDefault(); 
-    // データ出力用の関数を呼び出し、クリップボードにコピーさせる
-    exportUserData();
-});
-// 【メモ】データの復活（コード入力）ボタンを押したときの動き
-document.getElementById("import-data-btn").addEventListener("click", (e) => {
-    // リンクのデフォルト動作を無効化
-    e.preventDefault(); 
-    // プレイヤーに引き継ぎコードの入力を促すダイアログを表示
-    const code = prompt("控えておいた「引き継ぎコード」をここに貼り付けてください：");
-    // もしキャンセルされず、何かしらのコードが入力されていれば
-    if (code) {
-        // データ復元用の関数にコードを渡して実行する
-        importUserData(code);
-    }
-});
-//「パレット」ボタンが押されたときに画面全体のテーマカラーを順番に変更する
-const themes=["","theme-dark","theme-sakura","theme-ocean","theme-green","theme-orange","theme-red","theme-blue","theme-purple"];
-let themeIdx=0;
-if(ekiSettings.theme){
-themeIdx=themes.indexOf(ekiSettings.theme);
-if(themeIdx>-1&&ekiSettings.theme!=="")document.body.classList.add(ekiSettings.theme);
-}
-document.getElementById("theme-btn").addEventListener("click",()=>{
-  // ボタンを押す前に、エイプリルフールモードだったかどうかを記憶しておく
-  const isAF = document.body.classList.contains("event-aprilfool");
-  document.body.className=document.body.className.replace(/event-\w+/g,"");
-  if(themes[themeIdx]!=="")document.body.classList.remove(themes[themeIdx]);
-  themeIdx=(themeIdx+1)%themes.length;
-  if(themes[themeIdx]!=="")document.body.classList.add(themes[themeIdx]);
-  ekiSettings.theme=themes[themeIdx];
-  localStorage.setItem("ekiSettings",JSON.stringify(ekiSettings));
-  // もし元がエイプリルフールだったなら、クラスを消された直後に強制的に再付与
-  if (isAF) document.body.classList.add("event-aprilfool");
-  });
-  // ハードモード切り替えスイッチの制御ロジック
-  const hardSwitch = document.getElementById("hardmode-switch");
-  if (ekiSettings.hardMode) {
-    hardSwitch.checked = true;
-  }
-updateHelpContent(); // 起動時に説明文を現在の設定に合わせる
-
-  hardSwitch.addEventListener("change", (e) => {
-    let st = savedState[isPlayingRandom ? "random" : currentMode];
-
-    // 【追加】すでにゲームクリア・ゲームオーバーになっている場合は変更をブロック
-    if (st && st.isOver) {
-      e.target.checked = !e.target.checked; // スイッチの見た目を強制的に戻す
-      showMessage("ゲーム終了後は変更できません");
-      return;
-  }
-
-  // プレイ途中（1手以上入力済み）に「通常→ハード」へ変更しようとした場合はブロック
-  if (e.target.checked && st && st.guesses && st.guesses.length > 0) {
-    e.target.checked = false; // スイッチを強制的にオフに戻す
-    showMessage("プレイ開始後はハードモードに変更できません");
-    return;
-  }
-
-  // ハード→通常への変更はいつでも許可し、プレイ中のデータにも反映させる
-  ekiSettings.hardMode = e.target.checked;
-  if (!e.target.checked && st && st.guesses && st.guesses.length > 0) {
-     st.isHardMode = false;
-     if(!isPlayingRandom) saveGameState();
-  }
-
-  localStorage.setItem("ekiSettings", JSON.stringify(ekiSettings));
-  updateHelpContent();
-  });
-  
-    // 【ここを追加：④ 最終準備】
-    updateLoadingProgress(80, "ゲーム盤を構築中...");
-  
-    // 裏側で今日の正解駅を選び、ゲーム盤の準備だけをしておく（ポップアップ判定はまだしない）
-    await selectTodayStation(); 
-    restoreBoard(); 
-
-  // ==========================================
-  // タイトル画面とゲーム画面の行き来を制御する処理
-  // ==========================================
-  
-  // 通常モードで遊ぶボタンが押されたときの動作
-  document.getElementById("btn-normal-mode").addEventListener("click", () => {
-    document.getElementById("title-screen").classList.add("hidden");
-    document.getElementById("game-screen").classList.remove("hidden");
-    
-    // ゲーム画面に入ったので、モード選択ボタンとハードモードを表示します
-    document.querySelector(".mode-selector").classList.remove("hidden");
-    document.querySelector(".hardmode-container").classList.remove("hidden");
-    
-    checkSpecialEvent();
-  });
-
-  document.getElementById("btn-reverse-mode").addEventListener("click", () => {
-    alert("リバースモードは現在開発中です！お楽しみに！");
-  });
-
-  // タイトル画面へ戻るための共通関数
-  const returnToTitleScreen = () => {
-    const titleScreen = document.getElementById("title-screen");
-    titleScreen.classList.remove("hidden");
-    
-    // 【重要】過去の強力な非表示命令が残っていた場合、ここで強制的に解除します
-    titleScreen.style.display = ""; 
-    
-    // ゲーム画面の要素を隠します
-    document.getElementById("game-screen").classList.add("hidden");
-    document.querySelector(".mode-selector").classList.add("hidden");
-    document.querySelector(".hardmode-container").classList.add("hidden");
-    
-    // サイドメニューが開いていたら閉じます
-    document.getElementById("side-menu").style.right = "-250px";
-    setTimeout(() => {
-      document.getElementById("side-menu-overlay").style.display = "none";
-    }, 300);
-  };
-
-  // ヘッダーの矢印ボタン（←）を押したとき、「前の画面に戻る」動作にする処理
-  document.getElementById("home-btn").addEventListener("click", () => {
-    const gameScreen = document.getElementById("game-screen");
-    
-    // もしゲーム画面が表示されている（hiddenクラスがない）なら、タイトル画面へ戻す
-    if (!gameScreen.classList.contains("hidden")) {
-      returnToTitleScreen();
-    } else {
-      // すでにタイトル画面にいる場合は、ゲームのルートフォルダ（FALLBACK_URL）へ移動させる
-      window.location.href = FALLBACK_URL;
-    }
-  });
-
-  // サイドメニューの「タイトル画面に戻る」が押されたときの処理
-  document.getElementById("menu-home-btn").addEventListener("click", (e) => {
-    e.preventDefault(); 
-    returnToTitleScreen();
-  });
-
-  // 【新設】サイドメニューの「総合TOPへ」が押されたときの移動処理
-  document.getElementById("menu-top-btn").addEventListener("click", (e) => {
-    e.preventDefault();
-    window.location.href = FALLBACK_URL;
-  });
-  
-  // 【新設】サイドメニューの「これまでの記録を見る」が押されたときの動作
-  document.getElementById("menu-stats-btn").addEventListener("click", (e) => {
-    e.preventDefault(); // 画面最上部へのジャンプを防止
-    closeSideMenu();    // 開いているサイドメニューを一旦閉じます
-    
-    // 記録モーダルを画面に表示し、初期状態としてノーマルタブの戦績を計算・表示します
-    document.getElementById("title-stats-modal").classList.remove("hidden");
-    if (typeof updateTitleStatsDisplay === "function") {
-      updateTitleStatsDisplay("normal");
-    }
-  });
-
-
-  // ==========================================
-  // タイトル画面の「これまでの記録」モーダル制御
-  // ==========================================
-
-  // タイトル画面の記録ボタンが押されたらモーダルを開く
-  document.getElementById("btn-stats-title").addEventListener("click", () => {
-    document.getElementById("title-stats-modal").classList.remove("hidden");
-    updateTitleStatsDisplay("normal"); // 初期状態はノーマルタブを表示
-  });
-
-  // モーダルの閉じるボタン
-  document.getElementById("close-title-stats-btn").addEventListener("click", () => {
-    document.getElementById("title-stats-modal").classList.add("hidden");
-  });
-
-  // タブボタンが押されたときの処理
-  document.getElementById("tab-normal").addEventListener("click", () => updateTitleStatsDisplay("normal"));
-  document.getElementById("tab-hard").addEventListener("click", () => updateTitleStatsDisplay("hard"));
-
-  // ノーマル・ハードの記録を計算して表示する関数
-  function updateTitleStatsDisplay(mode) {
-    const tabNormal = document.getElementById("tab-normal");
-    const tabHard = document.getElementById("tab-hard");
-    
-    // 押されたタブの色（見た目）を切り替える
-    if (mode === "normal") {
-      tabNormal.className = "btn btn-small btn-primary";
-      tabHard.className = "btn btn-small btn-outline";
-    } else {
-      tabNormal.className = "btn btn-small btn-outline";
-      tabHard.className = "btn btn-small btn-danger"; // ハードは赤色で強調
-    }
-
-    // 4文字・5文字・6文字すべての成績を合算するための変数
-    let totalPlayed = 0;
-    let totalWon = 0;
-    let maxCurrentStreak = 0;
-    let maxMaxStreak = 0;
-    
-    // モードに応じて読み込むセーブデータのキーを変える
-    const keys = mode === "normal" ? [4, 5, 6] : ["4_hard", "5_hard", "6_hard"];
-    
-    // 各文字数のデータをループして足し合わせる
-    keys.forEach(k => {
-      let st = userStats[k];
-      if (st) {
-        totalPlayed += st.played || 0;
-        totalWon += st.won || 0;
-        // 連勝は合算できないため、各文字数の中で一番高い連勝記録を抽出して表示する
-        if ((st.currentStreak || 0) > maxCurrentStreak) maxCurrentStreak = st.currentStreak;
-        if ((st.maxStreak || 0) > maxMaxStreak) maxMaxStreak = st.maxStreak;
-      }
-    });
-
-    // 勝率を計算（プレイ回数が0の場合は0%にする）
-    let winrate = totalPlayed > 0 ? Math.round((totalWon / totalPlayed) * 100) : 0;
-
-    // 計算した数値をHTMLの該当箇所に当てはめる
-    document.getElementById("ts-played").textContent = totalPlayed;
-    document.getElementById("ts-winrate").textContent = winrate;
-    document.getElementById("ts-streak").textContent = maxCurrentStreak;
-    document.getElementById("ts-maxstreak").textContent = maxMaxStreak;
-  }
-  
-    // 【ここを追加：⑤ 完了・画面を閉じる】
-    updateLoadingProgress(100, "出発進行！");
-    // ロード画面が消えると、下に配置したタイトル画面（title-screen）が現れる仕組み
-    setTimeout(hideLoadingScreen, 600);
-  
-  }catch(e){ console.error("データエラー:",e); }
-}
-
+ところで、同じルートフォルダを持つサイト同士で同じ関数を使うことが多い場合、どうすると楽に管理できる？
 
 // ==========================================
 // パソコン（ブラウザ）へデータを保存・読み込み
@@ -2044,7 +1785,7 @@ function startQuadMode() {
 
 // 4つの駅をランダムに選択する処理（通常モードの出禁リストを読み込んで70%ルールを共有）
 function selectQuadStations(modeLength) {
-  const pool = stations.filter(s => s.hiragana.length === modeLength);
+  const pool = stations.filter(s => s.yomi.length === modeLength);
   const rngStateKey = `ekidle_rng_state_${modeLength}`;
   let usedList = JSON.parse(localStorage.getItem(rngStateKey) || "[]");
 
@@ -2118,7 +1859,7 @@ function submitQuadGuess() {
   }
 
   // 実在する駅名かどうかの辞書チェック
-  const guessExists = stations.some(s => s.hiragana === currentGuess);
+  const guessExists = stations.some(s => s.yomi === currentGuess);
   if (!guessExists) {
     showMessage("実在しない駅名です");
     return;
