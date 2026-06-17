@@ -1981,7 +1981,7 @@ function toggleDarkMode() {
   // 3. 少しだけ待ってから（ブラウザに色変更を認識させてから）、無効化クラスを外す
   setTimeout(() => {
     document.body.classList.remove('preload-transitions');
-  }, 10);
+  }, 100);
 }
 
 
