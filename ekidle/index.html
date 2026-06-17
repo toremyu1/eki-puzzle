@@ -170,6 +170,34 @@
     </div>
   </div>
 
+  <div id="title-stats-modal" class="modal-overlay hidden">
+    <div class="modal-content">
+      <span id="close-title-stats-btn" class="modal-close">&times;</span>
+      
+      <h2 style="text-align:center; margin-top:0;">これまでの記録</h2>
+      
+      <div style="display:flex; justify-content:center; gap:10px; margin-bottom:20px;">
+        <button id="tab-normal" class="btn btn-small btn-primary">ノーマル</button>
+        <button id="tab-hard" class="btn btn-small btn-outline">ハード</button>
+      </div>
+      
+      <div style="display:flex; flex-wrap:wrap; justify-content:space-around; gap:15px; text-align:center;">
+        <div class="stat-box" style="width:40%;">
+          <span id="ts-played" style="font-size:24px; font-weight:bold;">0</span><br>プレイ回数
+        </div>
+        <div class="stat-box" style="width:40%;">
+          <span id="ts-winrate" style="font-size:24px; font-weight:bold;">0</span>%<br>勝率
+        </div>
+        <div class="stat-box" style="width:40%;">
+          <span id="ts-streak" style="font-size:24px; font-weight:bold;">0</span><br>現在連勝
+        </div>
+        <div class="stat-box" style="width:40%;">
+          <span id="ts-maxstreak" style="font-size:24px; font-weight:bold;">0</span><br>最大連勝
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div id="side-menu-overlay" class="hidden"></div>
   <div id="side-menu">
     <div class="side-menu-header">
