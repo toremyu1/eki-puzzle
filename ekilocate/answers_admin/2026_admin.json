@@ -656,5 +656,19 @@
             "pref": "岩手県",
             "municipality": "盛岡市"
         }
+    },
+    "2026-07-30": {
+        "normal": {
+            "kanji": "北河内駅 (山口県)",
+            "yomi": "きたごうち",
+            "pref": "山口県",
+            "municipality": "岩国市"
+        },
+        "hard": {
+            "kanji": "柚木駅 (静岡県富士市)",
+            "yomi": "ゆのき",
+            "pref": "静岡県",
+            "municipality": "富士市"
+        }
     }
 }
