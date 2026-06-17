@@ -125,11 +125,11 @@ header {
   transition: transform 0.1s ease, border-bottom-width 0.1s ease;
 }
 
-/* ボタンを押した瞬間に影をなくして下に沈ませる（ガタつき防止版） */
-.btn:active:not([disabled]) {
-  transform: translateY(4px);
-  /* 太さを0にするのではなく、4pxのまま色を透明にして全体の高さを維持します */
-  border-bottom-color: transparent !important;
+/* ボタンを押した瞬間に下に沈ませる（ガタつき防止＆枠線キープ版） */
+.btn:active:not([disabled]) { 
+  /* 3px下に沈め、下枠線を1px残すことで、ボタンの下端（ボトムライン）の位置を完全に固定します */
+  transform: translateY(3px);
+  border-bottom-width: 1px !important;
 }
 
 /* 無効化（グレーアウト）時のボタン */
