@@ -474,13 +474,13 @@ body.theme-dark #title-stats-modal .btn {
 }
 
 /* 黒テーマ（ダークモード）用の立体影の最適化 */
-body.theme-dark .btn {
+/*body.theme-dark .btn {
   box-shadow: 0 4px 0 rgba(0, 0, 0, 0.6) !important;
   border-color: rgba(255, 255, 255, 0.15) !important;
-}
-body.theme-dark .btn-outline {
+}*/   
+/*body.theme-dark .btn-outline {
   background-color: #2a2a2a !important;
   color: #ffffff !important;
   border-color: #555555 !important;
   box-shadow: 0 4px 0 #1a1a1a !important;
-}
+}*/
