@@ -1787,30 +1787,22 @@ let quadGridHistory = [];            // 【追加】各手ごとの4盤面の色
 async function startQuadMode() {
   isQuadMode = true;
   isPlayingRandom = false;
-  guessesSubmitted = 0;
-  maxGuesses = CONFIG_MAX_GUESSES_QUAD;  
   quadSolved = [false, false, false, false];
   quadKeyColors = {};
-  quadGridHistory = []; // 【追加】履歴をリセット
+  quadGridHistory = []; 
   currentGuess = "";
+  guessesSubmitted = 0;
 
-  // 既存の1画面用ボードを隠し、4画面用コンテナを表示
-  document.getElementById("game-board").classList.add("hidden");
-  document.getElementById("quad-board-container").classList.remove("hidden");
-  document.querySelector(".mode-selector").classList.remove("hidden");
+  // 【追加1】現在の文字数に合わせて、入力判定用の「駅リスト」を正しく更新する
+  availableStations = stations.filter(s => s.yomi.length === currentMode).map(s => s.yomi);
+  
+  // 【追加2】クアッド盤面のCSS変数（列数）を更新し、見た目の枠数を合わせる
+  document.getElementById("quad-board-container")?.style.setProperty("--row-length", currentMode);
 
-  // 4つの正解駅をランダムに抽選（通常モードの出禁データを共有）
   await selectQuadStations(currentMode);
   
-  // 4つのゲーム盤面をHTML上に組み立てる
   buildQuadBoards();
-  
-  // キーボードのリセット
   resetKeyboardStyles();
-
-  // 【追加】クアッドを開いた瞬間に遊び方モーダルを表示する
-  const helpModal = document.getElementById("quad-help-modal");
-  if (helpModal) helpModal.classList.remove("hidden");
 }
 
 // 4つの駅を決定する処理（ファイル参照 ＋ 失敗時はシミュレーション）
@@ -2182,11 +2174,16 @@ function getQuadColorCodeStr(name) {
   return "#d3d6da";
 }
 
-// タイトル画面で「クアッドモードで遊ぶ」が押された時のクリックイベント登録
-document.getElementById("btn-quad-mode").addEventListener("click", async () => {
+// 【修正】タイトル画面からクアッドモードを起動する処理
+document.getElementById("btn-quad-mode")?.addEventListener("click", async () => {
   document.getElementById("title-screen").classList.add("hidden");
   document.getElementById("game-screen").classList.remove("hidden");
+  
   await startQuadMode();
+
+  // タイトル画面から飛んできた「初回のみ」モーダルを開く
+  const helpModal = document.getElementById("quad-help-modal");
+  if (helpModal) helpModal.classList.remove("hidden");
 });
 
 // 内部の色名を実際のカラーコード（CSS変数）に変換する関数
