@@ -99,7 +99,7 @@ function setupCommonUI() {
   // 1. 共通関数の呼び出し（これだけでメニューやモーダルが動きます）
   setupSharedSideMenu("menu-btn", "side-menu", "side-menu-overlay", "close-menu-btn");
   setupSharedModal("help-btn", "help-modal", "close-help-btn");
-  setupSharedModal("stats-btn", "result-modal", "close-modal-btn");
+  setupSharedModal("", "result-modal", "close-modal-btn");    // 第1引数を空文字（""）にして、強制的に開く処理を無効化します
 
   // 2. タイトル画面とゲーム画面の遷移制御（駅ドル専用の処理なので残す）
   const returnToTitleScreen = () => {
