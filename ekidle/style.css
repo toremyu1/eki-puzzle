@@ -723,9 +723,21 @@ body.event-nye .key { background-color:#25202b; color:#d1c7bd; }
   z-index: 1;
 }
 
-/* 入力中（アクティブ）の行を大きく発光させて目立たせる */
+/* 修正：入力中（アクティブ）の行の発光をテーマカラーに適応させる */
 .quad-board .board-row:not(.inactive-row) {
-  transform: scale(1.05); /* ほんの少しだけ大きくして手前に押し出す */
-  filter: drop-shadow(0 0 6px rgba(3, 169, 244, 0.6)); /* 水色に発光させる */
-  z-index: 2; /* 縮小行の上に確実に被さるようにする */
+  transform: scale(1.05);
+  /* 水色固定をやめ、テーマごとの文字色を使って自然に発光させる */
+  filter: drop-shadow(0 0 5px var(--text-color)); 
+  z-index: 2;
+}
+
+/* 追加：スマホの極小画面対策（隙間と枠線を削ってタイルを最大化） */
+@media (max-width: 400px) {
+  #quad-board-container { gap: 6px; }
+  .quad-board { padding: 2px; gap: 2px; }
+  .quad-board .board-row { gap: 2px; }
+  .quad-board .tile {
+    border: 1px solid #888 !important; /* スマホでは枠線を細くして内側を広げる */
+    font-size: 13px;
+  }
 }
