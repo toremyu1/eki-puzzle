@@ -199,8 +199,7 @@ function setupGameSpecificUI() {
         currentMode = num; rowLength = num; 
         if (num === 4) maxGuesses = CONFIG_MAX_GUESSES_4;
         else if (num === 5) maxGuesses = CONFIG_MAX_GUESSES_5;
-        else if (num === 6) maxGuesses = CONFIG_MAX_GUESS
-        ES_6;
+        else if (num === 6) maxGuesses = CONFIG_MAX_GUESSES_6;
         
         const gameBoard = document.getElementById("game-board");
         if(gameBoard) {
@@ -231,22 +230,45 @@ function setupGameSpecificUI() {
 }
 
 
-// ハードモードと通常モードの記録表示を切り替える処理を新設します
+// ハードモードと通常モードの記録表示を切り替え、実際の成績データを表示する関数
 function updateTitleStatsDisplay(modeType) {
-  // modeTypeには "normal" か "hard" が入ります
-  
-  // 1. タブの見た目（アクティブ状態）を切り替える
-  document.querySelectorAll(".stats-tab").forEach(tab => tab.classList.remove("active"));
-  const activeTab = document.getElementById(`tab-${modeType}`);
-  if (activeTab) activeTab.classList.add("active");
+  // 1. タブの見た目（色）の切り替え処理
+  const tabNormal = document.getElementById("tab-normal");
+  const tabHard = document.getElementById("tab-hard");
 
-  // 2. 実際のデータを表示する処理（※以下は一例です）
-  // 記録を画面に反映させるには、HTMLの各要素のIDに合わせて数値を代入する必要があります
-  // let targetMode = currentMode + (modeType === "hard" ? "_hard" : "");
-  // let st = userStats[targetMode] || {played:0, won:0};
-  // document.getElementById("stats-played").textContent = st.played;
-  
-  console.log(`${modeType}モードの成績表示に切り替えました`);
+  if (modeType === "normal") {
+    // ノーマルが選ばれたら、ノーマルを青色（primary）にし、ハードを白抜き（outline）にする
+    if (tabNormal) tabNormal.className = "btn btn-small btn-primary";
+    if (tabHard) tabHard.className = "btn btn-small btn-outline";
+  } else {
+    // ハードが選ばれたら、ハードを青色にし、ノーマルを白抜きにする
+    if (tabNormal) tabNormal.className = "btn btn-small btn-outline";
+    if (tabHard) tabHard.className = "btn btn-small btn-primary";
+  }
+
+  // 2. 実際のデータを読み込んで表示する処理
+  // 現在遊んでいる文字数（4, 5, 6）を基準にし、ハードなら後ろに "_hard" をくっつける
+  let targetMode = currentMode.toString() + (modeType === "hard" ? "_hard" : "");
+  let st = userStats[targetMode];
+
+  // まだそのモードを一回も遊んでいなくてデータが無い場合の「空箱」を用意する
+  if (!st) {
+    st = { played: 0, won: 0, currentStreak: 0, maxStreak: 0 };
+  }
+
+  // 勝率の計算（0回の時にエラーにならないよう分岐し、四捨五入する）
+  let winRate = st.played > 0 ? Math.round((st.won / st.played) * 100) : 0;
+
+  // 3. HTMLの数字部分（IDがts-〇〇の場所）に、計算したデータをそれぞれ代入する
+  const elPlayed = document.getElementById("ts-played");
+  const elWinrate = document.getElementById("ts-winrate");
+  const elStreak = document.getElementById("ts-streak");
+  const elMaxstreak = document.getElementById("ts-maxstreak");
+
+  if (elPlayed) elPlayed.textContent = st.played;
+  if (elWinrate) elWinrate.textContent = winRate;
+  if (elStreak) elStreak.textContent = st.currentStreak;
+  if (elMaxstreak) elMaxstreak.textContent = st.maxStreak;
 }
 
     
