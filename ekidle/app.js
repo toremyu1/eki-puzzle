@@ -152,16 +152,26 @@ function setupCommonUI() {
   document.getElementById("menu-home-btn")?.addEventListener("click", (e) => { e.preventDefault(); returnToTitleScreen(); });
   document.getElementById("menu-top-btn")?.addEventListener("click", (e) => { e.preventDefault(); if (typeof FALLBACK_URL !== "undefined") window.location.href = FALLBACK_URL; });
 
-  // これまでの記録を見るボタンの処理
+  
+  // 乗車記録ボタン
+  // 1箇所目：タイトル画面の「これまでの記録を見る」ボタン
+  document.getElementById("btn-stats-title")?.addEventListener("click", () => {
+    const statsModal = document.getElementById("title-stats-modal");
+    if (statsModal) statsModal.classList.remove("hidden");
+    // ▼ この1行を追加（開いた瞬間に計算する）
+    if(typeof updateTitleStatsDisplay === "function") updateTitleStatsDisplay("normal");
+  });
+
+  // 2箇所目：前回追加した、サイドメニューの「これまでの記録を見る」ボタン
   document.getElementById("menu-stats-btn")?.addEventListener("click", (e) => {
     e.preventDefault();
-    // 1. 開いているサイドメニューを閉じる
     document.getElementById("side-menu").style.right = "-250px";
     setTimeout(() => document.getElementById("side-menu-overlay").classList.add("hidden"), 300);
     
-    // 2. これまでの記録画面を表示する
     const statsModal = document.getElementById("title-stats-modal");
     if (statsModal) statsModal.classList.remove("hidden");
+    // ▼ この1行を追加（開いた瞬間に計算する）
+    if(typeof updateTitleStatsDisplay === "function") updateTitleStatsDisplay("normal");
   });
   
   // タブ切り替え処理
@@ -227,6 +237,37 @@ function setupGameSpecificUI() {
     const code = prompt("引き継ぎコードを入力：");
     if (code) importUserData(code);
   });
+  
+  // ハードモードボタンの処理
+  const hardSwitch = document.getElementById("hardmode-switch");
+  if (hardSwitch) {
+    hardSwitch.addEventListener("click", (e) => {
+      let stateKey = isPlayingRandom ? "random" : currentMode;
+      let currentSt = savedState[stateKey];
+      // 現在ゲームをプレイ途中（1手以上打っていて、まだクリアしていない）か判定
+      let isMidGame = currentSt && currentSt.guesses && currentSt.guesses.length > 0 && !currentSt.isOver;
+
+      if (isMidGame && hardSwitch.checked) {
+        // 【禁止】ノーマル → ハード（プレイ途中）
+        e.preventDefault();
+        hardSwitch.checked = false;
+        showMessage("プレイ開始後はハードモードに切り替えできません");
+      } else {
+        // 【許可】ハード → ノーマル、またはプレイ前の切り替え
+        ekiSettings.hardMode = hardSwitch.checked;
+        localStorage.setItem("ekiSettings", JSON.stringify(ekiSettings));
+        
+        if (isMidGame && !hardSwitch.checked) {
+          // プレイ途中でハードを諦めた場合、このゲームはノーマルクリア扱いにする
+          currentSt.isHardMode = false;
+          if (!isPlayingRandom) saveGameState();
+        }
+        
+        // ヘルプ画面の表示内容もこの瞬間に切り替える
+        if (typeof updateHelpContent === "function") updateHelpContent();
+      }
+    });
+  }  
 }
 
 
@@ -241,9 +282,10 @@ function updateTitleStatsDisplay(modeType) {
     if (tabNormal) tabNormal.className = "btn btn-small btn-primary";
     if (tabHard) tabHard.className = "btn btn-small btn-outline";
   } else {
-    // ハードが選ばれたら、ハードを青色にし、ノーマルを白抜きにする
+    // ハードが選ばれたら、ハードを赤色にし、ノーマルを白抜きにする
+    //  btn-primary ではなく btn-danger に変更します
     if (tabNormal) tabNormal.className = "btn btn-small btn-outline";
-    if (tabHard) tabHard.className = "btn btn-small btn-primary";
+    if (tabHard) tabHard.className = "btn btn-small btn-danger";
   }
 
   // 2. 実際のデータを読み込んで表示する処理
@@ -731,17 +773,27 @@ function restoreBoard(){
   currentGuess="";
   // 盤面復元時、既にプレイ中であればそのゲームのハードモード状態にスイッチを合わせる
   let currentSt = savedState[isPlayingRandom ? "random" : currentMode];
+  // 【修正後】以下のコードにまるごと差し替えてください
   if (currentSt && currentSt.guesses && currentSt.guesses.length > 0) {
-    // プレイ途中の場合は状態を復元し、スイッチを操作不可（グレーアウト）にする
+    // プレイ途中の場合（セーブデータ側の設定を優先）
     ekiSettings.hardMode = !!currentSt.isHardMode; 
     const hardSwitch = document.getElementById("hardmode-switch");
     if(hardSwitch) {
       hardSwitch.checked = ekiSettings.hardMode;
-      hardSwitch.disabled = true; // 操作をロック
+      hardSwitch.disabled = false;
     }
     localStorage.setItem("ekiSettings", JSON.stringify(ekiSettings));
-    updateHelpContent();
   } else {
+    // まっさらな新しいゲームの場合（現在の設定をチェックボックスに反映）
+    const hardSwitch = document.getElementById("hardmode-switch");
+    if(hardSwitch) {
+      hardSwitch.checked = ekiSettings.hardMode;
+      hardSwitch.disabled = false;
+    }
+  }
+  
+  // ★必ず最後に説明モーダルの表示を同期させる
+  if (typeof updateHelpContent === "function") updateHelpContent(); else {
     // まだ回答していない（新しいゲーム）なら、操作可能にする
     const hardSwitch = document.getElementById("hardmode-switch");
     if(hardSwitch) hardSwitch.disabled = false;
@@ -896,8 +948,8 @@ function submitGuess(isRestore=false){
       st.isHardMode = ekiSettings.hardMode;
 
       // 1手目を送信した瞬間にスイッチを操作不可にする
-      const hardSwitch = document.getElementById("hardmode-switch");
-      if (hardSwitch) hardSwitch.disabled = true;
+      // const hardSwitch = document.getElementById("hardmode-switch");
+      // if (hardSwitch) hardSwitch.disabled = true;
     }
 
     // 回答を配列に保存する
