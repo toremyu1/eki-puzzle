@@ -338,26 +338,83 @@ async function fetchSharedAnswerDict(yearStr) {
 function generateSharedAffiliateHTML(station, isAprilFool) {
   let safePref = station.pref || "富山県";
   let searchMuni = station.municipality || "富山市";
+  let muniMuni = searchMuni;
+  
   let isRural = station.population < 0; 
-  let areaKeyword = isRural ? safePref : searchMuni;
+  let areaKeyword = isRural ? safePref : muniMuni;
   let searchKw = isAprilFool ? safePref : areaKeyword;
   
   let prText = isAprilFool 
     ? `＼ 聖地のある「${safePref}」へ巡礼して指の疲れを癒やす ／` 
-    : `＼ この駅のある「${isRural ? safePref : safePref + searchMuni}」へ聖地巡礼に行こう！ ／`;
+    : `＼ この駅のある「${isRural ? safePref : safePref + muniMuni}」へ聖地巡礼に行こう！ ／`;
 
+  // 1段目：宿・ホテル予約
   let encodedStation = encodeURIComponent(encodeURIComponent(encodeURIComponent(searchKw)));
-  // ※実際のURLは文字数節約のためダミーにしています。本番では実際のURLを入れてください。
-  let rakutenUrl = `https://hb.afl.rakuten.co.jp/...&keyword=${encodedStation}`; 
+  let yahooUrl = `https://px.a8.net/svt/ejp?a8mat=4B5NW1+DE94S2+4ZCO+BW8O2&a8ejpredirect=https%3A%2F%2Ftravel.yahoo.co.jp%2FikCo.ashx%3Fcosid%3Dy_a8net%26surl%3Dhttps%253A%252F%252Ftravel.yahoo.co.jp%252Fsearch%253Fadc%253D1%2526discsort%253D1%2526kwd%253D${encodedStation}%2526lc%253D1%2526ppc%253D2%2526rc%253D1%2526si%253D6`;
+  let yahooImp = '<img border="0" width="1" height="1" src="https://www10.a8.net/0.gif?a8mat=4B5NW1+DE94S2+4ZCO+BW8O2" alt="" style="display:none;">';
+  
+  let rakutenKeyword = encodeURIComponent(encodeURIComponent(searchKw));
+  let rakutenUrl = `https://af.moshimo.com/af/c/click?a_id=5616621&p_id=55&pc_id=55&pl_id=624&url=https%3A%2F%2Fkw.travel.rakuten.co.jp%2Fkeyword%2FSearch.do%3Fcharset%3Dutf-8%26f_max%3D30%26l-id%3DtopC_search_keyword%26f_query%3D${rakutenKeyword}`;
+  let rakutenImp = '<img src="//i.moshimo.com/af/i/impression?a_id=5616621&p_id=55&pc_id=55&pl_id=624" width="1" height="1" style="border:none;" alt="" loading="lazy">';
+
+  // 2段目：通常のお取り寄せ
+  let yahooShoppingDest = `https://shopping.yahoo.co.jp/search/${encodeURIComponent(muniMuni)}+${encodeURIComponent("特産品")}/0/?area=13&first=1&ss_first=1&sretry=0&tab_ex=commerce`;
+  let yahooShoppingUrl = `https://af.moshimo.com/af/c/click?a_id=5626583&p_id=1225&pc_id=1925&pl_id=18502&url=${encodeURIComponent(yahooShoppingDest)}`;
+  let yahooShoppingImp = '<img src="//i.moshimo.com/af/i/impression?a_id=5626583&p_id=1225&pc_id=1925&pl_id=18502" width="1" height="1" style="border:none;" alt="" loading="lazy">';
+
+  let rakutenMarketDest = `https://search.rakuten.co.jp/search/mall/${encodeURIComponent(muniMuni)}+${encodeURIComponent("特産品")}/`;
+  let rakutenMarketUrl = `https://af.moshimo.com/af/c/click?a_id=5616620&p_id=54&pc_id=54&pl_id=616&url=${encodeURIComponent(rakutenMarketDest)}`;
+  let rakutenMarketImp = '<img src="//i.moshimo.com/af/i/impression?a_id=5616620&p_id=54&pc_id=54&pl_id=616" width="1" height="1" style="border:none;" alt="" loading="lazy">';
+
+  // 3段目：ふるさと納税
+  let yahooFurusatoDest = `https://shopping.yahoo.co.jp/search/${encodeURIComponent(muniMuni)}+${encodeURIComponent("ふるさと納税")}/0/?first=1&ss_first=1&sretry=0&tab_ex=commerce`;
+  let yahooFurusatoUrl = `https://af.moshimo.com/af/c/click?a_id=5626583&p_id=1225&pc_id=1925&pl_id=18502&url=${encodeURIComponent(yahooFurusatoDest)}`;
+  let yahooFurusatoImp = '<img src="//i.moshimo.com/af/i/impression?a_id=5626583&p_id=1225&pc_id=1925&pl_id=18502" width="1" height="1" style="border:none;" alt="" loading="lazy">';
+
+  let rakutenFurusatoDest = `https://search.rakuten.co.jp/search/mall/${encodeURIComponent(muniMuni)}+${encodeURIComponent("ふるさと納税")}/`;
+  let rakutenFurusatoUrl = `https://af.moshimo.com/af/c/click?a_id=5616620&p_id=54&pc_id=54&pl_id=616&url=${encodeURIComponent(rakutenFurusatoDest)}`;
+  let rakutenFurusatoImp = '<img src="//i.moshimo.com/af/i/impression?a_id=5616620&p_id=54&pc_id=54&pl_id=616" width="1" height="1" style="border:none;" alt="" loading="lazy">';
 
   return `
     <div style="margin-bottom:12px;">
-      <a href="${station.url}" target="_blank" style="display:inline-block; padding:8px 12px; background-color:#e0e0e0; color:#333; text-decoration:none; border-radius:4px; font-weight:bold; font-size:12px;">Wikipediaで見る</a>
+    <a href="${station.url}" target="_blank" style="display:inline-block; padding:8px 12px; background-color:#e0e0e0; color:#333; text-decoration:none; border-radius:4px; font-weight:bold; font-size:12px;">Wikipediaで見る</a>
     </div>
     <div style="background-color:#fff3e0; border:1px solid #ffcc80; border-radius:6px; padding:10px; margin-bottom:5px; position:relative;">
-      <div style="font-size:11px; font-weight:bold; color:#e65100; margin-bottom:8px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${prText}</div>
-      <a href="${rakutenUrl}" target="_blank" style="display:block; padding:8px; background-color:#bf0000; color:#fff; text-decoration:none; border-radius:4px; font-weight:bold; font-size:13px; margin-bottom:5px;">楽天トラベルで探す</a>
+    <div style="text-align:center; margin-bottom:8px;">
+    <span style="display:inline-block; border:1px solid #aaa; border-radius:4px; padding:1px 6px; font-size:10px; color:#aaa; font-weight:bold;">PR</span>
     </div>
+    <div style="font-size:11px; font-weight:bold; color:#e65100; margin-bottom:8px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${prText}</div>
+    <div style="display:flex; justify-content:center; gap:8px; align-items:center; flex-wrap:wrap;">
+    <a href="${yahooUrl}" target="_blank" style="display:flex; justify-content:center; align-items:center; padding:8px 0; background-color:#ffffff; border:1px solid #ff0033; color:#333; text-decoration:none; border-radius:4px; font-weight:bold; font-size:11px; width:45%;">
+    <img src="/aff_images/yahoo_japan_icon_64.svg" alt="Y!" style="height:14px; margin-right:4px; border:none;">トラベル
+    </a>
+    <a href="${rakutenUrl}" target="_blank" style="display:flex; justify-content:center; align-items:center; padding:0; background-color:#00B900; border:1px solid #00B900; border-radius:4px; width:45%; height:32px; overflow:hidden;">
+    <img src="/aff_images/R_Travel_v2.04.svg" alt="楽天トラベル" style="height:100%; border:none;">
+    </a>
+    <div style="width:100%; border-top:1px dashed #ffcc80; margin:6px 0;"></div>
+    <div style="width:100%; font-size:11px; font-weight:bold; color:#e65100; margin-bottom:4px; text-align:left; padding-left:5%;">🎁 この土地の名産品をお取り寄せ（通常購入）</div>
+    <a href="${yahooShoppingUrl}" target="_blank" style="display:flex; justify-content:center; align-items:center; padding:8px 0; background-color:#ffffff; border:1px solid #ff0033; color:#333; text-decoration:none; border-radius:4px; font-weight:bold; font-size:11px; width:45%;">
+    <img src="/aff_images/yahoo_japan_icon_64.svg" alt="Y!" style="height:14px; margin-right:4px; border:none;">ショッピング
+    </a>
+    <a href="${rakutenMarketUrl}" target="_blank" style="display:flex; justify-content:center; align-items:center; padding:8px 0; background-color:#bf0000; color:#ffffff; border:none; border-radius:4px; font-weight:bold; font-size:11px; width:45%;">
+    楽天市場で探す
+    </a>
+    <div style="width:100%; border-top:1px dashed #ffcc80; margin:6px 0;"></div>
+    <div style="width:100%; font-size:11px; font-weight:bold; color:#e65100; margin-bottom:4px; text-align:left; padding-left:5%;">🗾 地域を応援して名産品を貰う（ふるさと納税）</div>
+    <a href="${yahooFurusatoUrl}" rel="nofollow" referrerpolicy="no-referrer-when-downgrade" target="_blank" style="display:flex; justify-content:center; align-items:center; padding:8px 0; background-color:#ffffff; border:1px solid #ff0033; color:#333; text-decoration:none; border-radius:4px; font-weight:bold; font-size:11px; width:45%;">
+    <img src="/aff_images/yahoo_japan_icon_64.svg" alt="Y!" style="height:14px; margin-right:4px; border:none;">ふるさと納税
+    </a>
+    <a href="${rakutenFurusatoUrl}" target="_blank" style="display:flex; justify-content:center; align-items:center; padding:8px 0; background-color:#7a0000; color:#ffffff; border:none; border-radius:4px; font-weight:bold; font-size:11px; width:45%;">
+    楽天ふるさと納税
+    </a>
+    </div>
+    </div>
+    ${rakutenImp}
+    ${yahooImp}
+    ${rakutenMarketImp}
+    ${yahooShoppingImp}
+    ${yahooFurusatoImp}
+    ${rakutenFurusatoImp}
   `;
 }
 
