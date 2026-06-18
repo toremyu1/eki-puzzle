@@ -234,38 +234,43 @@ function setupGameSpecificUI() {
     else showMessage("ゲームクリア後に見ることができます");
   });
 
-  // モード切替ボタン（4文字・5文字・6文字）
+ // モード切替ボタン（4文字・5文字・6文字）
   [4, 5, 6].forEach(num => {
     const modeBtn = document.getElementById(`mode-${num}`);
     if (modeBtn) {
       modeBtn.addEventListener("click", async () => {
         isPlayingRandom = false; 
         isAprilFoolMode = false; 
-        
-        // クアッドモード判定を解除し、それぞれの盤面の表示状態を入れ替える
-        isQuadMode = false;
-        document.getElementById("quad-board-container")?.classList.add("hidden");
-        document.getElementById("game-board")?.classList.remove("hidden");
-        
-        const hs = document.getElementById("hardmode-switch");
-        if (hs) hs.disabled = false;
-        
-        document.querySelectorAll(".mode-btn").forEach(b => b.classList.remove("active"));
-        modeBtn.classList.add("active");
-        
+
         currentMode = num; rowLength = num; 
         if (num === 4) maxGuesses = CONFIG_MAX_GUESSES_4;
         else if (num === 5) maxGuesses = CONFIG_MAX_GUESSES_5;
         else if (num === 6) maxGuesses = CONFIG_MAX_GUESSES_6;
-        
-        const gameBoard = document.getElementById("game-board");
-        if(gameBoard) {
-          gameBoard.style.setProperty("--row-length", num);
-          gameBoard.style.setProperty("--row-count", maxGuesses);
-          // gameBoard.innerHTML = "";
+
+        document.querySelectorAll(".mode-btn").forEach(b => b.classList.remove("active"));
+        modeBtn.classList.add("active");
+
+        // ▼▼▼ 修正箇所：現在のモードに応じて再スタートの処理を分ける ▼▼▼
+        if (isQuadMode) {
+          // クアッドモードのまま文字数を変えて再スタート
+          maxGuesses = CONFIG_MAX_GUESSES_QUAD;
+          await startQuadMode();
+        } else {
+          // 通常モードとして再スタート
+          document.getElementById("quad-board-container")?.classList.add("hidden");
+          document.getElementById("game-board")?.classList.remove("hidden");
+          const hs = document.getElementById("hardmode-switch");
+          if (hs) hs.disabled = false;
+          
+          const gameBoard = document.getElementById("game-board");
+          if(gameBoard) {
+            gameBoard.style.setProperty("--row-length", num);
+            gameBoard.style.setProperty("--row-count", maxGuesses);
+          }
+          await selectTodayStation(); 
+          restoreBoard();
         }
-        await selectTodayStation(); 
-        restoreBoard();
+        // ▲▲▲ 修正箇所ここまで ▲▲▲
       });
     }
   });
@@ -894,19 +899,19 @@ function updateTiles() {
   // クアッドモード用の処理
   if (isQuadMode) {
     for (let b = 0; b < 4; b++) {
-      if (quadSolved[b]) continue; // クリア済みの盤面は更新しない
+      if (quadSolved[b]) continue; // クリア済みの盤面はスキップ
       const board = document.getElementById(`board-${b}`);
       if (!board) continue;
       const row = board.children[guessesSubmitted];
       if (!row) continue;
       
-      // 現在入力している行以外に「縮小クラス」を付けるアニメーション処理
+      // 現在入力している行以外を縮小して目立たなくする
       Array.from(board.children).forEach((r, idx) => {
         if (idx === guessesSubmitted) r.classList.remove("inactive-row");
         else r.classList.add("inactive-row");
       });
 
-      // キーボードで打った文字を4つすべての盤面に反映させる
+      // キーボードで打った文字を4つすべての盤面に反映
       for (let j = 0; j < rowLength; j++) {
         row.children[j].textContent = currentGuess[j] || "";
       }
@@ -1795,7 +1800,7 @@ function startQuadMode() {
   document.querySelector(".mode-selector").classList.remove("hidden");
 
   // 4つの正解駅をランダムに抽選（通常モードの出禁データを共有）
-  selectQuadStations(currentMode);
+  await selectQuadStations(currentMode);
   
   // 4つのゲーム盤面をHTML上に組み立てる
   buildQuadBoards();
@@ -1808,44 +1813,83 @@ function startQuadMode() {
   if (helpModal) helpModal.classList.remove("hidden");
 }
 
-// 4つの駅をランダムに選択する処理（重複排除＆日付をシードにして復元可能にする）
-function selectQuadStations(modeLength) {
-  // ① 通常モードの今日の答え（todayStation）と全く同じにならないように一覧から除外する
-  let pool = stations.filter(s => s.yomi.length === modeLength && (!todayStation || s.kanji !== todayStation.kanji));
+// 4つの駅を決定する処理（ファイル参照 ＋ 失敗時はシミュレーション）
+async function selectQuadStations(modeLength) {
+  const SECRET_SALT = "EkiDoru_Secret_2026!";
+  let todayStr = getJSTDateString();
+  const yearStr = todayStr.split("-")[0];
   
-  // ② 日付（currentDayIndex）を種（シード）にした独自の乱数生成器を作成
-  // これにより、同じ日なら何度やり直しても（過去問を指定しても）必ず同じ4駅が選出される
-  let seed = currentDayIndex * 12345 + modeLength * 6789;
-  const random = () => {
-    seed = Math.imul(seed ^ (seed >>> 15), 2246822507);
-    seed = Math.imul(seed ^ (seed >>> 13), 3266489909);
-    return ((seed ^ (seed >>> 16)) >>> 0) / 4294967296;
-  };
+  // クアッド用候補駅（通常の出題条件 ＋ 通常モードの今日の答えとは被らないようにする）
+  let validPool = stations.filter(s => 
+      s.yomi.length === modeLength && 
+      s.pref && s.companies && s.companies.length > 0 &&
+      !(s.companies.length === 1 && s.companies[0] === "日本貨物鉄道") &&
+      s.is_abolished_confirmed !== true &&
+      (!todayStation || s.kanji !== todayStation.kanji)
+  );
 
-  const rngStateKey = `ekidle_rng_state_${modeLength}`;
-  let usedList = JSON.parse(localStorage.getItem(rngStateKey) || "[]");
-  const maxLocked = Math.floor(pool.length * 0.7);
-
-  if (usedList.length > maxLocked) usedList = usedList.slice(usedList.length - maxLocked);
-  let validPool = pool.filter(s => !usedList.includes(s.kanji));
-  quadStations = [];
-
-  for (let i = 0; i < 4; i++) {
-    // 候補が尽きた場合は、今回選んだ以外の全ての駅から選ぶ（安全装置）
-    if (validPool.length === 0) {
-      validPool = pool.filter(s => !quadStations.map(q => q.kanji).includes(s.kanji));
+  try {
+    // ① まずは答えファイル（answers.json）の「quad4」などのキーから4つのハッシュを取得
+    const answersData = await fetchSharedAnswerDict(yearStr);
+    const targetHashes = answersData[todayStr]?.[`quad${modeLength}`];
+    
+    if (!targetHashes || targetHashes.length !== 4) {
+        throw new Error("本日のクアッド答えデータがありません");
     }
-    // Math.random() の代わりに、日付ベースの自作 random() を使って抽選する
-    const r = Math.floor(random() * validPool.length);
-    const selected = validPool[r];
-    quadStations.push(selected);
 
-    validPool.splice(r, 1);
-    usedList.push(selected.kanji); 
+    // 全候補駅のハッシュを計算して逆引きする
+    const calcSha256 = async (str) => {
+      const buf = new TextEncoder().encode(str);
+      const hashBuf = await crypto.subtle.digest('SHA-256', buf);
+      return Array.from(new Uint8Array(hashBuf)).map(b => b.toString(16).padStart(2, '0')).join('');
+    };
+
+    const hashPromises = validPool.map(async (s) => {
+      return { station: s, hash: await calcSha256(SECRET_SALT + s.yomi) };
+    });
+    const hashedStations = await Promise.all(hashPromises);
+
+    quadStations = [];
+    for (let h of targetHashes) {
+        const found = hashedStations.find(item => item.hash === h);
+        if (found) quadStations.push(found.station);
+        else throw new Error("ハッシュが一致する駅が見つかりません");
+    }
+    return; // ファイルから無事に取得できた場合はここで終了
+    
+  } catch (err) {
+    console.warn("クアッドのファイル読み込み失敗。シミュレーションで決定します:", err);
+    
+    // ② ファイルがない場合のフォールバック：日付シードによる歴史シミュレーション
+    let seed = currentDayIndex * 12345 + modeLength * 6789;
+    const random = () => {
+      seed = Math.imul(seed ^ (seed >>> 15), 2246822507);
+      seed = Math.imul(seed ^ (seed >>> 13), 3266489909);
+      return ((seed ^ (seed >>> 16)) >>> 0) / 4294967296;
+    };
+
+    const rngStateKey = `ekidle_rng_state_quad${modeLength}`;
+    let usedList = JSON.parse(localStorage.getItem(rngStateKey) || "[]");
+    const maxLocked = Math.floor(validPool.length * 0.7);
+
+    if (usedList.length > maxLocked) usedList = usedList.slice(usedList.length - maxLocked);
+    let availableForQuad = validPool.filter(s => !usedList.includes(s.kanji));
+    
+    quadStations = [];
+    for (let i = 0; i < 4; i++) {
+      if (availableForQuad.length === 0) {
+        availableForQuad = validPool.filter(s => !quadStations.map(q => q.kanji).includes(s.kanji));
+      }
+      const r = Math.floor(random() * availableForQuad.length);
+      const selected = availableForQuad[r];
+      quadStations.push(selected);
+      availableForQuad.splice(r, 1);
+      usedList.push(selected.kanji);
+    }
+    
+    if (usedList.length > maxLocked) usedList = usedList.slice(usedList.length - maxLocked);
+    localStorage.setItem(rngStateKey, JSON.stringify(usedList));
   }
-
-  if (usedList.length > maxLocked) usedList = usedList.slice(usedList.length - maxLocked);
-  localStorage.setItem(rngStateKey, JSON.stringify(usedList));
 }
 
 
@@ -2105,10 +2149,10 @@ function getQuadColorCodeStr(name) {
 }
 
 // タイトル画面で「クアッドモードで遊ぶ」が押された時のクリックイベント登録
-document.getElementById("btn-quad-mode").addEventListener("click", () => {
+document.getElementById("btn-quad-mode").addEventListener("click", async () => {
   document.getElementById("title-screen").classList.add("hidden");
   document.getElementById("game-screen").classList.remove("hidden");
-  startQuadMode();
+  await startQuadMode();
 });
 
 // 内部の色名を実際のカラーコード（CSS変数）に変換する関数
