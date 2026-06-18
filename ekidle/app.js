@@ -235,6 +235,12 @@ function setupGameSpecificUI() {
       modeBtn.addEventListener("click", async () => {
         isPlayingRandom = false; 
         isAprilFoolMode = false; 
+        
+        // クアッドモード判定を解除し、それぞれの盤面の表示状態を入れ替える
+        isQuadMode = false;
+        document.getElementById("quad-board-container")?.classList.add("hidden");
+        document.getElementById("game-board")?.classList.remove("hidden");
+        
         const hs = document.getElementById("hardmode-switch");
         if (hs) hs.disabled = false;
         
@@ -1804,7 +1810,7 @@ function selectQuadStations(modeLength) {
 // 4つの空のゲーム盤を画面に生成する関数
 function buildQuadBoards() {
   for (let b = 0; b < 4; b++) {
-    const board = document.getElementById(`quad-board-${b}`);
+    const board = document.getElementById(`board-${b}`);
     board.className = "quad-board"; // クリア状態をリセット
     board.innerHTML = "";
     board.style.setProperty("--row-length", currentMode);
@@ -1852,7 +1858,7 @@ function submitQuadGuess() {
 
   // 4つの盤面をループ処理して1つずつ色を判定していく
   for (let b = 0; b < 4; b++) {
-    const board = document.getElementById(`quad-board-${b}`);
+    const board = document.getElementById(`board-${b}`);
     const row = board.children[guessesSubmitted];
     const targetStation = quadStations[b];
 
