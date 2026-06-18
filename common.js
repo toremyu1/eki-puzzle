@@ -183,7 +183,6 @@ function showNextEventPopup() {
 
 
 // ==========================================
-// 【共通ファイル (common.js)】
 // どんなゲームから呼ばれても動くログイン判定関数
 // ==========================================
 // 引数 metaKey には "ekiLocateMeta" や "ekiZukanMeta" などの文字列が入ります
@@ -360,8 +359,13 @@ function generateSharedAffiliateHTML(station, isAprilFool) {
 function generateSharedStatsGraphHTML(distArray, currentTurn, maxRow) {
   let html = "<div style='font-weight:bold;margin:15px 0 5px;border-bottom:1px solid #ccc;padding-bottom:5px;'>回答回数の分布</div>";
   let maxDist = Math.max(...distArray);
-  // 色は11行分用意しておくことで、どのゲームでも対応可能
-  const barColors = ["#6aaa64","#42a5f5","#26c6da","#ffca28","#ffa726","#ff7043","#ec407a","#ab47bc","#8e24aa","#5e35b1","#3949ab"];
+  // エンドレスモードなど手数が多くなるゲームに備え、鮮やかな20色を設定します
+  const barColors = [
+    "#6aaa64", "#42a5f5", "#26c6da", "#ffca28", "#ffa726", 
+    "#ff7043", "#ec407a", "#ab47bc", "#8e24aa", "#5e35b1", 
+    "#3949ab", "#1e88e5", "#039be5", "#00acc1", "#00897b", 
+    "#43a047", "#7cb342", "#c0ca33", "#fbc02d", "#fb8c00"
+  ];
   
   for(let i = 1; i <= maxRow; i++) {
     let count = distArray[i] || 0;
