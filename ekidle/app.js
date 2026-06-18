@@ -190,8 +190,10 @@ function setupCommonUI() {
   // 2箇所目：前回追加した、サイドメニューの「運行記録を見る」ボタン
   document.getElementById("menu-stats-btn")?.addEventListener("click", (e) => {
     e.preventDefault();
+    // サイドメニュー本体はアニメーションで右にスライドして隠す
     document.getElementById("side-menu").style.right = "-250px";
-    setTimeout(() => document.getElementById("side-menu-overlay").classList.add("hidden"), 300);
+    // 【修正】300ミリ秒待たずに、黒幕（オーバーレイ）を即座に消して二重被りを防ぐ
+    document.getElementById("side-menu-overlay").classList.add("hidden");
     
     const statsModal = document.getElementById("title-stats-modal");
     if (statsModal) statsModal.classList.remove("hidden");
