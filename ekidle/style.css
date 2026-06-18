@@ -159,6 +159,14 @@ body.theme-dark #title-stats-modal .btn {
   cursor: not-allowed;
 }
 
+/* 選択中の文字数ボタン（4, 5, 6）を青色で着色して目立たせる */
+.mode-btn.active {
+  background-color: #03a9f4 !important;
+  color: #ffffff !important;
+  border-color: #03a9f4 !important;
+  font-weight: bold;
+}
+
 /* ------------------------------------------
    色のバリエーション（そのまま）
 ------------------------------------------ */
@@ -685,12 +693,20 @@ body.event-nye .key { background-color:#25202b; color:#d1c7bd; }
   text-shadow: 1px 1px 1px rgba(0,0,0,0.8), -1px -1px 1px rgba(0,0,0,0.8) !important;
 }
 
-/* 追加: クアッドモードの非アクティブ行の縮小 */
+/* ==========================================
+   クアッドモード・UIの追加デザイン
+========================================== */
+/* 6文字時の右偏りを防ぐため、中央揃えにする */
 .quad-board .board-row {
-  transition: transform 0.2s ease, opacity 0.2s ease;
+  justify-content: center;
+  transition: transform 0.2s ease, opacity 0.2s ease, margin 0.2s ease;
   transform-origin: center center;
 }
+
+/* 縦につぶれるような縮小アニメーション */
 .quad-board .board-row.inactive-row {
-  transform: scale(0.85);
-  opacity: 0.6;
+  transform: scaleY(0.35) scaleX(0.85); /* 縦をペチャンコに、横を少し縮小 */
+  opacity: 0.5;
+  margin: -6px 0; /* 縮小した分の縦の隙間を詰めてスッキリさせる */
 }
+
