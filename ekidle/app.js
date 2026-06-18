@@ -141,6 +141,14 @@ function setupCommonUI() {
     });
   }
 
+  // テーマ切り替えボタン（IDはHTMLに合わせて適宜変更してください）が押されたら処理を実行する
+  const themeBtn = document.getElementById("theme-btn");
+  if (themeBtn) {
+    themeBtn.addEventListener("click", () => {
+      toggleDarkMode(); 
+    });
+  }
+
   document.getElementById("menu-home-btn")?.addEventListener("click", (e) => { e.preventDefault(); returnToTitleScreen(); });
   document.getElementById("menu-top-btn")?.addEventListener("click", (e) => { e.preventDefault(); if (typeof FALLBACK_URL !== "undefined") window.location.href = FALLBACK_URL; });
   
@@ -179,13 +187,14 @@ function setupGameSpecificUI() {
         currentMode = num; rowLength = num; 
         if (num === 4) maxGuesses = CONFIG_MAX_GUESSES_4;
         else if (num === 5) maxGuesses = CONFIG_MAX_GUESSES_5;
-        else if (num === 6) maxGuesses = CONFIG_MAX_GUESSES_6;
+        else if (num === 6) maxGuesses = CONFIG_MAX_GUESS
+        ES_6;
         
         const gameBoard = document.getElementById("game-board");
         if(gameBoard) {
           gameBoard.style.setProperty("--row-length", num);
           gameBoard.style.setProperty("--row-count", maxGuesses);
-          gameBoard.innerHTML = "";
+          // gameBoard.innerHTML = "";
         }
         await selectTodayStation(); 
         restoreBoard();
@@ -209,6 +218,25 @@ function setupGameSpecificUI() {
   });
 }
 
+
+// ハードモードと通常モードの記録表示を切り替える処理を新設します
+function updateTitleStatsDisplay(modeType) {
+  // modeTypeには "normal" か "hard" が入ります
+  
+  // 1. タブの見た目（アクティブ状態）を切り替える
+  document.querySelectorAll(".stats-tab").forEach(tab => tab.classList.remove("active"));
+  const activeTab = document.getElementById(`tab-${modeType}`);
+  if (activeTab) activeTab.classList.add("active");
+
+  // 2. 実際のデータを表示する処理（※以下は一例です）
+  // 記録を画面に反映させるには、HTMLの各要素のIDに合わせて数値を代入する必要があります
+  // let targetMode = currentMode + (modeType === "hard" ? "_hard" : "");
+  // let st = userStats[targetMode] || {played:0, won:0};
+  // document.getElementById("stats-played").textContent = st.played;
+  
+  console.log(`${modeType}モードの成績表示に切り替えました`);
+}
+
     
 // ==========================================
 // 連続ログイン日数処理
@@ -217,6 +245,9 @@ function updateLoginStreak() {
   // 共通関数に保存先の名前（ekiLoginStreak）を渡すだけで全て自動でやってくれます
   let updatedData = updateSharedLoginStreak("ekiLoginStreak");
 }
+
+    
+
 
 
 // ==========================================
@@ -281,6 +312,7 @@ function hideLoadingScreen() {
     }, 500);
   }
 }
+
 
 
 
@@ -666,11 +698,19 @@ function restoreBoard(){
   // 盤面復元時、既にプレイ中であればそのゲームのハードモード状態にスイッチを合わせる
   let currentSt = savedState[isPlayingRandom ? "random" : currentMode];
   if (currentSt && currentSt.guesses && currentSt.guesses.length > 0) {
+    // プレイ途中の場合は状態を復元し、スイッチを操作不可（グレーアウト）にする
     ekiSettings.hardMode = !!currentSt.isHardMode; 
     const hardSwitch = document.getElementById("hardmode-switch");
-    if(hardSwitch) hardSwitch.checked = ekiSettings.hardMode;
+    if(hardSwitch) {
+      hardSwitch.checked = ekiSettings.hardMode;
+      hardSwitch.disabled = true; // 操作をロック
+    }
     localStorage.setItem("ekiSettings", JSON.stringify(ekiSettings));
     updateHelpContent();
+  } else {
+    // まだ回答していない（新しいゲーム）なら、操作可能にする
+    const hardSwitch = document.getElementById("hardmode-switch");
+    if(hardSwitch) hardSwitch.disabled = false;
   }
 }
 
@@ -820,6 +860,10 @@ function submitGuess(isRestore=false){
     // 1手目を送信した時点で、このゲームをハードモードとして集計するかを確定する
     if (st.guesses.length === 0) {
       st.isHardMode = ekiSettings.hardMode;
+
+      // 1手目を送信した瞬間にスイッチを操作不可にする
+      const hardSwitch = document.getElementById("hardmode-switch");
+      if (hardSwitch) hardSwitch.disabled = true;
     }
 
     // 回答を配列に保存する
