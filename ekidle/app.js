@@ -1784,7 +1784,7 @@ let quadGridHistory = [];            // 【追加】各手ごとの4盤面の色
 
 
 // クアッドモードを開始する処理
-function startQuadMode() {
+async function startQuadMode() {
   isQuadMode = true;
   isPlayingRandom = false;
   guessesSubmitted = 0;
