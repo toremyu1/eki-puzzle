@@ -284,7 +284,7 @@ function setupGameSpecificUI() {
       if (isMidGame && hardSwitch.checked) {
         e.preventDefault();
         hardSwitch.checked = false;
-        showMessage("プレイ開始後はハードモードに切り替えできません");
+        showMessage("プレイ開始後はハードモードに変更できません");
       } else {
         ekiSettings.hardMode = hardSwitch.checked;
         localStorage.setItem("ekiSettings", JSON.stringify(ekiSettings));
