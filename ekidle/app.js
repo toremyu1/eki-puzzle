@@ -129,7 +129,8 @@ function setupCommonUI() {
   // 各種ボタンの紐付け
   const btnNormalMode = document.getElementById("btn-normal-mode");
   if (btnNormalMode) {
-    btnNormalMode.addEventListener("click", () => {
+    // 盤面の再構築（await）を待つために、async を追加する
+    btnNormalMode.addEventListener("click", async () => {
       // 1. クアッドモードの状態を完全に解除する
       isQuadMode = false;
       
@@ -144,7 +145,24 @@ function setupCommonUI() {
       // 文字数セレクターとハードモードスイッチを表示する
       document.querySelector(".mode-selector")?.classList.remove("hidden");
       document.querySelector(".hardmode-container")?.classList.remove("hidden");
-      // ▲▲▲ ここまで修正・追加 ▲▲▲
+      
+      // ▼▼▼ 追加：現在の文字数に合わせて通常モードの変数を設定し直し、盤面を再構築する ▼▼▼
+      if (currentMode === 4) maxGuesses = CONFIG_MAX_GUESSES_4;
+      else if (currentMode === 5) maxGuesses = CONFIG_MAX_GUESSES_5;
+      else if (currentMode === 6) maxGuesses = CONFIG_MAX_GUESSES_6;
+      rowLength = currentMode;
+      
+      const gameBoard = document.getElementById("game-board");
+      if(gameBoard) {
+        // HTMLの枠の数を更新する
+        gameBoard.style.setProperty("--row-length", currentMode);
+        gameBoard.style.setProperty("--row-count", maxGuesses);
+      }
+      
+      // 駅の再抽選と盤面の初期化を確実に実行する
+      await selectTodayStation(); 
+      restoreBoard();
+      // ▲▲▲ 追加ここまで ▲▲▲
 
       if (typeof checkSpecialEvent === "function") checkSpecialEvent();
     });
@@ -557,13 +575,20 @@ function loadGameState(dayIdx){
   if(logData[dayIdx]){
     savedState=logData[dayIdx];
     // 【安全装置】ハードモード用のセーブ枠が不足していればその場で自動追加する
-    ["4_hard", "5_hard", "6_hard"].forEach(k => {
-      if(!savedState[k]) savedState[k] = {guesses:[],guessTimes:[],startTime:null,endTime:null,usedHint:false,isWin:false,isOver:false};
+    ["4_hard", "5_hard", "6_hard", "quad4", "quad5", "quad6"].forEach(k => {
+      if(!savedState[k]) {
+        // クアッド用の枠の場合は、4つの盤面クリア状態などを記憶する変数を入れる
+        if(k.startsWith("quad")) {
+          savedState[k] = {guesses:[], guessTimes:[], quadSolved:[false,false,false,false], quadGridHistory:[], isOver:false};
+        } else {
+          savedState[k] = {guesses:[],guessTimes:[],startTime:null,endTime:null,usedHint:false,isWin:false,isOver:false};
+        }
+      }
     });
     return;
   }
   
-  // 新しく本日のデータ枠を作成（通常モードとハードモードの枠を完全に分離して用意）
+  // 新しく本日のデータ枠を作成（クアッドモードの枠も追加）
   savedState={ 
     date:String(dayIdx), 
     isDaily:true,
@@ -572,7 +597,10 @@ function loadGameState(dayIdx){
     6:{guesses:[],guessTimes:[],startTime:null,endTime:null,usedHint:false,isWin:false,isOver:false},
     "4_hard":{guesses:[],guessTimes:[],startTime:null,endTime:null,usedHint:false,isWin:false,isOver:false}, 
     "5_hard":{guesses:[],guessTimes:[],startTime:null,endTime:null,usedHint:false,isWin:false,isOver:false}, 
-    "6_hard":{guesses:[],guessTimes:[],startTime:null,endTime:null,usedHint:false,isWin:false,isOver:false} 
+    "6_hard":{guesses:[],guessTimes:[],startTime:null,endTime:null,usedHint:false,isWin:false,isOver:false},
+    "quad4":{guesses:[],guessTimes:[],quadSolved:[false,false,false,false],quadGridHistory:[],isOver:false},
+    "quad5":{guesses:[],guessTimes:[],quadSolved:[false,false,false,false],quadGridHistory:[],isOver:false},
+    "quad6":{guesses:[],guessTimes:[],quadSolved:[false,false,false,false],quadGridHistory:[],isOver:false}
   };
   logData[dayIdx]=savedState;
   localStorage.setItem("ekiPuzzleStateV1_Log",JSON.stringify(logData));
@@ -1852,6 +1880,26 @@ async function startQuadMode() {
   
   buildQuadBoards();
   resetKeyboardStyles();
+
+  // ▼▼▼ 追加：クアッドモードのセーブデータ復元処理 ▼▼▼
+  let stateKey = "quad" + currentMode;
+  let st = savedState[stateKey];
+  
+  // まだ保存枠がない場合は新しく作成する
+  if (!st) {
+    st = {guesses: [], guessTimes: [], quadSolved: [false,false,false,false], quadGridHistory: [], isOver: false};
+    savedState[stateKey] = st;
+  }
+  
+  // セーブデータ（過去の入力単語）が存在する場合は、順番に送信して画面を再現する
+  if (st && st.guesses && st.guesses.length > 0) {
+    st.guesses.forEach(g => {
+      currentGuess = g;
+      submitQuadGuess(true); // isRestore=true を渡して復元送信モードにする
+    });
+  }
+  currentGuess = "";
+  // ▲▲▲ 追加ここまで ▲▲▲
 }
 
 // 4つの駅を決定する処理（ファイル参照 ＋ 失敗時はシミュレーション）
@@ -2014,18 +2062,30 @@ function resetKeyboardStyles() {
   });
 }
 
-// 【ゲームの花形】プレイヤーが回答（エンター）を押した時の4画面同時判定処理
-function submitQuadGuess() {
-  if (currentGuess.length !== currentMode) {
-    showMessage("文字数が足りません");
-    return;
+// 【修正後：関数全体を置き換え】
+// 引数に isRestore=false を追加し、復元中かどうかを判別できるようにします
+function submitQuadGuess(isRestore = false) {
+  // 復元中でない（プレイヤーの実際の入力）場合のみ、文字数と駅名のチェックを行う
+  if (!isRestore) {
+    if (currentGuess.length !== currentMode) {
+      showMessage("文字数が足りません");
+      return;
+    }
+
+    // 実在する駅名かどうかの辞書チェック
+    const guessExists = stations.some(s => s.yomi === currentGuess);
+    if (!guessExists) {
+      showMessage("実在しない駅名です");
+      return;
+    }
   }
 
-  // 実在する駅名かどうかの辞書チェック
-  const guessExists = stations.some(s => s.yomi === currentGuess);
-  if (!guessExists) {
-    showMessage("実在しない駅名です");
-    return;
+  // クアッド用のセーブデータ枠を取得する
+  let stateKey = "quad" + currentMode;
+  let st = savedState[stateKey];
+  if (!st) {
+    st = {guesses: [], guessTimes: [], quadSolved: [false,false,false,false], quadGridHistory: [], isOver: false};
+    savedState[stateKey] = st;
   }
 
   // 各盤面の色結果を集約するための多次元配列
@@ -2052,7 +2112,6 @@ function submitQuadGuess() {
     }
 
     // 内部の判定ロジックを呼び出して色の配列を取得
-    //（既存の通常モードにある色判定アルゴリズムをそのまま活用します）
     const rowColors = checkRowColors(currentGuess, targetStation.yomi);
     allBoardResults.push(rowColors);
 
@@ -2074,38 +2133,56 @@ function submitQuadGuess() {
   // 4色ブレンドキーボードの表示更新
   updateQuadKeyboardLogic(currentGuess, allBoardResults);
   
-  // 【追加】履歴に今回の4盤面分の色結果（🟩🟨など）を保存する
+  // 履歴に今回の4盤面分の色結果（🟩🟨など）を保存する
   quadGridHistory.push(allBoardResults);
+
+  // ▼▼▼ 保存処理（復元中でない場合のみ） ▼▼▼
+  if (!isRestore) {
+    st.guesses.push(currentGuess);
+    st.guessTimes.push(Date.now());
+    st.quadSolved = [...quadSolved];
+    st.quadGridHistory = [...quadGridHistory];
+  }
+  // ▲▲▲ 保存処理 ▲▲▲
 
   // 手数を1つ進め、入力欄を空にする
   guessesSubmitted++;
-  currentGuess = "";
+  if (!isRestore) currentGuess = "";
 
   // 勝敗の判定
   const isAllCleared = quadSolved.every(s => s === true);
   if (isAllCleared || guessesSubmitted >= maxGuesses) {
-
-    // 運行記録の保存
-    let targetMode = "quad" + currentMode; // 例: "quad4"
-    if (!userStats[targetMode]) {
-      userStats[targetMode] = { played: 0, won: 0, currentStreak: 0, maxStreak: 0, guesses: [] };
-    }
-    let st = userStats[targetMode];
     
-    st.played++;
-    if (isAllCleared) {
-      st.won++;
-      st.currentStreak++;
-      if (st.currentStreak > st.maxStreak) st.maxStreak = st.currentStreak;
-      // 最終的に全クリアした手数を記録する
-      st.guesses[guessesSubmitted] = (st.guesses[guessesSubmitted] || 0) + 1;
-    } else {
-      st.currentStreak = 0;
+    // ▼▼▼ ゲーム終了状態の保存 ▼▼▼
+    if (!isRestore) {
+      st.isOver = true;
+      saveGameState();
+      
+      // 運行記録の保存（変数名が st で被るため stUser に変更しています）
+      let targetMode = "quad" + currentMode; 
+      if (!userStats[targetMode]) {
+        userStats[targetMode] = { played: 0, won: 0, currentStreak: 0, maxStreak: 0, guesses: [] };
+      }
+      let stUser = userStats[targetMode];
+      
+      stUser.played++;
+      if (isAllCleared) {
+        stUser.won++;
+        stUser.currentStreak++;
+        if (stUser.currentStreak > stUser.maxStreak) stUser.maxStreak = stUser.currentStreak;
+        // 最終的に全クリアした手数を記録する
+        stUser.guesses[guessesSubmitted] = (stUser.guesses[guessesSubmitted] || 0) + 1;
+      } else {
+        stUser.currentStreak = 0;
+      }
+      localStorage.setItem("ekiPuzzleStatsV2", JSON.stringify(userStats));
+     
+      // アラートではなく、1.5秒待ってから専用の結果モーダルを美しく表示する
+      setTimeout(showQuadResultModal, 1500);
     }
-    localStorage.setItem("ekiPuzzleStatsV2", JSON.stringify(userStats));
-   
-    // 【修正】アラートではなく、1.5秒待ってから専用の結果モーダルを美しく表示する
-    setTimeout(showQuadResultModal, 1500);
+  } else {
+    // 途中経過を保存
+    if (!isRestore) saveGameState();
   }
 }
 
