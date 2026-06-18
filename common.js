@@ -489,32 +489,24 @@ async function generateSharedTransferCode(gameName, dataMap) {
 
 /**
  * 引き継ぎコードを自動判別して解凍・検証し、オブジェクトとして返す共通関数
- * @param {string} code - 入力された引き継ぎコード
+ @param {string} code - 入力された引き継ぎコード
  * @param {string} expectedGameName - 期待するゲーム名
  */
 async function parseSharedTransferCode(code, expectedGameName) {
   let textData = "";
   
   if (code.startsWith("Z:")) {
-    // 新方式：圧縮版の解凍
+    // 新方式：Gzip圧縮版の解凍処理
     const binary = atob(code.slice(2));
     const bytes = Uint8Array.from(binary, c => c.charCodeAt(0));
     const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("gzip"));
     textData = await new Response(stream).text();
   } else if (code.startsWith("R:")) {
-    // 新方式：非圧縮版の復元
+    // 新方式：非圧縮版の復元処理
     textData = decodeURIComponent(atob(code.slice(2)));
   } else {
-    // 過去のコード（プレフィックスなし）の自動判別救済ルート
-    try {
-      const binary = atob(code);
-      const bytes = Uint8Array.from(binary, c => c.charCodeAt(0));
-      const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("gzip"));
-      textData = await new Response(stream).text();
-    } catch (e) {
-      try { textData = decodeURIComponent(atob(code)); } 
-      catch (e2) { textData = atob(code); }
-    }
+    // 【修正】リリース前のため、プレフィックスなしの古いコードは即座にエラーとして弾く
+    throw new Error("無効なコード形式です。");
   }
 
   // データの改ざん・破損チェック
