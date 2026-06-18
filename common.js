@@ -244,6 +244,9 @@ async function downloadSharedGameData(cacheName, fallbackUrl) {
     const reader = res.body.getReader();
     const chunks = [];
 
+    // 進行度を記憶する変数を追加します
+    let fallbackPct = 30;
+
     // 少しずつデータを読み込み、共通のプログレスバー関数を呼び出す
     while (true) {
       const { done, value } = await reader.read();
