@@ -241,9 +241,23 @@ function setupGameSpecificUI() {
   
   // 「グラフ」ボタンの処理
   document.getElementById("stats-btn")?.addEventListener("click", () => {
+    // ▼▼▼ ここから修正 ▼▼▼
+    if (isQuadMode) {
+      const isAllCleared = quadSolved.every(s => s === true);
+      // クアッドが終了している場合のみ、クアッド専用モーダルを開く
+      if (isAllCleared || guessesSubmitted >= maxGuesses) {
+        if (typeof showQuadResultModal === "function") showQuadResultModal();
+      } else {
+        showMessage("ゲームクリア後に見ることができます");
+      }
+      return;
+    }
+
+    // 通常モードの処理
     let st = savedState[isPlayingRandom ? "random" : currentMode];
     if (st && st.isOver) showResultModal(st.isWin, true);
     else showMessage("ゲームクリア後に見ることができます");
+    // ▲▲▲ ここまで修正 ▲▲▲
   });
 
  // モード切替ボタン（4文字・5文字・6文字）
@@ -876,33 +890,44 @@ function restoreBoard(){
 // キーボードの文字や、特殊ボタン（回答・消去）が押されたときの振り分けを行う
 // プレイヤーの入力を処理する
 function handleKeyPress(char){
-  // 箱が統合されたため、単純に文字数モードのキーを参照するように修正
-  let stateKey = isPlayingRandom ? "random" : currentMode;
-  let st = savedState[stateKey];
-  if(!st || st.isOver || guessesSubmitted>=maxGuesses) return;
-  
-  if(!st.startTime && char!=="BACK" && char!=="CLEAR" && char!=="ENTER"){
-    st.startTime=Date.now();
-    if(!isPlayingRandom) {
-      saveGameState();
+  // 1. クアッドモードと通常モードで、入力ロックとタイマー処理を完全に分離する
+  if (isQuadMode) {
+    const isAllCleared = quadSolved.every(s => s === true);
+    if (isAllCleared || guessesSubmitted >= maxGuesses) return;
+  } else {
+    let stateKey = isPlayingRandom ? "random" : currentMode;
+    let st = savedState[stateKey];
+    if(!st || st.isOver || guessesSubmitted >= maxGuesses) return;
+    
+    // 最初の文字を入力した時のタイマー開始処理（通常モードのみ）
+    if(!st.startTime && char !== "BACK" && char !== "CLEAR" && char !== "ENTER"){
+      st.startTime = Date.now();
+      if(!isPlayingRandom) {
+        saveGameState();
+      }
     }
   }
-  
-  if(char==="BACK"){
-    if(currentGuess.length>0){ currentGuess=currentGuess.slice(0,-1); updateTiles(); }
-  }else if(char==="CLEAR"){
-    currentGuess=""; updateTiles();
-  }else if(char==="ENTER"){
-    if(currentGuess.length===rowLength) {
-      // 【修正】重い判定処理を10ミリ秒だけ遅らせて、ブラウザのフリーズ（処理落ち）を防ぐ
+
+  // 2. 実際の文字入力・消去の処理
+  if(char === "BACK"){
+    if(currentGuess.length > 0){ currentGuess = currentGuess.slice(0, -1); updateTiles(); }
+  } else if(char === "CLEAR"){
+    currentGuess = ""; updateTiles();
+  } else if(char === "ENTER"){
+    if(currentGuess.length === rowLength) {
       setTimeout(() => {
-        submitGuess(false);
+        // 3. 【追加】エンターキーを押した時の送信処理も、モードによって確実に振り分ける
+        if (isQuadMode) {
+          if (typeof submitQuadGuess === "function") submitQuadGuess();
+        } else {
+          submitGuess(false);
+        }
       }, 10);
     } else {
       showMessage(`${rowLength}文字入力してください`);
     }
-  }else{
-    if(currentGuess.length<rowLength){ currentGuess+=char; updateTiles(); }
+  } else {
+    if(currentGuess.length < rowLength){ currentGuess += char; updateTiles(); }
   }
 }
 
@@ -1954,6 +1979,8 @@ function buildQuadBoards() {
     for (let i = 0; i < maxGuesses; i++) {
       const row = document.createElement("div");
       row.className = "board-row";
+      // ▼▼▼ この1行を追加（1行目以外は、最初から縮小状態にする） ▼▼▼
+      if (i !== 0) row.classList.add("inactive-row");
       for (let j = 0; j < currentMode; j++) {
         const tile = document.createElement("div");
         tile.className = "tile";
