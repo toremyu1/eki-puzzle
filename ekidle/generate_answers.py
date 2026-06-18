@@ -78,7 +78,7 @@ def generate_answers():
             app_state = {}
 
     # 計算が必要な最終日（今日から43日後まで担保する）
-    target_day = today_index + 43
+    target_day = today_index + 44
 
     # 後でファイルに書き込むためのデータを一時保存する箱
     generated_hashes = {}
