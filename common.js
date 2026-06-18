@@ -61,18 +61,26 @@ function generateChecksum(str) {
 // 共通UI・システム処理（追加分）
 // ==========================================
 
-// 1. プログレスバーの更新を共通化
-// IDを柔軟に指定できるようにし、どのゲームのロード画面でも動くようにします
+// どちらのプログレスバー（円形・直線）がHTMLにあっても対応できるように修正します
 function updateSharedLoading(percent, text, barId = "circular-progress-bar", textId = "loading-text", pctId = "loading-percentage") {
   const bar = document.getElementById(barId);
   const textEl = document.getElementById(textId);
   const pctEl = document.getElementById(pctId);
 
+  // テキストとパーセンテージの更新
   if (textEl && text) textEl.textContent = text;
   if (pctEl) pctEl.textContent = `${Math.floor(percent)}%`;
   
-  // 円形プログレスバーのグラデーション更新
+  // 円形プログレスバーがある場合の処理
   if (bar) bar.style.background = `conic-gradient(#3498db ${percent}%, #e2e8f0 ${percent}%)`;
+
+  // 直線のプログレスバー（電車アイコン付き）がある場合の処理を追加
+  const linearBar = document.getElementById('progress-bar');
+  const trainIcon = document.getElementById('train-icon');
+  if (linearBar && trainIcon) {
+    linearBar.style.width = percent + '%';    // バーを伸ばす
+    trainIcon.style.left = percent + '%';     // 電車アイコンを進める
+  }
 }
 
 // 2. 駅データの基本フィルタリングを共通化
