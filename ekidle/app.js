@@ -1995,7 +1995,8 @@ function buildQuadBoards() {
 function resetKeyboardStyles() {
   // 現在の文字数の駅で使われているすべての文字を抽出してセットに突入させる
   const validChars = new Set();
-  stations.filter(s => s.yomi.length === currentMode).forEach(s => {
+  // ⭕️ 修正後：通常モードと同じく、すべての駅の文字を対象にする
+  stations.forEach(s => {
     for (let char of s.yomi) validChars.add(char);
   });
 
