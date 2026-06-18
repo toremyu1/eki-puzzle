@@ -130,10 +130,22 @@ function setupCommonUI() {
   const btnNormalMode = document.getElementById("btn-normal-mode");
   if (btnNormalMode) {
     btnNormalMode.addEventListener("click", () => {
-      document.getElementById("title-screen").classList.add("hidden");
-      document.getElementById("game-screen").classList.remove("hidden");
+      // 1. クアッドモードの状態を完全に解除する
+      isQuadMode = false;
+      
+      // 2. 画面の表示・非表示を通常モード用に切り替える
+      document.getElementById("title-screen")?.classList.add("hidden");
+      document.getElementById("game-screen")?.classList.remove("hidden");
+      
+      // 通常盤面を表示し、クアッド盤面を隠す
+      document.getElementById("game-board")?.classList.remove("hidden");
+      document.getElementById("quad-board-container")?.classList.add("hidden");
+      
+      // 文字数セレクターとハードモードスイッチを表示する
       document.querySelector(".mode-selector")?.classList.remove("hidden");
       document.querySelector(".hardmode-container")?.classList.remove("hidden");
+      // ▲▲▲ ここまで修正・追加 ▲▲▲
+
       if (typeof checkSpecialEvent === "function") checkSpecialEvent();
     });
   }
@@ -2190,6 +2202,8 @@ function getQuadColorCodeStr(name) {
 document.getElementById("btn-quad-mode")?.addEventListener("click", async () => {
   document.getElementById("title-screen").classList.add("hidden");
   document.getElementById("game-screen").classList.remove("hidden");
+  // ▼▼▼ この1行を追加（クアッドモードでも4, 5, 6文字を選べるようにする） ▼▼▼
+  document.querySelector(".mode-selector")?.classList.remove("hidden");
   
   await startQuadMode();
 
