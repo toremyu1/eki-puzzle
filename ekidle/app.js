@@ -35,273 +35,82 @@ let userStats={　　　　　　　
 };
 //過去に解いた問題を記録しておく箱
 let dailyArchive={};
-// イベントポップアップの順番待ち列（優先順位・拡張対応版）
-let eventPopupQueue = [];
-let isPopupRunning = false;
+
 
 // ==========================================
 // 共通ユーティリティ処理
 // ==========================================
 // 端末の時計や場所に依存せず、確実に「日本時間（JST）」のYYYY-MM-DD文字列を返す関数
-function getJSTDateString() {
-  const t = new Date();
-  const jstMs = t.getTime() + (t.getTimezoneOffset() * 60000) + (9 * 3600000);
-  const jstObj = new Date(jstMs);
-  return jstObj.getFullYear() + "-" + String(jstObj.getMonth() + 1).padStart(2, '0') + "-" + String(jstObj.getDate()).padStart(2, '0');
-}
+
 
 // priority(数値)が小さい順に表示されます。
 // 基準： 10(サイト周年), 20(エイプリル), 30(ユーザー周年), 99(将来のその他用)
-function registerEventPopup(priority, actionFunc) {
-  eventPopupQueue.push({ priority: priority, action: actionFunc });
-}
-
-function startEventPopups() {
-  if (isPopupRunning) return; // 既に動いていれば何もしない
-  isPopupRunning = true;
-  eventPopupQueue.sort((a, b) => a.priority - b.priority); // 優先度順に並び替え
-  showNextEventPopup();
-}
-
-function showNextEventPopup() {
-  if (eventPopupQueue.length > 0) {
-    const nextPopup = eventPopupQueue.shift();
-    nextPopup.action();
-  } else {
-    isPopupRunning = false; // 列が空になったら待機状態に戻す
-  }
-}
 
 
 // ==========================================
-// 共通UI制御処理（他のゲームでも流用可能）
+// 共通UI制御処理
 // ==========================================
-// サイドメニュー、各種モーダル、画面遷移のイベントをまとめて登録する関数です。
 function setupCommonUI() {
-  // ----------------------------------------
-  // サイドメニューの制御
-  // ----------------------------------------
-  // メニューを画面右側に隠し、暗転用の背景を消す処理
-  const closeSideMenu = () => {
-    const sideMenu = document.getElementById("side-menu");
-    const overlay = document.getElementById("side-menu-overlay");
-    
-    if (sideMenu && overlay) {
-      sideMenu.style.right = "-250px"; // 画面外にスライドアウト
-      // スライドアニメーションが終わる頃に背景を隠す
-      setTimeout(() => {
-        overlay.classList.add("hidden"); 
-      }, 300);
-    }
-  };
+  // 1. 共通関数の呼び出し（これだけでメニューやモーダルが動きます）
+  setupSharedSideMenu("menu-btn", "side-menu", "side-menu-overlay", "close-menu-btn");
+  setupSharedModal("help-btn", "help-modal", "close-help-btn");
+  setupSharedModal("btn-stats-title", "title-stats-modal", "close-title-stats-btn");
 
-  // メニューボタン（三本線）が押された時の開閉処理
-  const menuBtn = document.getElementById("menu-btn");
-  if (menuBtn) {
-    menuBtn.addEventListener("click", () => {
-      const sideMenu = document.getElementById("side-menu");
-      const overlay = document.getElementById("side-menu-overlay");
-      
-      if (sideMenu && overlay) {
-        // すでに開いている場合は閉じる
-        if (sideMenu.style.right === "0px") {
-          closeSideMenu();
-        } else {
-          // 閉じている場合は背景を表示し、メニューをスライドインさせる
-          overlay.classList.remove("hidden");
-          setTimeout(() => sideMenu.style.right = "0", 10);
-        }
-      }
-    });
-  }
-
-  // メニュー内の閉じるボタンや、暗転背景を押したときにも閉じるように紐付け
-  const closeMenuBtn = document.getElementById("close-menu-btn");
-  if (closeMenuBtn) closeMenuBtn.addEventListener("click", closeSideMenu);
-  
-  const sideMenuOverlay = document.getElementById("side-menu-overlay");
-  if (sideMenuOverlay) sideMenuOverlay.addEventListener("click", closeSideMenu);
-
-  // ----------------------------------------
-  // 各種モーダル（説明・リザルト）の制御
-  // ----------------------------------------
-  // 「？」ボタンを押したときに説明画面を表示
-  const helpBtn = document.getElementById("help-btn");
-  if (helpBtn) {
-    helpBtn.addEventListener("click", () => {
-      const helpModal = document.getElementById("help-modal");
-      if (helpModal) helpModal.classList.remove("hidden");
-    });
-  }
-
-  // 説明画面の「×」ボタンを押したときに非表示にする
-  const closeHelpBtn = document.getElementById("close-help-btn");
-  if (closeHelpBtn) {
-    closeHelpBtn.addEventListener("click", () => {
-      const helpModal = document.getElementById("help-modal");
-      if (helpModal) helpModal.classList.add("hidden");
-    });
-  }
-
-  // 結果画面の「×」ボタンを押したときの処理（複数ある場合に対応）
-  const closeModalBtns = document.querySelectorAll("#close-modal-btn");
-  closeModalBtns.forEach(btn => {
-    btn.addEventListener("click", () => {
-      const resModal = document.getElementById("result-modal");
-      if (resModal) {
-        resModal.style.display = ""; // 古い表示システムによるバグを防ぐためスタイルをリセット
-        resModal.classList.add("hidden");
-      }
-    });
-  });
-
-  // ----------------------------------------
-  // タイトル画面とゲーム画面の遷移制御
-  // ----------------------------------------
-  // タイトル画面へ戻るための共通処理
+  // 2. タイトル画面とゲーム画面の遷移制御（駅ドル専用の処理なので残す）
   const returnToTitleScreen = () => {
     const titleScreen = document.getElementById("title-screen");
     const gameScreen = document.getElementById("game-screen");
-    
     if (titleScreen && gameScreen) {
       titleScreen.classList.remove("hidden");
-      titleScreen.style.display = ""; // 強制非表示を解除
+      titleScreen.style.display = ""; 
       gameScreen.classList.add("hidden");
-      
-      // ゲーム中のUIパーツを隠す
       const modeSelector = document.querySelector(".mode-selector");
       if (modeSelector) modeSelector.classList.add("hidden");
       const hardmodeContainer = document.querySelector(".hardmode-container");
       if (hardmodeContainer) hardmodeContainer.classList.add("hidden");
       
-      closeSideMenu(); // 遷移時は必ずサイドメニューを閉じる
+      // メニューを閉じる処理（共通UIに無いので手動で隠す）
+      document.getElementById("side-menu").style.right = "-250px";
+      setTimeout(() => document.getElementById("side-menu-overlay").classList.add("hidden"), 300);
     }
   };
 
-  // 「通常モードで遊ぶ」ボタンの処理
+  // 各種ボタンの紐付け
   const btnNormalMode = document.getElementById("btn-normal-mode");
   if (btnNormalMode) {
     btnNormalMode.addEventListener("click", () => {
       document.getElementById("title-screen").classList.add("hidden");
       document.getElementById("game-screen").classList.remove("hidden");
-      
-      const modeSelector = document.querySelector(".mode-selector");
-      if (modeSelector) modeSelector.classList.remove("hidden");
-      const hardmodeContainer = document.querySelector(".hardmode-container");
-      if (hardmodeContainer) hardmodeContainer.classList.remove("hidden");
-      
-      // イベント行事のチェック関数があれば実行
+      document.querySelector(".mode-selector")?.classList.remove("hidden");
+      document.querySelector(".hardmode-container")?.classList.remove("hidden");
       if (typeof checkSpecialEvent === "function") checkSpecialEvent();
     });
   }
 
-  // 「リバースモードで遊ぶ」ボタンの処理
-  const btnReverseMode = document.getElementById("btn-reverse-mode");
-  if (btnReverseMode) {
-    btnReverseMode.addEventListener("click", () => {
-      alert("リバースモードは現在開発中です！お楽しみに！");
-    });
-  }
-
-  // ヘッダーの戻る（家）ボタンの処理
   const homeBtn = document.getElementById("home-btn");
   if (homeBtn) {
     homeBtn.addEventListener("click", () => {
       const gameScreen = document.getElementById("game-screen");
-      // ゲーム中ならタイトルへ、タイトルにいるなら総合TOPへ戻す
-      if (gameScreen && !gameScreen.classList.contains("hidden")) {
-        returnToTitleScreen();
-      } else {
-        if (typeof FALLBACK_URL !== "undefined") window.location.href = FALLBACK_URL;
-      }
+      if (gameScreen && !gameScreen.classList.contains("hidden")) returnToTitleScreen();
+      else if (typeof FALLBACK_URL !== "undefined") window.location.href = FALLBACK_URL;
     });
   }
 
-  // メニュー内のリンク群の処理
-  const menuHomeBtn = document.getElementById("menu-home-btn");
-  if (menuHomeBtn) {
-    menuHomeBtn.addEventListener("click", (e) => {
-      e.preventDefault(); // 画面上部へのジャンプを防ぐ
-      returnToTitleScreen();
-    });
-  }
-
-  const menuTopBtn = document.getElementById("menu-top-btn");
-  if (menuTopBtn) {
-    menuTopBtn.addEventListener("click", (e) => {
-      e.preventDefault();
-      if (typeof FALLBACK_URL !== "undefined") window.location.href = FALLBACK_URL;
-    });
-  }
-
-  const menuStatsBtn = document.getElementById("menu-stats-btn");
-  if (menuStatsBtn) {
-    menuStatsBtn.addEventListener("click", (e) => {
-      e.preventDefault();
-      closeSideMenu();
-      const titleStatsModal = document.getElementById("title-stats-modal");
-      if (titleStatsModal) {
-        titleStatsModal.classList.remove("hidden");
-        // 成績表示の更新関数があれば初期化（ノーマルタブ）
-        if (typeof updateTitleStatsDisplay === "function") {
-          updateTitleStatsDisplay("normal");
-        }
-      }
-    });
-  }
-
-  // ----------------------------------------
-  // タイトル画面の「これまでの記録」モーダル制御
-  // ----------------------------------------
-  const btnStatsTitle = document.getElementById("btn-stats-title");
-  if (btnStatsTitle) {
-    btnStatsTitle.addEventListener("click", () => {
-      const titleStatsModal = document.getElementById("title-stats-modal");
-      if (titleStatsModal) {
-        titleStatsModal.classList.remove("hidden");
-        if (typeof updateTitleStatsDisplay === "function") updateTitleStatsDisplay("normal");
-      }
-    });
-  }
-
-  const closeTitleStatsBtn = document.getElementById("close-title-stats-btn");
-  if (closeTitleStatsBtn) {
-    closeTitleStatsBtn.addEventListener("click", () => {
-      const titleStatsModal = document.getElementById("title-stats-modal");
-      if (titleStatsModal) titleStatsModal.classList.add("hidden");
-    });
-  }
-
-  // タブの切り替え処理
-  const tabNormal = document.getElementById("tab-normal");
-  const tabHard = document.getElementById("tab-hard");
-  if (tabNormal) {
-    tabNormal.addEventListener("click", () => { 
-      if(typeof updateTitleStatsDisplay === "function") updateTitleStatsDisplay("normal"); 
-    });
-  }
-  if (tabHard) {
-    tabHard.addEventListener("click", () => { 
-      if(typeof updateTitleStatsDisplay === "function") updateTitleStatsDisplay("hard"); 
-    });
-  }
+  document.getElementById("menu-home-btn")?.addEventListener("click", (e) => { e.preventDefault(); returnToTitleScreen(); });
+  document.getElementById("menu-top-btn")?.addEventListener("click", (e) => { e.preventDefault(); if (typeof FALLBACK_URL !== "undefined") window.location.href = FALLBACK_URL; });
+  
+  // タブ切り替え処理
+  document.getElementById("tab-normal")?.addEventListener("click", () => { if(typeof updateTitleStatsDisplay === "function") updateTitleStatsDisplay("normal"); });
+  document.getElementById("tab-hard")?.addEventListener("click", () => { if(typeof updateTitleStatsDisplay === "function") updateTitleStatsDisplay("hard"); });
 }
 
 // ==========================================
-//連続ログイン日数処理
+// 連続ログイン日数処理
 // ==========================================
-
-// 連続ログイン日数をチェックし、データを更新する関数
 function updateLoginStreak() {
-  let streakData = JSON.parse(localStorage.getItem("ekiLoginStreak") || '{"currentStreak":0,"maxStreak":0,"lastLoginDate":""}');
-  
-  // 共通関数を使って「今日（JST）」を取得
-  const todayStr = getJSTDateString();
-  
-  // 今日すでにログインして処理が終わっていれば終了
-  if (streakData.lastLoginDate === todayStr) {
-    return;
-  }
+  // 共通関数に保存先の名前（ekiLoginStreak）を渡すだけで全て自動でやってくれます
+  let updatedData = updateSharedLoginStreak("ekiLoginStreak");
+}
   
   // 「昨日（JST）」の日付を正確に計算する
   const t = new Date();
@@ -361,7 +170,6 @@ const dakuonGroups=[
 //引数でもらった文字に濁点・半濁点・小文字がある場合、清音に戻して返す
 function getBaseChar(c){return baseMap[c]||c;}
 //カタカナのフリガナをすべてひらがなに変換する
-function toHiragana(str){ return str.replace(/[ァ-ン]/g,m=>String.fromCharCode(m.charCodeAt(0)-0x60)); }
 
 
 // ==========================================
@@ -1177,99 +985,17 @@ function showResultModal(isWin,isRestore){
     ? `＼ 聖地のある「${safePref}」へ巡礼して指の疲れを癒やす ／` 
     : `＼ この駅のある「${isRural ? safePref : safePref + muniMuni}」へ聖地巡礼に行こう！ ／`;
 
-  // 1段目：宿・ホテル予約（既存のトラベルURL）
-  let encodedStation=encodeURIComponent(encodeURIComponent(encodeURIComponent(searchKw)));
-  let yahooUrl=`https://px.a8.net/svt/ejp?a8mat=4B5NW1+DE94S2+4ZCO+BW8O2&a8ejpredirect=https%3A%2F%2Ftravel.yahoo.co.jp%2FikCo.ashx%3Fcosid%3Dy_a8net%26surl%3Dhttps%253A%252F%252Ftravel.yahoo.co.jp%252Fsearch%253Fadc%253D1%2526discsort%253D1%2526kwd%253D${encodedStation}%2526lc%253D1%2526ppc%253D2%2526rc%253D1%2526si%253D6`;
-  let yahooImp='<img border="0" width="1" height="1" src="https://www10.a8.net/0.gif?a8mat=4B5NW1+DE94S2+4ZCO+BW8O2" alt="" style="display:none;">';
-  let rakutenKeyword=encodeURIComponent(encodeURIComponent(searchKw));
-  let rakutenUrl=`https://af.moshimo.com/af/c/click?a_id=5616621&p_id=55&pc_id=55&pl_id=624&url=https%3A%2F%2Fkw.travel.rakuten.co.jp%2Fkeyword%2FSearch.do%3Fcharset%3Dutf-8%26f_max%3D30%26l-id%3DtopC_search_keyword%26f_query%3D${rakutenKeyword}`;
-  let rakutenImp='<img src="//i.moshimo.com/af/i/impression?a_id=5616621&p_id=55&pc_id=55&pl_id=624" width="1" height="1" style="border:none;" alt="" loading="lazy">';
+  // --- (前半の勝率計算などの処理はそのまま残す) ---
 
-  // 2段目：通常のお取り寄せ（楽天側もご提示いただいた半角プラス区切りへ修正）
-  let yahooShoppingDest = `https://shopping.yahoo.co.jp/search/${encodeURIComponent(muniMuni)}+${encodeURIComponent("特産品")}/0/?area=13&first=1&ss_first=1&sretry=0&tab_ex=commerce`;
-  let yahooShoppingUrl = `https://af.moshimo.com/af/c/click?a_id=5626583&p_id=1225&pc_id=1925&pl_id=18502&url=${encodeURIComponent(yahooShoppingDest)}`;
-  let yahooShoppingImp = '<img src="//i.moshimo.com/af/i/impression?a_id=5626583&p_id=1225&pc_id=1925&pl_id=18502" width="1" height="1" style="border:none;" alt="" loading="lazy">';
+  // 【修正】共通関数を呼んでアフィリエイト広告を生成
+  const isAF = typeof isAprilFoolMode !== "undefined" && isAprilFoolMode;
+  document.getElementById("wiki-link-container").innerHTML = generateSharedAffiliateHTML(todayStation, isAF);
 
-  let rakutenMarketDest = `https://search.rakuten.co.jp/search/mall/${encodeURIComponent(muniMuni)}+${encodeURIComponent("特産品")}/`;
-  let rakutenMarketUrl = `https://af.moshimo.com/af/c/click?a_id=5616620&p_id=54&pc_id=54&pl_id=616&url=${encodeURIComponent(rakutenMarketDest)}`;
-  let rakutenMarketImp = '<img src="//i.moshimo.com/af/i/impression?a_id=5616620&p_id=54&pc_id=54&pl_id=616" width="1" height="1" style="border:none;" alt="" loading="lazy">';
+  // 【修正】共通関数を呼んで棒グラフを生成
+  const currentClearTurn = isWin ? gridHistory.length : -1;
+  document.getElementById("guess-distribution").innerHTML = generateSharedStatsGraphHTML(st.dist, currentClearTurn, maxGuesses);
 
-  // 3段目：ふるさと納税（こちらも同様に半角プラス区切りへ統一）
-  let yahooFurusatoDest = `https://shopping.yahoo.co.jp/search/${encodeURIComponent(muniMuni)}+${encodeURIComponent("ふるさと納税")}/0/?first=1&ss_first=1&sretry=0&tab_ex=commerce`;
-  let yahooFurusatoUrl = `https://af.moshimo.com/af/c/click?a_id=5626583&p_id=1225&pc_id=1925&pl_id=18502&url=${encodeURIComponent(yahooFurusatoDest)}`;
-  let yahooFurusatoImp = '<img src="//i.moshimo.com/af/i/impression?a_id=5626583&p_id=1225&pc_id=1925&pl_id=18502" width="1" height="1" style="border:none;" alt="" loading="lazy">';
-
-  let rakutenFurusatoDest = `https://search.rakuten.co.jp/search/mall/${encodeURIComponent(muniMuni)}+${encodeURIComponent("ふるさと納税")}/`;
-  let rakutenFurusatoUrl = `https://af.moshimo.com/af/c/click?a_id=5616620&p_id=54&pc_id=54&pl_id=616&url=${encodeURIComponent(rakutenFurusatoDest)}`;
-  let rakutenFurusatoImp = '<img src="//i.moshimo.com/af/i/impression?a_id=5616620&p_id=54&pc_id=54&pl_id=616" width="1" height="1" style="border:none;" alt="" loading="lazy">';
-
-  // 結果画面のHTML書き換え
-  document.getElementById("wiki-link-container").innerHTML=`
-    <div style="margin-bottom:12px;">
-    <a href="${todayStation.url}" target="_blank" style="display:inline-block; padding:8px 12px; background-color:#e0e0e0; color:#333; text-decoration:none; border-radius:4px; font-weight:bold; font-size:12px;">Wikipediaで見る</a>
-    </div>
-    <div style="background-color:#fff3e0; border:1px solid #ffcc80; border-radius:6px; padding:10px; margin-bottom:5px; position:relative;">
-    <div style="text-align:center; margin-bottom:8px;">
-    <span style="display:inline-block; border:1px solid #aaa; border-radius:4px; padding:1px 6px; font-size:10px; color:#aaa; font-weight:bold;">PR</span>
-    </div>
-    <div style="font-size:11px; font-weight:bold; color:#e65100; margin-bottom:8px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${prText}</div>
-    <div style="display:flex; justify-content:center; gap:8px; align-items:center; flex-wrap:wrap;">
-    <a href="${yahooUrl}" target="_blank" style="display:flex; justify-content:center; align-items:center; padding:8px 0; background-color:#ffffff; border:1px solid #ff0033; color:#333; text-decoration:none; border-radius:4px; font-weight:bold; font-size:11px; width:45%;">
-    <img src="/aff_images/yahoo_japan_icon_64.svg" alt="Y!" style="height:14px; margin-right:4px; border:none;">トラベル
-    </a>
-    <a href="${rakutenUrl}" target="_blank" style="display:flex; justify-content:center; align-items:center; padding:0; background-color:#00B900; border:1px solid #00B900; border-radius:4px; width:45%; height:32px; overflow:hidden;">
-    <img src="/aff_images/R_Travel_v2.04.svg" alt="楽天トラベル" style="height:100%; border:none;">
-    </a>
-    <div style="width:100%; border-top:1px dashed #ffcc80; margin:6px 0;"></div>
-    <div style="width:100%; font-size:11px; font-weight:bold; color:#e65100; margin-bottom:4px; text-align:left; padding-left:5%;">🎁 この土地の名産品をお取り寄せ（通常購入）</div>
-    <a href="${yahooShoppingUrl}" target="_blank" style="display:flex; justify-content:center; align-items:center; padding:8px 0; background-color:#ffffff; border:1px solid #ff0033; color:#333; text-decoration:none; border-radius:4px; font-weight:bold; font-size:11px; width:45%;">
-    <img src="/aff_images/yahoo_japan_icon_64.svg" alt="Y!" style="height:14px; margin-right:4px; border:none;">ショッピング
-    </a>
-    <a href="${rakutenMarketUrl}" target="_blank" style="display:flex; justify-content:center; align-items:center; padding:8px 0; background-color:#bf0000; color:#ffffff; border:none; border-radius:4px; font-weight:bold; font-size:11px; width:45%;">
-    楽天市場で探す
-    </a>
-    <div style="width:100%; border-top:1px dashed #ffcc80; margin:6px 0;"></div>
-    <div style="width:100%; font-size:11px; font-weight:bold; color:#e65100; margin-bottom:4px; text-align:left; padding-left:5%;">🗾 地域を応援して名産品を貰う（ふるさと納税）</div>
-    <a href="${yahooFurusatoUrl}" rel="nofollow" referrerpolicy="no-referrer-when-downgrade" target="_blank" style="display:flex; justify-content:center; align-items:center; padding:8px 0; background-color:#ffffff; border:1px solid #ff0033; color:#333; text-decoration:none; border-radius:4px; font-weight:bold; font-size:11px; width:45%;">
-    <img src="/aff_images/yahoo_japan_icon_64.svg" alt="Y!" style="height:14px; margin-right:4px; border:none;">ふるさと納税
-    </a>
-    <a href="${rakutenFurusatoUrl}" target="_blank" style="display:flex; justify-content:center; align-items:center; padding:8px 0; background-color:#7a0000; color:#ffffff; border:none; border-radius:4px; font-weight:bold; font-size:11px; width:45%;">
-    楽天ふるさと納税
-    </a>
-    </div>
-    </div>
-    ${rakutenImp}
-    ${yahooImp}
-    ${rakutenMarketImp}
-    ${yahooShoppingImp}
-    ${yahooFurusatoImp}
-    ${rakutenFurusatoImp}
-  `;
-  document.getElementById("stat-played").textContent=st.played;
-  let winRate=st.played>0?Math.round((st.won/st.played)*100):0;
-  document.getElementById("stat-winrate").textContent=winRate;
-  document.getElementById("stat-streak").textContent=st.currentStreak;
-  document.getElementById("stat-maxstreak").textContent=st.maxStreak;
-  //何手目で正解できたかの分布データを横向きの棒グラフ（HTMLとCSS）として組み立てて表示する
-  let distHTML="<div style='font-weight:bold;margin:15px 0 5px;border-bottom:1px solid #ccc;padding-bottom:5px;'>回答回数の分布</div>";
-  let maxDist=Math.max(...st.dist);
-  const barColors=["#6aaa64","#42a5f5","#26c6da","#ffca28","#ffa726","#ff7043","#ec407a","#ab47bc"];
-  for(let i=1;i<=maxGuesses;i++){
-    let count=st.dist[i]||0;
-    let w=maxDist>0?Math.max(8,Math.round((count/maxDist)*100)):8;
-    let bg=barColors[i-1]||"#6aaa64";
-    
-    // 【新設】今日かかった手数の棒グラフだけを美しく縁取るスタイル
-    let isTodayRow = (i === gridHistory.length);
-    let borderStyle = isTodayRow ? "border: 2px solid #ffd700; box-shadow: 0 0 4px #ff8c00; font-weight: bold;" : "";
-    
-    distHTML+=`<div style="display:flex;align-items:center;margin-bottom:4px;">
-      <div style="width:15px;font-weight:bold;text-align:right;margin-right:5px;font-size:12px;">${i}</div>
-      <div style="flex:1;background-color:#f0f2f5;border-radius:2px;">
-      <div style="background-color:${bg};height:18px;width:${w}%;color:white;text-align:right;padding-right:5px;font-size:11px;line-height:18px;border-radius:2px;box-sizing:border-box; ${borderStyle}">${count}</div>
-      </div>
-      </div>`;
-  }
+  // --- (後半の絵文字作成などの処理はそのまま残す) ---
   document.getElementById("guess-distribution").innerHTML=distHTML;
   //タイルの色の結果を四角い絵文字（🟩🟨🟪⬛）の並びに変換し、結果画面の中央に配置する
   const grid=document.getElementById("modal-grid");
@@ -1316,16 +1042,10 @@ function shareResult(type){
 
   text+=`\n\n${hashtagStr}${currentUrl}`;
 
-  if(type==="twitter"){
-    let url=`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`; window.open(url,"_blank");
-  }else if(type==="line"){
-    let url=`https://line.me/R/msg/text/?${encodeURIComponent(text)}`; window.open(url,"_blank");
-  }else if(type==="facebook"){
-    let url=`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(currentUrl)}`; window.open(url,"_blank");
-  }else if(type==="copy"){
-    navigator.clipboard.writeText(text).then(()=>showMessage("クリップボードにコピーしました"));
-  }
+  // 【修正】実際のシェア送信処理を共通関数に任せる
+  executeSharedShare(type, text, currentUrl);
 }
+
 // すべての画面準備が整った（DOM構築完了）タイミングで一番最初の初期化関数（initGame）を起動させます
 window.addEventListener("DOMContentLoaded",initGame);
 
@@ -2025,17 +1745,7 @@ function getQuadColorCode(colorName) {
 // データのエクスポートとインポート（改ざん防止機能付き）
 // ==========================================
 
-// データから固有の「合言葉（チェックサム）」を生成する関数
-// 文字列の文字コードを計算して、短い英数字の組み合わせを作ります
-function generateChecksum(str) {
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    const char = str.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash = hash & hash; // 32ビットの整数に変換
-  }
-  return hash.toString(36); // 短い英数字の文字列にして返す
-}
+
 
 // データを1つのテキストにまとめて書き出す（エクスポート）
 function exportUserData() {
