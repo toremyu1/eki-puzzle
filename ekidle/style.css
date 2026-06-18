@@ -694,19 +694,38 @@ body.event-nye .key { background-color:#25202b; color:#d1c7bd; }
 }
 
 /* ==========================================
-   クアッドモード・UIの追加デザイン
+   クアッドモード・UIの追加デザイン修正（完全版）
 ========================================== */
-/* 6文字時の右偏りを防ぐため、中央揃えにする */
+/* 盤面のはみ出し解消と、枠線の強化 */
+.quad-board .tile {
+  width: 100% !important; /* 横幅を自動調整にしてはみ出しを完全に防ぐ */
+  height: auto !important;
+  aspect-ratio: 1 / 1;    /* 正方形を維持する */
+  max-width: 38px;
+  max-height: 38px;
+  border: 2px solid #888 !important; /* 枠線を太く・濃くして視認性を高める */
+  box-sizing: border-box;
+}
+
+/* 行のベース設定（中央揃えとアニメーション定義） */
 .quad-board .board-row {
   justify-content: center;
-  transition: transform 0.2s ease, opacity 0.2s ease, margin 0.2s ease;
+  transition: transform 0.2s ease, opacity 0.2s ease, margin 0.2s ease, filter 0.2s ease;
   transform-origin: center center;
+  position: relative;
 }
 
-/* 縦につぶれるような縮小アニメーション */
+/* 縦にペチャンコにつぶれる縮小アニメーション（列の横幅は揃えたまま） */
 .quad-board .board-row.inactive-row {
-  transform: scaleY(0.35) scaleX(0.85); /* 縦をペチャンコに、横を少し縮小 */
-  opacity: 0.5;
-  margin: -6px 0; /* 縮小した分の縦の隙間を詰めてスッキリさせる */
+  transform: scaleY(0.4); /* 縦方向のみ40%に潰す */
+  opacity: 0.35;          /* より薄くして背景に沈ませる */
+  margin: -6px 0;         /* 潰れた分の隙間を詰める */
+  z-index: 1;
 }
 
+/* 入力中（アクティブ）の行を大きく発光させて目立たせる */
+.quad-board .board-row:not(.inactive-row) {
+  transform: scale(1.05); /* ほんの少しだけ大きくして手前に押し出す */
+  filter: drop-shadow(0 0 6px rgba(3, 169, 244, 0.6)); /* 水色に発光させる */
+  z-index: 2; /* 縮小行の上に確実に被さるようにする */
+}
