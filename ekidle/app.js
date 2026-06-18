@@ -1993,12 +1993,10 @@ function buildQuadBoards() {
 
 // キーボードのスタイルをリセットする補助関数
 function resetKeyboardStyles() {
-  document.querySelectorAll(".key").forEach(k => {
-    k.className = "key";
-    k.style.removeProperty("--c1");
-    k.style.removeProperty("--c2");
-    k.style.removeProperty("--c3");
-    k.style.removeProperty("--c4");
+  document.querySelectorAll(".key").forEach(key => {
+    key.className = "key";
+    // 【追加】クアッドモードで直接塗られた背景色（グラデーション等）を確実に消去する
+    key.style.background = ""; 
   });
 }
 
