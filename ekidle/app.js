@@ -1991,11 +1991,24 @@ function buildQuadBoards() {
   }
 }
 
-// キーボードのスタイルをリセットする補助関数
+// キーボードのスタイルとインライン背景を初期化し、使われない文字の枠を非表示にする
 function resetKeyboardStyles() {
+  // 現在の文字数の駅で使われているすべての文字を抽出してセットに突入させる
+  const validChars = new Set();
+  stations.filter(s => s.yomi.length === currentMode).forEach(s => {
+    for (let char of s.yomi) validChars.add(char);
+  });
+
   document.querySelectorAll(".key").forEach(key => {
-    key.className = "key";
-    // 【追加】クアッドモードで直接塗られた背景色（グラデーション等）を確実に消去する
+    const char = key.textContent;
+    
+    // システムボタン（ENTER, BACK, CLEARなど）や実在する文字のキー
+    if (char === "ENTER" || char === "BACK" || char === "CLEAR" || char === "確定" || char === "1字消す" || char === "全消去" || validChars.has(char)) {
+      key.className = "key";
+    } else {
+      // どの駅名にも使われない文字のキーは非表示にする
+      key.className = "key hidden";
+    }
     key.style.background = ""; 
   });
 }
