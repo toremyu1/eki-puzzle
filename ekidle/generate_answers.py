@@ -153,39 +153,39 @@ def generate_answers():
             # ---------------------------------------------------------
             # 【2】クアッドモードの答えを選出（通常モードの直後に計算）
             # ---------------------------------------------------------
-            quad_state_key = f"quad_{mode}_used_list"
-            used_list = app_state.get(quad_state_key, [])
+            quad_state_key = f"quad_{mode}_dict"
+            quad_state = app_state.get(quad_state_key, {})
+            quad_next_available_day = quad_state.get("next_available_day", {})
             
-            # JSのクアッドと同じく、現役駅判定(is_active)をスルーし、通常モードの答えを除外したプールを作成
-            valid_pool = [s for s in mode_stations if s['yomi'] != candidate['yomi']]
-            max_locked = int(len(valid_pool) * 0.7)
+            # 通常モードの出禁日（next_available_day）と、クアッドの出禁日を両方チェック
+            available_for_quad = [s for s in mode_stations if
+                                  s['is_active'] and
+                                  next_available_day.get(s['yomi'], 0) <= d and
+                                  quad_next_available_day.get(s['yomi'], 0) <= d]
             
-            if len(used_list) > max_locked:
-                used_list = used_list[len(used_list) - max_locked:]
-                
-            available_for_quad = [s for s in valid_pool if s['yomi'] not in used_list]
-            
-            # JSと完全に一致するシードを使って乱数ジェネレータを起動
             quad_rng = QuadRNG(d * 12345 + mode * 6789)
             quad_stations = []
             
             for _ in range(4):
-                if len(available_for_quad) <= 4:
+                if len(available_for_quad) == 0:
                     quad_yomis = [q['yomi'] for q in quad_stations]
-                    available_for_quad = [s for s in valid_pool if s['yomi'] not in quad_yomis]
+                    # 枯渇時は、現役駅の中から「現在のクアッドで既に選んだ読み」だけを除外して復活
+                    available_for_quad = [s for s in mode_stations if s['is_active'] and s['yomi'] not in quad_yomis]
                 
-                # 乱数を使って抽出
                 r = int(quad_rng.random() * len(available_for_quad))
                 selected = available_for_quad[r]
                 quad_stations.append(selected)
-                available_for_quad.pop(r)
-                used_list.append(selected['yomi'])        # 4. 出禁リストへの登録
                 
-            if len(used_list) > max_locked:
-                used_list = used_list[len(used_list) - max_locked:]
+                # 同音異字の重複を防ぐため、選ばれた「読み」と同じ駅をリストから一掃する
+                available_for_quad = [s for s in available_for_quad if s['yomi'] != selected['yomi']]
                 
-            # 次回の計算のためにクアッドの出禁リストを保存
-            app_state[quad_state_key] = used_list
+                # クアッド専用辞書に出禁解除日を登録
+                quad_next_available_day[selected['yomi']] = d + lookback + 1
+                
+            # 計算が終わったら状態を更新
+            app_state[quad_state_key] = {
+                "next_available_day": {k: v for k, v in quad_next_available_day.items() if v > d}
+            }
             # ---------------------------------------------------------
 
             # 今日から43日後までのデータだけ保存する
