@@ -227,12 +227,13 @@ function setupCommonUI() {
   // タブ切り替え処理
   document.getElementById("tab-normal")?.addEventListener("click", () => { if(typeof updateTitleStatsDisplay === "function") updateTitleStatsDisplay("normal"); });
   document.getElementById("tab-hard")?.addEventListener("click", () => { if(typeof updateTitleStatsDisplay === "function") updateTitleStatsDisplay("hard"); });
+  document.getElementById("tab-quad")?.addEventListener("click", () => { if(typeof updateTitleStatsDisplay === "function") updateTitleStatsDisplay("quad"); });
 }
 
 // 入力ボタンやモード切替など、駅ドル固有のUI
 function setupGameSpecificUI() {
   // キーボード・入力ボタンの処理
-  document.getElementById("enter-btn")?.addEventListener("click", () => isQuadMode ? submitQuadGuess() : submitGuess(false));
+  document.getElementById("enter-btn")?.addEventListener("click", () => handleKeyPress("ENTER"));
   document.getElementById("back-btn")?.addEventListener("click", () => handleKeyPress("BACK"));
   document.getElementById("clear-btn")?.addEventListener("click", () => handleKeyPress("CLEAR"));
   // クアッド用のシェアボタン紐付け
@@ -359,27 +360,26 @@ function updateTitleStatsDisplay(modeType) {
   // 1. タブの見た目（色）の切り替え処理
   const tabNormal = document.getElementById("tab-normal");
   const tabHard = document.getElementById("tab-hard");
+  const tabQuad = document.getElementById("tab-quad"); 
 
+  // タブの見た目リセット
+  [tabNormal, tabHard, tabQuad].forEach(t => { if(t) t.className = "btn btn-small btn-outline"; });
+
+  let targetMode = currentMode.toString();
+  let maxRowForGraph = maxGuesses;
+  
   if (modeType === "normal") {
-    // ノーマルが選ばれたら、ノーマルを青色（primary）にし、ハードを白抜き（outline）にする
     if (tabNormal) tabNormal.className = "btn btn-small btn-primary";
-    if (tabHard) tabHard.className = "btn btn-small btn-outline";
-  } else {
-    // ハードが選ばれたら、ハードを赤色にし、ノーマルを白抜きにする
-    //  btn-primary ではなく btn-danger に変更します
-    if (tabNormal) tabNormal.className = "btn btn-small btn-outline";
+  } else if (modeType === "hard") {
     if (tabHard) tabHard.className = "btn btn-small btn-danger";
+    targetMode += "_hard";
+  } else if (modeType === "quad") {
+    if (tabQuad) tabQuad.className = "btn btn-small btn-success"; // クアッドは緑色で区別
+    targetMode = "quad" + currentMode;
+    maxRowForGraph = CONFIG_MAX_GUESSES_QUAD; // クアッド専用の最大手数（11）をセット
   }
 
-  // 2. 実際のデータを読み込んで表示する処理
-  // 現在遊んでいる文字数（4, 5, 6）を基準にし、ハードなら後ろに "_hard" をくっつける
-  let targetMode = currentMode.toString() + (modeType === "hard" ? "_hard" : "");
-  let st = userStats[targetMode];
-
-  // まだそのモードを一回も遊んでいなくてデータが無い場合の「空箱」を用意する
-  if (!st) {
-    st = { played: 0, won: 0, currentStreak: 0, maxStreak: 0 };
-  }
+  let st = userStats[targetMode] || { played: 0, won: 0, currentStreak: 0, maxStreak: 0, guesses: [] };
 
   // 勝率の計算（0回の時にエラーにならないよう分岐し、四捨五入する）
   let winRate = st.played > 0 ? Math.round((st.won / st.played) * 100) : 0;
@@ -2070,6 +2070,26 @@ function submitQuadGuess() {
   // 勝敗の判定
   const isAllCleared = quadSolved.every(s => s === true);
   if (isAllCleared || guessesSubmitted >= maxGuesses) {
+
+    // 運行記録の保存
+    let targetMode = "quad" + currentMode; // 例: "quad4"
+    if (!userStats[targetMode]) {
+      userStats[targetMode] = { played: 0, won: 0, currentStreak: 0, maxStreak: 0, guesses: [] };
+    }
+    let st = userStats[targetMode];
+    
+    st.played++;
+    if (isAllCleared) {
+      st.won++;
+      st.currentStreak++;
+      if (st.currentStreak > st.maxStreak) st.maxStreak = st.currentStreak;
+      // 最終的に全クリアした手数を記録する
+      st.guesses[guessesSubmitted] = (st.guesses[guessesSubmitted] || 0) + 1;
+    } else {
+      st.currentStreak = 0;
+    }
+    localStorage.setItem("ekiPuzzleStatsV2", JSON.stringify(userStats));
+   
     // 【修正】アラートではなく、1.5秒待ってから専用の結果モーダルを美しく表示する
     setTimeout(showQuadResultModal, 1500);
   }
