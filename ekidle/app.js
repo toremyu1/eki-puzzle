@@ -251,7 +251,7 @@ function setupGameSpecificUI() {
         // 【禁止】ノーマル → ハード（プレイ途中）
         e.preventDefault();
         hardSwitch.checked = false;
-        showMessage("プレイ開始後はハードモードに切り替えできません");
+        showMessage("プレイ開始後はハードモードに変更できません");
       } else {
         // 【許可】ハード → ノーマル、またはプレイ前の切り替え
         ekiSettings.hardMode = hardSwitch.checked;
