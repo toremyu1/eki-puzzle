@@ -457,3 +457,74 @@ function generateSharedStatsGraphHTML(distArray, currentTurn, maxRow) {
   }
   return html;
 }
+
+
+
+/**
+ * ゲームデータを高度に圧縮（Gzip）または非圧縮で引き継ぎコード化する共通関数
+ * @param {string} gameName - ゲームの識別名（例: "Ekidle", "EkiLocate"）
+ * @param {Object} dataMap - 各ゲームのLocalStorageから取得したデータのオブジェクト
+ */
+async function generateSharedTransferCode(gameName, dataMap) {
+  // ゲーム名を含めてデータを1つにまとめ、チェックサムを計算します
+  const payloadString = JSON.stringify({ game: gameName, ...dataMap });
+  const checksum = generateChecksum(payloadString);
+  const secureData = JSON.stringify({ payload: payloadString, sig: checksum });
+
+  try {
+    // 1. まずはGzip圧縮を試みます（ブラウザが対応している場合）
+    if (typeof CompressionStream !== "undefined") {
+      const stream = new Blob([secureData]).stream().pipeThrough(new CompressionStream("gzip"));
+      const buffer = await new Response(stream).arrayBuffer();
+      const binary = String.fromCharCode(...new Uint8Array(buffer));
+      return "Z:" + btoa(binary); // 圧縮成功時は先頭に「Z:」を付与
+    }
+    throw new Error("CompressionStream not supported");
+  } catch (err) {
+    console.warn("Gzip圧縮に失敗したため、非圧縮（Base64）でコードを生成します:", err);
+    // 2. 圧縮に失敗、または未対応の古いブラウザの場合は非圧縮で出力します
+    return "R:" + btoa(encodeURIComponent(secureData)); // 非圧縮時は先頭に「R:」を付与
+  }
+}
+
+/**
+ * 引き継ぎコードを自動判別して解凍・検証し、オブジェクトとして返す共通関数
+ * @param {string} code - 入力された引き継ぎコード
+ * @param {string} expectedGameName - 期待するゲーム名
+ */
+async function parseSharedTransferCode(code, expectedGameName) {
+  let textData = "";
+  
+  if (code.startsWith("Z:")) {
+    // 新方式：圧縮版の解凍
+    const binary = atob(code.slice(2));
+    const bytes = Uint8Array.from(binary, c => c.charCodeAt(0));
+    const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("gzip"));
+    textData = await new Response(stream).text();
+  } else if (code.startsWith("R:")) {
+    // 新方式：非圧縮版の復元
+    textData = decodeURIComponent(atob(code.slice(2)));
+  } else {
+    // 過去のコード（プレフィックスなし）の自動判別救済ルート
+    try {
+      const binary = atob(code);
+      const bytes = Uint8Array.from(binary, c => c.charCodeAt(0));
+      const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("gzip"));
+      textData = await new Response(stream).text();
+    } catch (e) {
+      try { textData = decodeURIComponent(atob(code)); } 
+      catch (e2) { textData = atob(code); }
+    }
+  }
+
+  // データの改ざん・破損チェック
+  const secureJson = JSON.parse(textData);
+  if (!secureJson.payload || !secureJson.sig) throw new Error("データ形式が不正です。");
+  if (generateChecksum(secureJson.payload) !== secureJson.sig) throw new Error("チェックサムが一致しません。");
+
+  // 対象ゲームのチェック（別ゲームのコードを弾く）
+  const json = JSON.parse(secureJson.payload);
+  if (json.game !== expectedGameName) throw new Error("異なるゲームのデータです。");
+  
+  return json;
+}
