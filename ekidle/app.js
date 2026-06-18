@@ -151,6 +151,18 @@ function setupCommonUI() {
 
   document.getElementById("menu-home-btn")?.addEventListener("click", (e) => { e.preventDefault(); returnToTitleScreen(); });
   document.getElementById("menu-top-btn")?.addEventListener("click", (e) => { e.preventDefault(); if (typeof FALLBACK_URL !== "undefined") window.location.href = FALLBACK_URL; });
+
+  // これまでの記録を見るボタンの処理
+  document.getElementById("menu-stats-btn")?.addEventListener("click", (e) => {
+    e.preventDefault();
+    // 1. 開いているサイドメニューを閉じる
+    document.getElementById("side-menu").style.right = "-250px";
+    setTimeout(() => document.getElementById("side-menu-overlay").classList.add("hidden"), 300);
+    
+    // 2. これまでの記録画面を表示する
+    const statsModal = document.getElementById("title-stats-modal");
+    if (statsModal) statsModal.classList.remove("hidden");
+  });
   
   // タブ切り替え処理
   document.getElementById("tab-normal")?.addEventListener("click", () => { if(typeof updateTitleStatsDisplay === "function") updateTitleStatsDisplay("normal"); });
