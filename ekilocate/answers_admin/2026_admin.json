@@ -670,5 +670,19 @@
             "pref": "大阪府",
             "municipality": "大阪市"
         }
+    },
+    "2026-07-31": {
+        "normal": {
+            "kanji": "西大宮駅",
+            "yomi": "にしおおみや",
+            "pref": "埼玉県",
+            "municipality": "さいたま市"
+        },
+        "hard": {
+            "kanji": "西別所駅",
+            "yomi": "にしべっしょ",
+            "pref": "三重県",
+            "municipality": "桑名市"
+        }
     }
 }
