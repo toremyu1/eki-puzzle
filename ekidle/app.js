@@ -1989,14 +1989,10 @@ function getQuadColorCode(colorName) {
 // ==========================================
 // データのエクスポートとインポート（改ざん防止機能付き）
 // ==========================================
-
-
-
-// データを1つのテキストにまとめて書き出す（エクスポート）
-function exportUserData() {
-  // ローカルストレージから必要な全データを集める
-  const data = {
-    game: "Ekidle",
+// 共通関数を呼び出してデータを書き出す（駅ドル用）
+async function exportUserData() {
+  // このゲームで保存したいキーと中身のリストを作成
+  const dataMap = {
     stats: localStorage.getItem("ekiPuzzleStatsV2"),
     archive: localStorage.getItem("ekiPuzzleArchiveV1"),
     zukan: localStorage.getItem("ekiZukanData"),
@@ -2009,53 +2005,26 @@ function exportUserData() {
     version: localStorage.getItem("ekiSystemVersion"),
     log: localStorage.getItem("ekiPuzzleStateV1_Log")
   };
-  
-  // データをJSON文字列に変換する
-  const payloadString = JSON.stringify(data);
-  // データの中身から、改ざん確認用の合言葉（チェックサム）を作成する
-  const checksum = generateChecksum(payloadString);
-  
-  // データ本体と合言葉をセットにしてから、Base64（暗号風）に変換する
-  const secureData = JSON.stringify({ payload: payloadString, sig: checksum });
-  const code = btoa(encodeURIComponent(secureData));
-  
-  // 出来上がった文字列をクリップボードにコピーする
-  navigator.clipboard.writeText(code).then(() => {
-    alert("引き継ぎコードをクリップボードにコピーしました！\n\n※大切なデータですので、ブラウザの不具合に備えて、念のためメモ帳アプリやメールなどに貼り付けて別で控えておくことを強くおすすめします。");
-  });
+
+  try {
+    // 共通関数へゲーム名「Ekidle」とデータを渡してコードを生成
+    const code = await generateSharedTransferCode("Ekidle", dataMap);
+    navigator.clipboard.writeText(code).then(() => {
+      alert("運行記録などのデータを引き継ぎコードとしてコピーしました！\n\nメモ帳などに貼り付けて大切に保管してください。");
+    });
+  } catch (err) {
+    alert("コードの生成に失敗しました。");
+    console.error(err);
+  }
 }
 
-// テキストからデータを復元する（インポート）
-function importUserData(code) {
+// 共通関数を呼び出してデータを復元する（駅ドル用）
+async function importUserData(code) {
   try {
-    // Base64をデコードし、日本語を復元してからJSONオブジェクトに戻す
-    const secureJson = JSON.parse(decodeURIComponent(atob(code)));
-    
-    // 読み込んだコードの中に「データ本体」と「合言葉」が存在するか確認する
-    if (!secureJson.payload || !secureJson.sig) {
-      throw new Error("不正なデータ形式です。");
-    }
-    
-    // 読み込んだデータ本体から、改めて合言葉を計算し直す
-    const expectedChecksum = generateChecksum(secureJson.payload);
-    
-    // コードに記録されていた合言葉と、計算し直した合言葉が一致しなければエラーにする（改ざん検知）
-    if (secureJson.sig !== expectedChecksum) {
-      throw new Error("データが改ざんされているか、壊れています。");
-    }
-    
-    // 合言葉が一致したので、データ本体をJavaScriptで扱える形に戻す
-    const json = JSON.parse(secureJson.payload);
+    // 共通関数へコードを渡し、ゲーム名「Ekidle」のデータとして安全に解凍・検証
+    const json = await parseSharedTransferCode(code, "Ekidle");
 
-    // 【ここから追加】他のゲームのデータがインポートされるのを防ぐ
-    // タグが存在していて、かつ「EkiDoru」ではない場合（EkiLocateなど）はエラーを投げて処理を止める
-    // ※タグ付け機能実装前の「古い駅ドルのコード（タグ無し）」はそのまま救済して通す
-    if (json.game !== "Ekidle") {
-      throw new Error("このコードは駅ドル用ではありません。（他のゲームのコードは使えません）");
-    }
-    // 【ここまで追加】
-    
-    // データが存在するものだけローカルストレージに上書きしていく
+    // 検証を通過したら、データが存在するものだけLocalStorageに書き戻す
     if(json.stats) localStorage.setItem("ekiPuzzleStatsV2", json.stats);
     if(json.archive) localStorage.setItem("ekiPuzzleArchiveV1", json.archive);
     if(json.zukan) localStorage.setItem("ekiZukanData", json.zukan);
@@ -2068,13 +2037,10 @@ function importUserData(code) {
     if(json.version) localStorage.setItem("ekiSystemVersion", json.version); 
     if(json.log) localStorage.setItem("ekiPuzzleStateV1_Log", json.log);
     
-    alert("データを復元しました。再読み込みします。");
-    
-    // ページを再読み込みして、復元したデータを直ちに画面に反映させる
+    alert("データを正常に復元しました！再読み込みを行います。");
     location.reload();
   } catch(e) { 
-    // 壊れたコードや改ざんされたコードが入力された場合のエラー処理
-    alert("無効なコードです。正しくコピーできているか確認してください。"); 
+    alert("無効な引き継ぎコードです。正しくコピーできているか確認してください。"); 
     console.error("インポートエラー:", e);
   }
 }
