@@ -178,7 +178,7 @@ body.theme-dark #title-stats-modal .btn {
 .btn-green-outline {
   border-color: #6aaa64;
   color: #6aaa64;
-  background: transparent;
+  background: #ffffff
 }
 
 /* ------------------------------------------
@@ -778,3 +778,4 @@ body.event-nye .key { background-color:#25202b; color:#d1c7bd; }
     font-size: 13px;
   }
 }
+
