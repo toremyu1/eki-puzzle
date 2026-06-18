@@ -38,13 +38,58 @@ let dailyArchive={};
 
 
 // ==========================================
-// 共通ユーティリティ処理
+// 1. システム初期化（心臓部）
 // ==========================================
-// 端末の時計や場所に依存せず、確実に「日本時間（JST）」のYYYY-MM-DD文字列を返す関数
+async function initGame() {
+  try {
+    // 共通関数を使って進捗バーを動かす
+    updateSharedLoading(10, "システムを起動中...");
 
+    // URLパラメーターによるデータ初期化機能
+    if (new URLSearchParams(window.location.search).get("emergency_reset") === "true") {
+      if (confirm("これまでのプレイ実績や設定がすべて消去されます。本当に初期化しますか？")) {
+        localStorage.clear();
+        alert("データを初期化しました。");  
+      }
+      window.location.href = window.location.origin + window.location.pathname;
+      return;
+    }
 
-// priority(数値)が小さい順に表示されます。
-// 基準： 10(サイト周年), 20(エイプリル), 30(ユーザー周年), 99(将来のその他用)
+    // 過去のセーブデータの読み込み
+    loadStats();
+    if(typeof loadArchive === "function") loadArchive();
+    
+    // 共通関数を使って連続ログイン日数を計算し、データを更新する
+    let streakData = updateSharedLoginStreak("ekiLoginStreak");
+    
+    updateSharedLoading(30, "駅データをダウンロード中...");
+
+    // 共通関数を使って、強力なキャッシュ・エラー対策付きのデータ取得を行う
+    const rawData = await downloadSharedGameData("eki-backup-v1", FALLBACK_URL);
+    if (!rawData) return; // 取得失敗時は共通関数内でエラー画面が出るため処理を止める
+
+    // 共通関数を使って不要な駅（貨物駅など）を弾き、ひらがな化の独自処理を足す
+    stations = getCleanStations(rawData).map(s => ({...s, yomi: toHiragana(s.yomi)}));
+    if (stations.length === 0) return;
+
+    updateSharedLoading(60, "画面を準備中...");
+
+    // UIの紐付け関数を実行
+    setupCommonUI();
+    setupGameSpecificUI();
+
+    // 今日の正解駅を選び、盤面を構築する
+    updateSharedLoading(80, "ゲーム盤を構築中...");
+    await selectTodayStation(); 
+    restoreBoard(); 
+
+    updateSharedLoading(100, "出発進行！");
+    setTimeout(hideLoadingScreen, 600);
+
+  } catch (e) {
+    console.error("起動エラー:", e);
+  }
+}
 
 
 // ==========================================
@@ -104,37 +149,73 @@ function setupCommonUI() {
   document.getElementById("tab-hard")?.addEventListener("click", () => { if(typeof updateTitleStatsDisplay === "function") updateTitleStatsDisplay("hard"); });
 }
 
+// 入力ボタンやモード切替など、駅ドル固有のUI
+function setupGameSpecificUI() {
+  // キーボード・入力ボタンの処理
+  document.getElementById("enter-btn")?.addEventListener("click", () => isQuadMode ? submitQuadGuess() : submitGuess(false));
+  document.getElementById("back-btn")?.addEventListener("click", () => handleKeyPress("BACK"));
+  document.getElementById("clear-btn")?.addEventListener("click", () => handleKeyPress("CLEAR"));
+  
+  // 「グラフ」ボタンの処理
+  document.getElementById("stats-btn")?.addEventListener("click", () => {
+    let st = savedState[isPlayingRandom ? "random" : currentMode];
+    if (st && st.isOver) showResultModal(st.isWin, true);
+    else showMessage("ゲームクリア後に見ることができます");
+  });
+
+  // モード切替ボタン（4文字・5文字・6文字）
+  [4, 5, 6].forEach(num => {
+    const modeBtn = document.getElementById(`mode-${num}`);
+    if (modeBtn) {
+      modeBtn.addEventListener("click", async () => {
+        isPlayingRandom = false; 
+        isAprilFoolMode = false; 
+        const hs = document.getElementById("hardmode-switch");
+        if (hs) hs.disabled = false;
+        
+        document.querySelectorAll(".mode-btn").forEach(b => b.classList.remove("active"));
+        modeBtn.classList.add("active");
+        
+        currentMode = num; rowLength = num; 
+        if (num === 4) maxGuesses = CONFIG_MAX_GUESSES_4;
+        else if (num === 5) maxGuesses = CONFIG_MAX_GUESSES_5;
+        else if (num === 6) maxGuesses = CONFIG_MAX_GUESSES_6;
+        
+        const gameBoard = document.getElementById("game-board");
+        if(gameBoard) {
+          gameBoard.style.setProperty("--row-length", num);
+          gameBoard.style.setProperty("--row-count", maxGuesses);
+          gameBoard.innerHTML = "";
+        }
+        await selectTodayStation(); 
+        restoreBoard();
+      });
+    }
+  });
+
+  // シェアボタンの処理（各プラットフォームに振り分け）
+  const btnIds = ["share-btn", "line-btn", "fb-btn", "copy-btn"];
+  const actions = ["twitter", "line", "facebook", "copy"];
+  btnIds.forEach((id, idx) => {
+    document.getElementById(id)?.addEventListener("click", () => shareResult(actions[idx]));
+  });
+
+  // データのインポート・エクスポート
+  document.getElementById("export-data-btn")?.addEventListener("click", (e) => { e.preventDefault(); exportUserData(); });
+  document.getElementById("import-data-btn")?.addEventListener("click", (e) => {
+    e.preventDefault(); 
+    const code = prompt("引き継ぎコードを入力：");
+    if (code) importUserData(code);
+  });
+}
+
+    
 // ==========================================
 // 連続ログイン日数処理
 // ==========================================
 function updateLoginStreak() {
   // 共通関数に保存先の名前（ekiLoginStreak）を渡すだけで全て自動でやってくれます
   let updatedData = updateSharedLoginStreak("ekiLoginStreak");
-}
-  
-  // 「昨日（JST）」の日付を正確に計算する
-  const t = new Date();
-  // 今の日本時間から、ちょうど24時間（86400000ミリ秒）前を計算
-  const jstYesterdayMs = t.getTime() + (t.getTimezoneOffset() * 60000) + (9 * 3600000) - 86400000;
-  const yObj = new Date(jstYesterdayMs);
-  const yesterdayStr = yObj.getFullYear() + "-" + String(yObj.getMonth() + 1).padStart(2, '0') + "-" + String(yObj.getDate()).padStart(2, '0');
-  
-  // 最後にログインした日が「昨日」であれば、連続ログイン日数を1日増やす
-  if (streakData.lastLoginDate === yesterdayStr) {
-    streakData.currentStreak++;
-  } else {
-    // 最後にログインした日が「一昨日以前」などの場合は1日にリセット
-    streakData.currentStreak = 1;
-  }
-  
-  // 最高記録の更新チェック
-  if (streakData.currentStreak > streakData.maxStreak) {
-    streakData.maxStreak = streakData.currentStreak;
-  }
-  
-  // 最終ログイン日を今日に更新して保存
-  streakData.lastLoginDate = todayStr;
-  localStorage.setItem("ekiLoginStreak", JSON.stringify(streakData));
 }
 
 
@@ -1004,7 +1085,6 @@ function showResultModal(isWin,isRestore){
   return r;
   }).join("<br>");
   grid.innerHTML=gridHTML;
-  // ランダムモード中は、日々の勝率や戦績グラフなどの要素を非表示にしてスッキリさせる
   // ランダムモード中は、日々の勝率や戦績グラフなどの要素を非表示にしてスッキリさせる
   // 結果画面のhiddenクラスを消して、画面中央に表示させます
   const resModal = document.getElementById("result-modal");
