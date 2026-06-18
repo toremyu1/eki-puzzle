@@ -784,3 +784,18 @@ body.event-nye .key { background-color:#25202b; color:#d1c7bd; }
   }
 }
 
+
+/* ▼▼▼ 追加：特定の行をタップして拡大する処理 ▼▼▼ */
+.quad-board .board-row {
+  cursor: pointer; /* タップできることを示す指マーク */
+}
+
+.quad-board .board-row.force-expand {
+  transform: scale(1.05) !important; /* アクティブな行と同じか少し大きめに */
+  opacity: 1 !important;             /* 暗転を解除 */
+  margin: 2px 0 !important;          /* 潰れたマージンを元に戻して見やすくする */
+  filter: drop-shadow(0 0 5px rgba(100, 100, 100, 0.5)); /* 軽く影をつけて浮かせる */
+  z-index: 10;
+}
+
+
