@@ -684,3 +684,13 @@ body.event-nye .key { background-color:#25202b; color:#d1c7bd; }
   color: white !important;
   text-shadow: 1px 1px 1px rgba(0,0,0,0.8), -1px -1px 1px rgba(0,0,0,0.8) !important;
 }
+
+/* 追加: クアッドモードの非アクティブ行の縮小 */
+.quad-board .board-row {
+  transition: transform 0.2s ease, opacity 0.2s ease;
+  transform-origin: center center;
+}
+.quad-board .board-row.inactive-row {
+  transform: scale(0.85);
+  opacity: 0.6;
+}
