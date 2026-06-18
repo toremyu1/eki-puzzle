@@ -579,25 +579,30 @@ body.event-nye .key { background-color:#25202b; color:#d1c7bd; }
 /* ==========================================
    キーボードの4分割カラーリング（クアッドモード用）
 ========================================== */
+/* 【修正後】キーボードの4分割グラデーションと縁取りなし設定 */
 .key.quad-mode {
-  /* プログラム側から流し込む4色の変数（最初はすべて未入力のグレー） */
-  --c1: #d3d6da; /* 左上（盤面0） */
-  --c2: #d3d6da; /* 右上（盤面1） */
-  --c3: #d3d6da; /* 左下（盤面2） */
-  --c4: #d3d6da; /* 右下（盤面3） */
+  --c1: #d3d6da; /* 左上：盤面0 */
+  --c2: #d3d6da; /* 右上：盤面1 */
+  --c3: #d3d6da; /* 左下：盤面2 */
+  --c4: #d3d6da; /* 右下：盤面3 */
   
-  /* 中心点から時計回りに4分割で色を塗る描画処理 */
-  background: conic-gradient(
-    var(--c2) 0deg 90deg,
-    var(--c4) 90deg 180deg,
-    var(--c3) 180deg 270deg,
-    var(--c1) 270deg 360deg
-  ) !important;
+  /* conic-gradientのゆがみを防ぐため、2つのlinear-gradientを上下で分けて完璧な十字を作る */
+  background: 
+    linear-gradient(to right, var(--c1) 50%, var(--c2) 50%) top / 100% 50% no-repeat,
+    linear-gradient(to right, var(--c3) 50%, var(--c4) 50%) bottom / 100% 50% no-repeat
+  !important;
   
-  /* 色が4つ混ざってもキーの文字が読みやすいように、文字に黒い縁取りの影をつける */
-  border: 1px solid rgba(0, 0, 0, 0.2) !important;
+  /* borderの縁取りを消す */
+  border: none !important;
   color: white !important;
-  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8), -1px -1px 2px rgba(0, 0, 0, 0.8) !important;
+  
+  /* 文字の周りだけをしっかり縁取って見やすくする */
+  text-shadow: 
+    -1px -1px 0 #000,  
+     1px -1px 0 #000,
+    -1px  1px 0 #000,
+     1px  1px 0 #000,
+     0px  2px 2px rgba(0,0,0,0.8) !important;
 }
 
 
