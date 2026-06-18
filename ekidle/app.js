@@ -1900,6 +1900,25 @@ async function startQuadMode() {
   }
   currentGuess = "";
   // ▲▲▲ 追加ここまで ▲▲▲
+
+  // ▼▼▼ ここから追加：最後に回答した行（現在入力待ちの行）をライトアップする処理 ▼▼▼
+  // 復元が終わった後の手数（guessesSubmitted）を基準にして、盤面の表示状態を更新します
+  for (let b = 0; b < 4; b++) {
+    const board = document.getElementById(`board-${b}`);
+    if (board) {
+      Array.from(board.children).forEach((r, idx) => {
+        // まだクリアされていない盤面の、現在入力する行だけ縮小を解除してライトアップする
+        if (idx === guessesSubmitted && !quadSolved[b]) {
+          r.classList.remove("inactive-row");
+          r.classList.remove("force-expand"); // 念のため拡大バッジも解除しておく
+        } else {
+          // それ以外の行、またはクリア済みの盤面はすべて縮小状態にする
+          r.classList.add("inactive-row");
+        }
+      });
+    }
+  }
+  // ▲▲▲ ここまで追加 ▲▲▲
 }
 
 // 4つの駅を決定する処理（ファイル参照 ＋ 失敗時はシミュレーション）
@@ -2030,8 +2049,10 @@ function buildQuadBoards() {
     for (let i = 0; i < maxGuesses; i++) {
       const row = document.createElement("div");
       row.className = "board-row";
-      // 1行目以外は、最初から縮小状態にする
-      if (i !== 0) row.classList.add("inactive-row");
+      
+      // 【修正】1行目固定ではなく、現在の入力待ち行（guessesSubmitted）以外を縮小状態にする
+      if (i !== guessesSubmitted) row.classList.add("inactive-row");
+      
       for (let j = 0; j < currentMode; j++) {
         const tile = document.createElement("div");
         tile.className = "tile";
@@ -2051,15 +2072,22 @@ function buildQuadBoards() {
           const start = Math.min(lastClickedIdx, currentIdx);
           const end = Math.max(lastClickedIdx, currentIdx);
           
-          // 前回クリックした位置から、今回クリックした位置までの行をすべて拡大状態にする
+          // 【追加】今回クリックした行が「これから開く」のか「これから閉じる」のかを判定
+          const isExpanding = !this.classList.contains("force-expand");
+          
+          // 前回クリックした位置から、今回クリックした位置までの行をすべて同じ状態に合わせる
           for (let k = start; k <= end; k++) {
             const targetRow = board.children[k];
             if (targetRow && targetRow.classList.contains("inactive-row")) {
-              targetRow.classList.add("force-expand");
+              if (isExpanding) {
+                targetRow.classList.add("force-expand");
+              } else {
+                targetRow.classList.remove("force-expand");
+              }
             }
           }
         } else {
-          // 【機能2】通常のクリック：他の行の拡大は巻き添えで解除せず、その行単体でバッジのように開閉を切り替える
+          // 【機能2】通常のクリック（単体での開閉切り替え）
           if (this.classList.contains("force-expand")) {
             this.classList.remove("force-expand");
           } else {
