@@ -141,11 +141,36 @@ function setupCommonUI() {
     });
   }
 
-  // テーマ切り替えボタン（IDはHTMLに合わせて適宜変更してください）が押されたら処理を実行する
+// 【修正後】以下のコードに差し替えてください
   const themeBtn = document.getElementById("theme-btn");
   if (themeBtn) {
+    // CSSに登録されているテーマのリスト（空文字はデフォルトの白テーマ）
+    const themeList = ["", "theme-dark", "theme-sakura", "theme-ocean", "theme-blue", "theme-green", "theme-orange", "theme-red", "theme-purple"];
+    
+    // 起動時に、保存されているテーマがあれば適用する
+    if (ekiSettings.theme) document.body.classList.add(ekiSettings.theme);
+
     themeBtn.addEventListener("click", () => {
-      toggleDarkMode(); 
+      // 現在のbodyのクラスから、現在のテーマを特定する
+      let currentTheme = themeList.find(t => t !== "" && document.body.classList.contains(t)) || "";
+      // 次のテーマの順番を計算する（最後まで行ったら最初に戻る）
+      let nextIndex = (themeList.indexOf(currentTheme) + 1) % themeList.length;
+      let nextTheme = themeList[nextIndex];
+      
+      // 切り替え時のアニメーションのガタつきを防ぐ
+      document.body.classList.add('preload-transitions');
+      
+      // 古いテーマを消して、新しいテーマを適用する
+      themeList.forEach(t => { if (t !== "") document.body.classList.remove(t); });
+      if (nextTheme !== "") document.body.classList.add(nextTheme);
+      
+      // ブラウザに高さを再計算させてから、ガタつき防止を解除する
+      document.body.offsetHeight; 
+      document.body.classList.remove('preload-transitions');
+      
+      // ユーザー設定としてローカルストレージに保存する
+      ekiSettings.theme = nextTheme;
+      localStorage.setItem("ekiSettings", JSON.stringify(ekiSettings));
     });
   }
 
@@ -1207,7 +1232,7 @@ function showResultModal(isWin,isRestore){
   document.getElementById("guess-distribution").innerHTML = generateSharedStatsGraphHTML(st.dist, currentClearTurn, maxGuesses);
 
   // --- (後半の絵文字作成などの処理はそのまま残す) ---
-  document.getElementById("guess-distribution").innerHTML=distHTML;
+  // document.getElementById("guess-distribution").innerHTML=distHTML;
   //タイルの色の結果を四角い絵文字（🟩🟨🟪⬛）の並びに変換し、結果画面の中央に配置する
   const grid=document.getElementById("modal-grid");
   let gridHTML=gridHistory.map((row,i)=>{
@@ -1662,20 +1687,20 @@ function incrementClearAchievements(actualGuesses, clearTimeMs) {
 }
 
 // テーマカラー切り替え時のラグ解消
-function toggleDarkMode() {
+//function toggleDarkMode() {
   // 1. アニメーション無効化クラスを付ける
-  document.body.classList.add('preload-transitions');
+//  document.body.classList.add('preload-transitions');
   
   // 2. ダークモードのクラスを切り替える
-  document.body.classList.toggle('theme-dark');
+//  document.body.classList.toggle('theme-dark');
   
   // 3. 【追加】ここでブラウザに現在の高さを読み取らせることで、
   // 強制的に「アニメーションなしの状態」を一度計算（確定）させます。
-  document.body.offsetHeight; 
+//  document.body.offsetHeight; 
   
   // 4. その後、無効化クラスを外す（setTimeoutは不要になります）
-  document.body.classList.remove('preload-transitions');
-}
+//  document.body.classList.remove('preload-transitions');
+//}
 
 
 // ==========================================
