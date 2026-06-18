@@ -206,6 +206,42 @@
     </div>
   </div>
 
+  <div id="quad-help-modal" class="modal-overlay hidden">
+    <div class="modal-content">
+      <span id="close-quad-help-btn" class="modal-close">&times;</span>
+      <h2 style="text-align: center; color: #03a9f4;">遊び方（クアッド）</h2>
+      <p>4つの盤面で同時に進行する<strong>超難解モード</strong>です。</p>
+      <ul class="help-list">
+        <li>入力した文字は、4つの盤面<strong>すべてに同時に</strong>反映されます。</li>
+        <li>回答回数は全盤面共通で<strong>11回</strong>です。</li>
+        <li>1手ごとに、各盤面の答えに対してそれぞれ色が判定されます。</li>
+        <li>4つすべての駅名を当てるとクリアになります。</li>
+      </ul>
+      <hr class="modal-divider">
+      <p style="font-size: 13px;">※クアッドモードの過去問に挑戦したい場合は、後日実装予定のアーカイブ機能をお待ちください。（本日の問題は日付によって完全に固定されています）</p>
+    </div>
+  </div>
+
+  <div id="quad-result-modal" class="modal-overlay hidden">
+    <div class="modal-content result-content" style="max-width: 400px;">
+      <span id="close-quad-modal-btn" class="modal-close">&times;</span>
+      <h2 id="quad-modal-title"></h2>
+      <div id="quad-modal-desc"></div>
+      
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 15px; font-size: 10px; line-height: 1.1; letter-spacing: 1px; justify-items: center; margin-bottom: 20px;">
+        <div id="q-grid-0"></div>
+        <div id="q-grid-1"></div>
+        <div id="q-grid-2"></div>
+        <div id="q-grid-3"></div>
+      </div>
+      
+      <div class="modal-buttons">
+        <button id="quad-share-btn" class="btn btn-share-x">Xでシェア</button>
+        <button id="quad-copy-btn" class="btn btn-share-copy">コピー</button>
+      </div>
+    </div>
+  </div>
+
   <div id="side-menu-overlay" class="hidden"></div>
   <div id="side-menu">
     <div class="side-menu-header">
