@@ -178,8 +178,8 @@ function setupCommonUI() {
   document.getElementById("menu-top-btn")?.addEventListener("click", (e) => { e.preventDefault(); if (typeof FALLBACK_URL !== "undefined") window.location.href = FALLBACK_URL; });
 
   
-  // 乗車記録ボタン
-  // 1箇所目：タイトル画面の「これまでの記録を見る」ボタン
+  // 運行記録ボタン
+  // 1箇所目：タイトル画面の「運行記録を見る」ボタン
   document.getElementById("btn-stats-title")?.addEventListener("click", () => {
     const statsModal = document.getElementById("title-stats-modal");
     if (statsModal) statsModal.classList.remove("hidden");
@@ -187,7 +187,7 @@ function setupCommonUI() {
     if(typeof updateTitleStatsDisplay === "function") updateTitleStatsDisplay("normal");
   });
 
-  // 2箇所目：前回追加した、サイドメニューの「これまでの記録を見る」ボタン
+  // 2箇所目：前回追加した、サイドメニューの「運行記録を見る」ボタン
   document.getElementById("menu-stats-btn")?.addEventListener("click", (e) => {
     e.preventDefault();
     document.getElementById("side-menu").style.right = "-250px";
@@ -197,6 +197,11 @@ function setupCommonUI() {
     if (statsModal) statsModal.classList.remove("hidden");
     // ▼ この1行を追加（開いた瞬間に計算する）
     if(typeof updateTitleStatsDisplay === "function") updateTitleStatsDisplay("normal");
+  });
+
+  // 運行記録モーダルの×ボタンを確実に動かす処理を追加
+  document.getElementById("close-title-stats-btn")?.addEventListener("click", () => {
+    document.getElementById("title-stats-modal")?.classList.add("hidden");
   });
   
   // タブ切り替え処理
