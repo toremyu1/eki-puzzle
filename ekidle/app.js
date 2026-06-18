@@ -1860,35 +1860,69 @@ async function selectQuadStations(modeLength) {
   } catch (err) {
     console.warn("クアッドのファイル読み込み失敗。シミュレーションで決定します:", err);
     
-    // ② ファイルがない場合のフォールバック：日付シードによる歴史シミュレーション
-    let seed = currentDayIndex * 12345 + modeLength * 6789;
-    const random = () => {
-      seed = Math.imul(seed ^ (seed >>> 15), 2246822507);
-      seed = Math.imul(seed ^ (seed >>> 13), 3266489909);
-      return ((seed ^ (seed >>> 16)) >>> 0) / 4294967296;
-    };
+    // 【修正1】通常モードの出禁辞書を読み込む（通常モードと被らないようにするため）
+    const normalStateKey = `ekidle_rng_state_${currentMode}`;
+    let normalSaved = JSON.parse(localStorage.getItem(normalStateKey) || "{}");
+    let normalBanned = normalSaved.nextAvailableDay || {};
 
-    const rngStateKey = `ekidle_rng_state_quad${modeLength}`;
-    let usedList = JSON.parse(localStorage.getItem(rngStateKey) || "[]");
-    const maxLocked = Math.floor(validPool.length * 0.7);
+    // 【修正2】クアッド専用の「日付辞書（nextAvailableDay）」を新設して読み込む
+    const quadStateKey = `ekidle_rng_state_quad_${currentMode}_v2`;
+    let quadSaved = JSON.parse(localStorage.getItem(quadStateKey) || "{}");
+    let quadNextAvailableDay = quadSaved.nextAvailableDay || {};
+    let startDay = quadSaved.lastCalculatedDay !== undefined ? quadSaved.lastCalculatedDay + 1 : 0;
 
-    if (usedList.length > maxLocked) usedList = usedList.slice(usedList.length - maxLocked);
-    let availableForQuad = validPool.filter(s => !usedList.includes(s.yomi));
-    
-    quadStations = [];
-    for (let i = 0; i < 4; i++) {
-      if (availableForQuad.length === 0) {
-        availableForQuad = validPool.filter(s => !quadStations.map(q => q.yomi).includes(s.yomi));
+    let uniqueYomiCount = new Set(validPool.map(s => s.yomi)).size;
+    let lookback = Math.min(1000, Math.floor(uniqueYomiCount * 0.7));
+
+    // 【修正3】通常モードと同じく、0日目（または計算の続き）から今日までを一気にシミュレーションする
+    for (let d = startDay; d <= currentDayIndex; d++) {
+      
+      // 現役の駅であり、通常モードでもクアッドモードでも出禁になっていない駅だけを抽出
+      let pool = validPool.filter(s =>
+        (s.startDay === undefined || s.startDay <= d) &&
+        (s.endDay === undefined || s.endDay > d || s.endDay === 999999) &&
+        !(normalBanned[s.yomi] && normalBanned[s.yomi] > d) &&
+        !(quadNextAvailableDay[s.yomi] && quadNextAvailableDay[s.yomi] > d)
+      );
+
+      let seed = d * 12345 + modeLength * 6789;
+      const random = () => {
+        seed = Math.imul(seed ^ (seed >>> 15), 2246822507);
+        seed = Math.imul(seed ^ (seed >>> 13), 3266489909);
+        return ((seed ^ (seed >>> 16)) >>> 0) / 4294967296;
+      };
+
+      quadStations = [];
+      for (let i = 0; i < 4; i++) {
+        // 枯渇時の安全装置
+        if (pool.length === 0) {
+          pool = validPool.filter(s =>
+            (s.startDay === undefined || s.startDay <= d) &&
+            (s.endDay === undefined || s.endDay > d || s.endDay === 999999) &&
+            !quadStations.map(q => q.yomi).includes(s.yomi)
+          );
+        }
+        
+        const r = Math.floor(random() * pool.length);
+        const selected = pool[r];
+        quadStations.push(selected);
+        
+        // 選ばれた駅と同音異字をこのターンのくじ引き箱からすべて捨てる
+        pool = pool.filter(s => s.yomi !== selected.yomi);
+        
+        // クアッド専用の辞書に「次回出禁解除日」を登録
+        quadNextAvailableDay[selected.yomi] = d + lookback + 1;
       }
-      const r = Math.floor(random() * availableForQuad.length);
-      const selected = availableForQuad[r];
-      quadStations.push(selected);
-      availableForQuad.splice(r, 1);
-      usedList.push(selected.yomi);
     }
     
-    if (usedList.length > maxLocked) usedList = usedList.slice(usedList.length - maxLocked);
-    localStorage.setItem(rngStateKey, JSON.stringify(usedList));
+    // 【修正4】不要な過去の出禁データを掃除し、最新の状態だけを保存する
+    let stateToSave = { lastCalculatedDay: currentDayIndex, nextAvailableDay: {} };
+    for (const yomi in quadNextAvailableDay) {
+      if (quadNextAvailableDay[yomi] > currentDayIndex) {
+        stateToSave.nextAvailableDay[yomi] = quadNextAvailableDay[yomi];
+      }
+    }
+    localStorage.setItem(quadStateKey, JSON.stringify(stateToSave));
   }
 }
 
