@@ -441,13 +441,16 @@ function generateSharedStatsGraphHTML(distArray, currentTurn, maxRow) {
     let bg = barColors[i-1] || "#6aaa64";
     
     let isTodayRow = (i === currentTurn);
-    let borderStyle = isTodayRow ? "border: 2px solid #ffd700; box-shadow: 0 0 4px #ff8c00; font-weight: bold;" : "";
+    // 【修正】枠線をグラフバーから外し、数字側に丸いバッジ風のハイライトを適用します
+    let numStyle = isTodayRow 
+      ? "width:20px; height:20px; line-height:16px; text-align:center; margin-right:5px; font-size:12px; font-weight:900; color:#e65100; background-color:#fff3e0; border:2px solid #ff8c00; border-radius:50%; box-shadow:0 0 4px #ffcc80; box-sizing:border-box;" 
+      : "width:20px; font-weight:bold; text-align:right; margin-right:5px; font-size:12px; padding-right:4px; box-sizing:border-box;";
     
     html += `
       <div style="display:flex;align-items:center;margin-bottom:4px;">
-        <div style="width:15px;font-weight:bold;text-align:right;margin-right:5px;font-size:12px;">${i}</div>
+        <div style="${numStyle}">${i}</div>
         <div style="flex:1;background-color:#f0f2f5;border-radius:2px;">
-          <div style="background-color:${bg};height:18px;width:${w}%;color:white;text-align:right;padding-right:5px;font-size:11px;line-height:18px;border-radius:2px;box-sizing:border-box; ${borderStyle}">${count}</div>
+          <div style="background-color:${bg};height:18px;width:${w}%;color:white;text-align:right;padding-right:5px;font-size:11px;line-height:18px;border-radius:2px;box-sizing:border-box;">${count}</div>
         </div>
       </div>
     `;
