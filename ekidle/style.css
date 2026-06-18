@@ -190,6 +190,13 @@ body.theme-dark #title-stats-modal .btn {
 .btn-danger { background-color: #fff; color: #e53935; border-color: #e53935; box-shadow: 0 4px 0 #c0392b; }
 .btn-primary{ background-color: #fff; color: #03a9f4; border-color: #03a9f4; box-shadow: 0 4px 0 #0288d1; }
 
+/* ==========================================
+   追加: クアッドモードボタンの文字色を強制的に白にする
+========================================== */
+#btn-quad-mode {
+  color: #ffffff !important;
+}
+
 /* ------------------------------------------
    結果画面のシェアボタン等（立体カラーデザイン）
 ------------------------------------------ */
