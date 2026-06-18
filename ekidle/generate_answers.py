@@ -13,6 +13,17 @@ def math_imul(a, b):
 def zero_fill_right_shift(val, n):
     return (val & 0xffffffff) >> n
 
+# JSと全く同じ挙動をするクアッドモード用の乱数生成クラス
+class QuadRNG:
+    def __init__(self, seed):
+        self.seed = seed & 0xffffffff
+        
+    def random(self):
+        self.seed = math_imul(self.seed ^ zero_fill_right_shift(self.seed, 15), 2246822507)
+        self.seed = math_imul(self.seed ^ zero_fill_right_shift(self.seed, 13), 3266489909)
+        out = zero_fill_right_shift(self.seed ^ zero_fill_right_shift(self.seed, 16), 0)
+        return out / 4294967296.0
+
 def generate_answers():
     # 1. 最新の駅データをインターネット経由で直接読み込む
     # stations_url = "https://eki-puzzle.pages.dev/ekidle/" # ←★ここに実際のstations.jsonのURLを入れます
@@ -123,7 +134,7 @@ def generate_answers():
                 departure_queue[dep_idx]['is_active'] = False
                 dep_idx += 1
 
-            # 元の並び順のままフィルタリング
+            #【1】通常モードの答えを選出
             pool = [s for s in mode_stations if s['is_active'] and next_available_day.get(s['yomi'], 0) <= d]
             if not pool:
                 pool = [s for s in mode_stations if s['is_active']]
@@ -139,6 +150,44 @@ def generate_answers():
             # 次回出禁日をセットする
             next_available_day[candidate['yomi']] = d + lookback + 1
 
+            # ---------------------------------------------------------
+            # 【2】クアッドモードの答えを選出（通常モードの直後に計算）
+            # ---------------------------------------------------------
+            quad_state_key = f"quad_{mode}_used_list"
+            used_list = app_state.get(quad_state_key, [])
+            
+            # JSのクアッドと同じく、現役駅判定(is_active)をスルーし、通常モードの答えを除外したプールを作成
+            valid_pool = [s for s in mode_stations if s['yomi'] != candidate['yomi']]
+            max_locked = int(len(valid_pool) * 0.7)
+            
+            if len(used_list) > max_locked:
+                used_list = used_list[len(used_list) - max_locked:]
+                
+            available_for_quad = [s for s in valid_pool if s['yomi'] not in used_list]
+            
+            # JSと完全に一致するシードを使って乱数ジェネレータを起動
+            quad_rng = QuadRNG(d * 12345 + mode * 6789)
+            quad_stations = []
+            
+            for _ in range(4):
+                if len(available_for_quad) <= 4:
+                    quad_yomis = [q['yomi'] for q in quad_stations]
+                    available_for_quad = [s for s in valid_pool if s['yomi'] not in quad_yomis]
+                
+                # 乱数を使って抽出
+                r = int(quad_rng.random() * len(available_for_quad))
+                selected = available_for_quad[r]
+                quad_stations.append(selected)
+                available_for_quad.pop(r)
+                used_list.append(selected['kanji'])
+                
+            if len(used_list) > max_locked:
+                used_list = used_list[len(used_list) - max_locked:]
+                
+            # 次回の計算のためにクアッドの出禁リストを保存
+            app_state[quad_state_key] = used_list
+            # ---------------------------------------------------------
+
             # 今日から43日後までのデータだけ保存する
             if d >= today_index:
                 target_date = base_date + timedelta(days=d)
@@ -146,6 +195,15 @@ def generate_answers():
                 
                 salted_text = SECRET_SALT + candidate['yomi']
                 hashed_text = hashlib.sha256(salted_text.encode('utf-8')).hexdigest()
+
+                # クアッド用のハッシュ計算
+                quad_hashes = []
+                quad_admin_list = []
+                for qs in quad_stations:
+                    q_salted = SECRET_SALT + qs['yomi']
+                    q_hashed = hashlib.sha256(q_salted.encode('utf-8')).hexdigest()
+                    quad_hashes.append(q_hashed)
+                    quad_admin_list.append({"kanji": qs['kanji'], "yomi": qs['yomi']})
                 
                 if date_str not in generated_hashes:
                     generated_hashes[date_str] = {}
@@ -153,12 +211,11 @@ def generate_answers():
                 
                 # 暗号化された本番用データ
                 generated_hashes[date_str][str(mode)] = hashed_text
+                generated_hashes[date_str][f"quad{mode}"] = quad_hashes
                 
                 # 管理者が確認するための平文データ
-                generated_admin[date_str][str(mode)] = {
-                    "kanji": candidate['kanji'],
-                    "yomi": candidate['yomi']
-                }
+                generated_admin[date_str][str(mode)] = {"kanji": candidate['kanji'], "yomi": candidate['yomi']}
+                generated_admin[date_str][f"quad{mode}"] = quad_admin_list
 
         # この文字数モードの状態を更新
         app_state[mode_str] = {
