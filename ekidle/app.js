@@ -2035,6 +2035,21 @@ function buildQuadBoards() {
         row.appendChild(tile);
       }
       board.appendChild(row);
+
+      // ▼▼▼ ここから追加：行をタップ（クリック）したときの拡大処理 ▼▼▼
+      row.addEventListener("click", function() {
+        // すでに拡大状態なら元に戻す
+        if (this.classList.contains("force-expand")) {
+          this.classList.remove("force-expand");
+        } else {
+          // 同じ盤面内の他の拡大を解除してから、クリックされた行を拡大する
+          Array.from(board.children).forEach(r => r.classList.remove("force-expand"));
+          if (this.classList.contains("inactive-row")) {
+            this.classList.add("force-expand");
+          }
+        }
+      });
+      // ▲▲▲ ここまで追加 ▲▲▲
     }
   }
 }
