@@ -489,7 +489,7 @@ async function generateSharedTransferCode(gameName, dataMap) {
 
 /**
  * 引き継ぎコードを自動判別して解凍・検証し、オブジェクトとして返す共通関数
- @param {string} code - 入力された引き継ぎコード
+ * @param {string} code - 入力された引き継ぎコード
  * @param {string} expectedGameName - 期待するゲーム名
  */
 async function parseSharedTransferCode(code, expectedGameName) {
