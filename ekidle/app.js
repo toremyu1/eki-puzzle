@@ -1825,7 +1825,7 @@ async function selectQuadStations(modeLength) {
       s.pref && s.companies && s.companies.length > 0 &&
       !(s.companies.length === 1 && s.companies[0] === "日本貨物鉄道") &&
       s.is_abolished_confirmed !== true &&
-      (!todayStation || s.kanji !== todayStation.kanji)
+      (!todayStation || s.yomi !== todayStation.yomi)
   );
 
   try {
@@ -1873,18 +1873,18 @@ async function selectQuadStations(modeLength) {
     const maxLocked = Math.floor(validPool.length * 0.7);
 
     if (usedList.length > maxLocked) usedList = usedList.slice(usedList.length - maxLocked);
-    let availableForQuad = validPool.filter(s => !usedList.includes(s.kanji));
+    let availableForQuad = validPool.filter(s => !usedList.includes(s.yomi));
     
     quadStations = [];
     for (let i = 0; i < 4; i++) {
       if (availableForQuad.length === 0) {
-        availableForQuad = validPool.filter(s => !quadStations.map(q => q.kanji).includes(s.kanji));
+        availableForQuad = validPool.filter(s => !quadStations.map(q => q.yomi).includes(s.yomi));
       }
       const r = Math.floor(random() * availableForQuad.length);
       const selected = availableForQuad[r];
       quadStations.push(selected);
       availableForQuad.splice(r, 1);
-      usedList.push(selected.kanji);
+      usedList.push(selected.yomi);
     }
     
     if (usedList.length > maxLocked) usedList = usedList.slice(usedList.length - maxLocked);
