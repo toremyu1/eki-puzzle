@@ -1793,10 +1793,22 @@ async function startQuadMode() {
   currentGuess = "";
   guessesSubmitted = 0;
 
-  // 【追加1】現在の文字数に合わせて、入力判定用の「駅リスト」を正しく更新する
+  // クアッド用の盤面コンテナを表示する
+  const quadContainer = document.getElementById("quad-board-container");
+  if (quadContainer) quadContainer.classList.remove("hidden");
+
+  // 通常用の盤面コンテナを非表示にする
+  const normalBoard = document.getElementById("game-board");
+  if (normalBoard) normalBoard.classList.add("hidden");
+
+  // ハードモードのスイッチ領域を非表示にする（クアッドにはハードモードが存在しないため）
+  const hardContainer = document.querySelector(".hardmode-container");
+  if (hardContainer) hardContainer.classList.add("hidden");
+
+  // 現在の文字数に合わせて、入力判定用の「駅リスト」を正しく更新する
   availableStations = stations.filter(s => s.yomi.length === currentMode).map(s => s.yomi);
   
-  // 【追加2】クアッド盤面のCSS変数（列数）を更新し、見た目の枠数を合わせる
+  // クアッド盤面のCSS変数（列数）を更新し、見た目の枠数を合わせる
   document.getElementById("quad-board-container")?.style.setProperty("--row-length", currentMode);
 
   await selectQuadStations(currentMode);
