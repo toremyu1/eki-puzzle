@@ -369,7 +369,7 @@ function updateTitleStatsDisplay(modeType) {
   let maxRowForGraph = maxGuesses;
   
   if (modeType === "normal") {
-    if (tabNormal) tabNormal.className = "btn btn-small btn-green";
+    if (tabNormal) tabNormal.className = "btn btn-small btn-green-outline";
   } else if (modeType === "hard") {
     if (tabHard) tabHard.className = "btn btn-small btn-danger";
     targetMode += "_hard";
