@@ -99,7 +99,7 @@ function setupCommonUI() {
   // 1. 共通関数の呼び出し（これだけでメニューやモーダルが動きます）
   setupSharedSideMenu("menu-btn", "side-menu", "side-menu-overlay", "close-menu-btn");
   setupSharedModal("help-btn", "help-modal", "close-help-btn");
-  setupSharedModal("btn-stats-title", "title-stats-modal", "close-title-stats-btn");
+  setupSharedModal("stats-btn", "result-modal", "close-modal-btn");
 
   // 2. タイトル画面とゲーム画面の遷移制御（駅ドル専用の処理なので残す）
   const returnToTitleScreen = () => {
@@ -269,30 +269,35 @@ function setupGameSpecificUI() {
     hardSwitch.addEventListener("click", (e) => {
       let stateKey = isPlayingRandom ? "random" : currentMode;
       let currentSt = savedState[stateKey];
-      // 現在ゲームをプレイ途中（1手以上打っていて、まだクリアしていない）か判定
-      let isMidGame = currentSt && currentSt.guesses && currentSt.guesses.length > 0 && !currentSt.isOver;
+      
+      // ゲームが既に終了（クリアor失敗）している場合
+      if (currentSt && currentSt.isOver) {
+        e.preventDefault();
+        // チェック状態を元に戻す
+        hardSwitch.checked = !hardSwitch.checked;
+        showMessage("ゲーム終了後は変更できません");
+        return;
+      }
 
+      let isMidGame = currentSt && currentSt.guesses && currentSt.guesses.length > 0 && !currentSt.isOver;
+      // プレイ途中のハードモードへ切り替えを禁止する
       if (isMidGame && hardSwitch.checked) {
-        // 【禁止】ノーマル → ハード（プレイ途中）
         e.preventDefault();
         hardSwitch.checked = false;
-        showMessage("プレイ開始後はハードモードに変更できません");
+        showMessage("プレイ開始後はハードモードに切り替えできません");
       } else {
-        // 【許可】ハード → ノーマル、またはプレイ前の切り替え
         ekiSettings.hardMode = hardSwitch.checked;
         localStorage.setItem("ekiSettings", JSON.stringify(ekiSettings));
-        
+        // ノーマルモードはプレイ途中の変更も許可する
         if (isMidGame && !hardSwitch.checked) {
-          // プレイ途中でハードを諦めた場合、このゲームはノーマルクリア扱いにする
           currentSt.isHardMode = false;
-          if (!isPlayingRandom) saveGameState();
+          if (!isPlayingRandom) saveGameState();    //ノーマルモードとして記録する
         }
         
-        // ヘルプ画面の表示内容もこの瞬間に切り替える
         if (typeof updateHelpContent === "function") updateHelpContent();
       }
     });
-  }  
+  }
 }
 
 
@@ -1275,7 +1280,7 @@ function shareResult(type){
     hashtagStr += `#駅ドルHard${currentMode}\n`;
   }
 
-  text+=`\n\n${hashtagStr}${currentUrl}`;
+  text += `\n\n${hashtagStr}`;
 
   // 【修正】実際のシェア送信処理を共通関数に任せる
   executeSharedShare(type, text, currentUrl);
