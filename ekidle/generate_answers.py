@@ -179,7 +179,7 @@ def generate_answers():
                 selected = available_for_quad[r]
                 quad_stations.append(selected)
                 available_for_quad.pop(r)
-                used_list.append(selected['kanji'])
+                used_list.append(selected['yomi'])        # 4. 出禁リストへの登録
                 
             if len(used_list) > max_locked:
                 used_list = used_list[len(used_list) - max_locked:]
