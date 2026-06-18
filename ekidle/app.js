@@ -2016,7 +2016,7 @@ async function selectQuadStations(modeLength) {
 }
 
 
-// 4つの空のゲーム盤を画面に生成する関数
+// 【修正後】行の独立トグル化およびShiftキーでの範囲一括拡大機能
 function buildQuadBoards() {
   for (let b = 0; b < 4; b++) {
     const board = document.getElementById(`board-${b}`);
@@ -2024,10 +2024,13 @@ function buildQuadBoards() {
     board.innerHTML = "";
     board.style.setProperty("--row-length", currentMode);
 
+    // この盤面（ボード）内で最後にクリックされた行の番号を記憶する変数
+    let lastClickedIdx = null;
+
     for (let i = 0; i < maxGuesses; i++) {
       const row = document.createElement("div");
       row.className = "board-row";
-      // ▼▼▼ この1行を追加（1行目以外は、最初から縮小状態にする） ▼▼▼
+      // 1行目以外は、最初から縮小状態にする
       if (i !== 0) row.classList.add("inactive-row");
       for (let j = 0; j < currentMode; j++) {
         const tile = document.createElement("div");
@@ -2035,21 +2038,38 @@ function buildQuadBoards() {
         row.appendChild(tile);
       }
       board.appendChild(row);
+      
+      // 行をタップ（クリック）したときの処理
+      row.addEventListener("click", function(e) {
+        // 縮小されていない行（現在入力中のアクティブな行など）は処理しない
+        if (!this.classList.contains("inactive-row")) return;
 
-      // ▼▼▼ ここから追加：行をタップ（クリック）したときの拡大処理 ▼▼▼
-      row.addEventListener("click", function() {
-        // すでに拡大状態なら元に戻す
-        if (this.classList.contains("force-expand")) {
-          this.classList.remove("force-expand");
+        const currentIdx = i;
+
+        // 【機能1】Shiftキーが押されており、かつ前回クリックした行が同じ盤面内にある場合（範囲選択）
+        if (e.shiftKey && lastClickedIdx !== null) {
+          const start = Math.min(lastClickedIdx, currentIdx);
+          const end = Math.max(lastClickedIdx, currentIdx);
+          
+          // 前回クリックした位置から、今回クリックした位置までの行をすべて拡大状態にする
+          for (let k = start; k <= end; k++) {
+            const targetRow = board.children[k];
+            if (targetRow && targetRow.classList.contains("inactive-row")) {
+              targetRow.classList.add("force-expand");
+            }
+          }
         } else {
-          // 同じ盤面内の他の拡大を解除してから、クリックされた行を拡大する
-          Array.from(board.children).forEach(r => r.classList.remove("force-expand"));
-          if (this.classList.contains("inactive-row")) {
+          // 【機能2】通常のクリック：他の行の拡大は巻き添えで解除せず、その行単体でバッジのように開閉を切り替える
+          if (this.classList.contains("force-expand")) {
+            this.classList.remove("force-expand");
+          } else {
             this.classList.add("force-expand");
           }
         }
+
+        // 最後にクリックされた行の番号を今回の位置に更新
+        lastClickedIdx = currentIdx;
       });
-      // ▲▲▲ ここまで追加 ▲▲▲
     }
   }
 }
