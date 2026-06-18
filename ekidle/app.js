@@ -24,8 +24,8 @@ let isPlayingRandom=false;   // ランダムモード中かどうかの判定フ
 let savedState={};　　　　　　//各文字のモードで今日のゲームの途中経過を保存する箱
 let todayStationCache={};    // 今日の答えをキャッシュに保存する箱
 let ekiSettings=JSON.parse(localStorage.getItem("ekiSettings")||'{"theme":"","sound":true,"fontSize":"normal","hardMode":false}');　　　//ユーザー設定を保存する箱
-let ekiLoginStreak=JSON.parse(localStorage.getItem("ekiLoginStreak")||'{"currentStreak":0,"maxStreak":0,"lastLoginDate":""}');　　//連続ログイン日数を保存する箱
-let ekiClearedDays=JSON.parse(localStorage.getItem("ekiClearedDays")||'{"4":[],"5":[],"6":[]}');　　　//クリアした日を保存する箱　
+// let ekiLoginStreak=JSON.parse(localStorage.getItem("ekiLoginStreak")||'{"currentStreak":0,"maxStreak":0,"lastLoginDate":""}');　　//連続ログイン日数を保存する箱（ekiZukanMetaに統合するため廃止）
+// let ekiClearedDays=JSON.parse(localStorage.getItem("ekiClearedDays")||'{"4":[],"5":[],"6":[]}');　　　//クリアした日を保存する箱　(ekiPuzzleStateV1_LogのisWinを調べれば復元できるため廃止)
 let ekiAchievements=JSON.parse(localStorage.getItem("ekiAchievements")||'{"bestScores":{},"counters":{"legendStationClears":0,"noAbsentClears":0,"totalYomiLength":0,"noHintClears":0,"hintUsedClears":0,"totalSubmitCount":0},"winStreak":{"currentStreak":0,"maxStreak":0,"lastClearedDate":""},"hourlyClears":{},"unlockedSets":{"prefs":[],"companies":[],"lines":[],"colorCounts":{"4":{"correct":0,"present":0,"diacritic":0,"absent":0}},"clearedEvents":[],"clearedMonthDays":[],"clearedStationNames":[]}}');　　// 実績データの全体構造を定義
 //各文字数モード毎の累計プレイ回数、勝率、連勝記録、最大連勝、何回目で当たったかを記録する箱
 let userStats={　　　　　　　
@@ -33,8 +33,8 @@ let userStats={　　　　　　　
 5:{played:0,won:0,currentStreak:0,maxStreak:0,dist:[0,0,0,0,0,0,0,0,0,0]},
 6:{played:0,won:0,currentStreak:0,maxStreak:0,dist:[0,0,0,0,0,0,0,0,0,0]}
 };
-//過去に解いた問題を記録しておく箱
-let dailyArchive={};
+// 過去に解いた問題を記録しておく箱（後から復元可能なため廃止）
+// let dailyArchive={};
 
 
 // ==========================================
@@ -57,10 +57,13 @@ async function initGame() {
 
     // 過去のセーブデータの読み込み
     loadStats();
-    if(typeof loadArchive === "function") loadArchive();
+    // if(typeof loadArchive === "function") loadArchive();
     
     // 共通関数を使って連続ログイン日数を計算し、データを更新する
-    let streakData = updateSharedLoginStreak("ekiLoginStreak");
+    // let streakData = updateSharedLoginStreak("ekiLoginStreak");
+    // 【修正後】アーカイブ読み込みを消し、保存先を ekiZukanMeta に変更します
+    // 図鑑のメタデータ（ekiZukanMeta）にログイン機能を集約させます
+    let streakData = updateSharedLoginStreak("ekiZukanMeta");
     
     updateSharedLoading(30, "駅データをダウンロード中...");
 
@@ -352,12 +355,12 @@ function updateTitleStatsDisplay(modeType) {
 
     
 // ==========================================
-// 連続ログイン日数処理
+// 連続ログイン日数処理（ekiZukanMetaに統合するため廃止）
 // ==========================================
-function updateLoginStreak() {
+// unction updateLoginStreak() {
   // 共通関数に保存先の名前（ekiLoginStreak）を渡すだけで全て自動でやってくれます
-  let updatedData = updateSharedLoginStreak("ekiLoginStreak");
-}
+//   let updatedData = updateSharedLoginStreak("ekiLoginStreak");
+// }
 
     
 
@@ -479,16 +482,16 @@ function saveStats(isWin,actualGuesses){
 }
 
 //過去に遊んだアーカイブ情報を読み込む
-function loadArchive(){
-const saved=localStorage.getItem("ekiPuzzleArchiveV1");
-if(saved) dailyArchive=JSON.parse(saved);
-}
+// function loadArchive(){
+// const saved=localStorage.getItem("ekiPuzzleArchiveV1");
+// if(saved) dailyArchive=JSON.parse(saved);
+// }
 //今日の問題をアーカイブへ保存する
-function saveToArchive(){
-if(!dailyArchive[currentDayIndex]) dailyArchive[currentDayIndex]={};
-dailyArchive[currentDayIndex][currentMode]={kanji:todayStation.kanji, yomi:todayStation.yomi};
-localStorage.setItem("ekiPuzzleArchiveV1",JSON.stringify(dailyArchive));
-}
+// function saveToArchive(){
+// if(!dailyArchive[currentDayIndex]) dailyArchive[currentDayIndex]={};
+// dailyArchive[currentDayIndex][currentMode]={kanji:todayStation.kanji, yomi:todayStation.yomi};
+// localStorage.setItem("ekiPuzzleArchiveV1",JSON.stringify(dailyArchive));
+// }
 // ゲームの進行状況を日付ごとに保存・読み込みする処理です
 function loadGameState(dayIdx){
   const savedLog=localStorage.getItem("ekiPuzzleStateV1_Log");
@@ -1341,9 +1344,22 @@ window.triggerEventEffect=(ev)=>{
   if(ev==="aprilfool"){
     let mLen=stations.reduce((max,s)=>Math.max(max,s.yomi.length),0);
     let longestPool=stations.filter(s=>s.yomi.length===mLen);
-    let afSaved=localStorage.getItem("ekiAF_"+currentDayIndex);
+    
+    // 【修正後】以下のコードにまるごと差し替えてください
+    let afSaved = localStorage.getItem("ekiAF_" + currentDayIndex);
     let longestSt;
-    if(afSaved){ longestSt=JSON.parse(afSaved); }else{ longestSt=longestPool[Math.floor(Math.random()*longestPool.length)]; localStorage.setItem("ekiAF_"+currentDayIndex,JSON.stringify(longestSt)); }
+    if (afSaved) { 
+      longestSt = JSON.parse(afSaved); 
+    } else { 
+      // 【追加】今日以外の古い「ekiAF_〇〇」データを綺麗にお掃除する
+      Object.keys(localStorage).forEach(k => {
+        if (k.startsWith("ekiAF_")) localStorage.removeItem(k);
+      });
+      // 新しい駅を選んで保存
+      longestSt = longestPool[Math.floor(Math.random() * longestPool.length)]; 
+      localStorage.setItem("ekiAF_" + currentDayIndex, JSON.stringify(longestSt)); 
+    }
+    
     const modeArea=document.querySelector(".mode-btn").parentNode;
     if(modeArea&&!document.getElementById("mode-"+mLen)){
       const bMax=document.createElement("button");
@@ -1675,27 +1691,27 @@ function incrementClearAchievements(actualGuesses, clearTimeMs) {
   // 最後に、新しく計算し終わった実績データをLocalStorageに一括で上書き保存します
   localStorage.setItem("ekiAchievements", JSON.stringify(ach));
   
-  // --- 8. クリア済みインデックスの記録（文字数モード別） ---
-  let clearedData = JSON.parse(localStorage.getItem("ekiClearedDays") || '{"4":[],"5":[],"6":[],"4_hard":[],"5_hard":[],"6_hard":[]}');
+  // --- 8. クリア済みインデックスの記録（文字数モード別） ---（後から復元できるため廃止）
+  // let clearedData = JSON.parse(localStorage.getItem("ekiClearedDays") || '{"4":[],"5":[],"6":[],"4_hard":[],"5_hard":[],"6_hard":[]}');
   
   // 通常モードの記録（ハードでクリアした場合も、大元の「クリア済み」として記録しておく）
-  if (!clearedData[currentMode]) clearedData[currentMode] = [];
-  if (!clearedData[currentMode].includes(currentDayIndex)) {
-    clearedData[currentMode].push(currentDayIndex);
-    clearedData[currentMode].sort((a, b) => a - b);
-  }
+  // if (!clearedData[currentMode]) clearedData[currentMode] = [];
+  // if (!clearedData[currentMode].includes(currentDayIndex)) {
+  //   clearedData[currentMode].push(currentDayIndex);
+  //   clearedData[currentMode].sort((a, b) => a - b);
+  // }
 
   // ハードモードの記録（ハードモード維持でクリアした場合のみ、別途 _hard 枠にも記録）
-  if (currentState && currentState.isHardMode) {
-    let hardKey = currentMode + "_hard";
-    if (!clearedData[hardKey]) clearedData[hardKey] = [];
-    if (!clearedData[hardKey].includes(currentDayIndex)) {
-      clearedData[hardKey].push(currentDayIndex);
-      clearedData[hardKey].sort((a, b) => a - b);
-    }
-  }
+  // if (currentState && currentState.isHardMode) {
+  //   let hardKey = currentMode + "_hard";
+  //   if (!clearedData[hardKey]) clearedData[hardKey] = [];
+  //   if (!clearedData[hardKey].includes(currentDayIndex)) {
+  //     clearedData[hardKey].push(currentDayIndex);
+  //     clearedData[hardKey].sort((a, b) => a - b);
+  // }
+  // }
   
-  localStorage.setItem("ekiClearedDays", JSON.stringify(clearedData));
+  // localStorage.setItem("ekiClearedDays", JSON.stringify(clearedData));
 }
 
 // テーマカラー切り替え時のラグ解消
@@ -1996,14 +2012,10 @@ async function exportUserData() {
   // このゲームで保存したいキーと中身のリストを作成
   const dataMap = {
     stats: localStorage.getItem("ekiPuzzleStatsV2"),
-    archive: localStorage.getItem("ekiPuzzleArchiveV1"),
     zukan: localStorage.getItem("ekiZukanData"),
     meta: localStorage.getItem("ekiZukanMeta"),
     achievements: localStorage.getItem("ekiAchievements"),
-    guesses: localStorage.getItem("ekiAllGuesses"),
-    cleared: localStorage.getItem("ekiClearedDays"),
     settings: localStorage.getItem("ekiSettings"),
-    streak: localStorage.getItem("ekiLoginStreak"),
     version: localStorage.getItem("ekiSystemVersion"),
     log: localStorage.getItem("ekiPuzzleStateV1_Log")
   };
@@ -2028,14 +2040,10 @@ async function importUserData(code) {
 
     // 検証を通過したら、データが存在するものだけLocalStorageに書き戻す
     if(json.stats) localStorage.setItem("ekiPuzzleStatsV2", json.stats);
-    if(json.archive) localStorage.setItem("ekiPuzzleArchiveV1", json.archive);
     if(json.zukan) localStorage.setItem("ekiZukanData", json.zukan);
     if(json.meta) localStorage.setItem("ekiZukanMeta", json.meta);
     if(json.achievements) localStorage.setItem("ekiAchievements", json.achievements);
-    if(json.guesses) localStorage.setItem("ekiAllGuesses", json.guesses);
-    if(json.cleared) localStorage.setItem("ekiClearedDays", json.cleared);
     if(json.settings) localStorage.setItem("ekiSettings", json.settings);
-    if(json.streak) localStorage.setItem("ekiLoginStreak", json.streak);
     if(json.version) localStorage.setItem("ekiSystemVersion", json.version); 
     if(json.log) localStorage.setItem("ekiPuzzleStateV1_Log", json.log);
     
