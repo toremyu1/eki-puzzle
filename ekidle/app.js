@@ -369,12 +369,12 @@ function updateTitleStatsDisplay(modeType) {
   let maxRowForGraph = maxGuesses;
   
   if (modeType === "normal") {
-    if (tabNormal) tabNormal.className = "btn btn-small btn-primary";
+    if (tabNormal) tabNormal.className = "btn btn-small btn-green";
   } else if (modeType === "hard") {
     if (tabHard) tabHard.className = "btn btn-small btn-danger";
     targetMode += "_hard";
   } else if (modeType === "quad") {
-    if (tabQuad) tabQuad.className = "btn btn-small btn-success"; // クアッドは緑色で区別
+    if (tabQuad) tabQuad.className = "btn btn-small btn-primary"; 
     targetMode = "quad" + currentMode;
     maxRowForGraph = CONFIG_MAX_GUESSES_QUAD; // クアッド専用の最大手数（11）をセット
   }
@@ -2007,7 +2007,7 @@ function resetKeyboardStyles() {
       key.className = "key";
     } else {
       // どの駅名にも使われない文字のキーは非表示にする
-      key.className = "key hidden";
+      key.className = "key dummy";
     }
     key.style.background = ""; 
   });
@@ -2052,7 +2052,7 @@ function submitQuadGuess() {
 
     // 内部の判定ロジックを呼び出して色の配列を取得
     //（既存の通常モードにある色判定アルゴリズムをそのまま活用します）
-    const rowColors = checkRowColors(currentGuess, targetStation.hiragana);
+    const rowColors = checkRowColors(currentGuess, targetStation.yomi);
     allBoardResults.push(rowColors);
 
     // 盤面のタイルに文字と色を反映
@@ -2262,6 +2262,8 @@ document.getElementById("btn-quad-mode")?.addEventListener("click", async () => 
   document.getElementById("game-screen").classList.remove("hidden");
   // ▼▼▼ この1行を追加（クアッドモードでも4, 5, 6文字を選べるようにする） ▼▼▼
   document.querySelector(".mode-selector")?.classList.remove("hidden");
+  // ▼▼▼ この1行を追加（クアッド用の回答回数を確実にセットする） ▼▼▼
+  maxGuesses = CONFIG_MAX_GUESSES_QUAD;
   
   await startQuadMode();
 
