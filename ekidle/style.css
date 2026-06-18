@@ -799,3 +799,8 @@ body.event-nye .key { background-color:#25202b; color:#d1c7bd; }
 }
 
 
+/* 【追加】クアッドモードの盤面全体で、文字が選択（ハイライト）されるのを防ぎます */
+#quad-board-container {
+  -webkit-user-select: none; /* iPhoneやSafariブラウザ用の設定です */
+  user-select: none;         /* パソコンやAndroid等の標準的な文字選択禁止設定です */
+}
