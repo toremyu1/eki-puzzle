@@ -304,6 +304,8 @@ function setupGameSpecificUI() {
   
   // クアッド用のシェアボタン紐付け
   document.getElementById("quad-share-btn")?.addEventListener("click", () => shareQuadResult("twitter"));
+  document.getElementById("quad-line-btn")?.addEventListener("click", () => shareQuadResult("line"));
+  document.getElementById("quad-fb-btn")?.addEventListener("click", () => shareQuadResult("facebook"));
   document.getElementById("quad-copy-btn")?.addEventListener("click", () => shareQuadResult("copy"));
   
   // 「グラフ」ボタンの処理
@@ -421,45 +423,49 @@ function setupGameSpecificUI() {
 }
 
 
-// ハードモードと通常モードの記録表示を切り替え、実際の成績データを表示する関数
+// 【修正後】 各文字数（4, 5, 6文字）のデータを一度に集計・表示する運行記録更新関数
 function updateTitleStatsDisplay(modeType) {
-  // 1. タブの見た目（色）の切り替え処理
+  // タブボタン要素の取得
   const tabNormal = document.getElementById("tab-normal");
   const tabHard = document.getElementById("tab-hard");
   const tabQuad = document.getElementById("tab-quad"); 
 
-  // タブの見た目リセット
+  // 全タブのスタイルを一旦リセット
   [tabNormal, tabHard, tabQuad].forEach(t => { if(t) t.className = "btn btn-small btn-outline"; });
 
-  let targetMode = currentMode.toString();
-  let maxRowForGraph = maxGuesses;
-  
+  // 選択されたタブに応じた色の強調表示
   if (modeType === "normal") {
     if (tabNormal) tabNormal.className = "btn btn-small btn-green-outline";
   } else if (modeType === "hard") {
     if (tabHard) tabHard.className = "btn btn-small btn-danger";
-    targetMode += "_hard";
   } else if (modeType === "quad") {
     if (tabQuad) tabQuad.className = "btn btn-small btn-primary"; 
-    targetMode = "quad" + currentMode;
-    maxRowForGraph = CONFIG_MAX_GUESSES_QUAD; // クアッド専用の最大手数（11）をセット
   }
 
-  let st = userStats[targetMode] || { played: 0, won: 0, currentStreak: 0, maxStreak: 0, guesses: [] };
+  // 4, 5, 6文字それぞれのデータをループで取得し、それぞれの表示枠へ一斉に流し込みます
+  [4, 5, 6].forEach(num => {
+    let targetMode = num.toString();
+    if (modeType === "hard") {
+      targetMode += "_hard";
+    } else if (modeType === "quad") {
+      targetMode = "quad" + num;
+    }
 
-  // 勝率の計算（0回の時にエラーにならないよう分岐し、四捨五入する）
-  let winRate = st.played > 0 ? Math.round((st.won / st.played) * 100) : 0;
+    // セーブデータから該当モードの戦績を読み出し（存在しない場合は初期値）
+    let st = userStats[targetMode] || { played: 0, won: 0, currentStreak: 0, maxStreak: 0, guesses: [] };
+    let winRate = st.played > 0 ? Math.round((st.won / st.played) * 100) : 0;
 
-  // 3. HTMLの数字部分（IDがts-〇〇の場所）に、計算したデータをそれぞれ代入する
-  const elPlayed = document.getElementById("ts-played");
-  const elWinrate = document.getElementById("ts-winrate");
-  const elStreak = document.getElementById("ts-streak");
-  const elMaxstreak = document.getElementById("ts-maxstreak");
+    // 対応する文字数のHTML要素に数値を代入
+    const elPlayed = document.getElementById(`ts-${num}-played`);
+    const elWinrate = document.getElementById(`ts-${num}-winrate`);
+    const elStreak = document.getElementById(`ts-${num}-streak`);
+    const elMaxstreak = document.getElementById(`ts-${num}-maxstreak`);
 
-  if (elPlayed) elPlayed.textContent = st.played;
-  if (elWinrate) elWinrate.textContent = winRate;
-  if (elStreak) elStreak.textContent = st.currentStreak;
-  if (elMaxstreak) elMaxstreak.textContent = st.maxStreak;
+    if (elPlayed) elPlayed.textContent = st.played;
+    if (elWinrate) elWinrate.textContent = winRate;
+    if (elStreak) elStreak.textContent = st.currentStreak;
+    if (elMaxstreak) elMaxstreak.textContent = st.maxStreak;
+  });
 }
 
     
@@ -2342,7 +2348,8 @@ function showQuadResultModal() {
   for(let i = 0; i < 4; i++){
     let st = quadStations[i];
     let icon = quadSolved[i] ? "✅" : "❌";
-    descHtml += `<div style="background:#f9f9f9; padding:5px; border-radius:5px;">${icon} <b style="color:#333;">${st.kanji}</b><br><span style="font-size:11px; color:#666;">(${st.yomi})</span></div>`;
+    // 駅名部分をWikipediaリンク（st.url）で包み、色を整えます
+    descHtml += `<div style="background:#f9f9f9; padding:5px; border-radius:5px;">${icon} <a href="${st.url}" target="_blank" style="color:inherit; text-decoration:none;"><b style="color:#333; border-bottom:1px dashed #666;">${st.kanji}</b></a><br><span style="font-size:11px; color:#666;">(${st.yomi})</span></div>`;
   }
   descHtml += `</div>`;
   document.getElementById("quad-modal-desc").innerHTML = descHtml;
@@ -2369,6 +2376,7 @@ function showQuadResultModal() {
 }
 
 // クアッド専用のシェアテキストを組み立てる処理
+// 手数表示をお洒落にコンパクト化し、ハッシュタグを拡張したシェア関数
 function shareQuadResult(type) {
   let clearTurns = ["X", "X", "X", "X"];
   for(let b=0; b<4; b++) {
@@ -2379,25 +2387,17 @@ function shareQuadResult(type) {
     }
   }
 
-  let text = `駅ドル Quad ${currentMode}文字モード\n`;
-  text += `${clearTurns[0]} ${clearTurns[1]}\n${clearTurns[2]} ${clearTurns[3]}\n\n`;
-
-  // 横に2つずつ並べて絵文字のブロックを作成（本家Quordle風）
-  for(let i=0; i<quadGridHistory.length; i++) {
-    let row0 = quadGridHistory[i][0].map(c => colorToEmoji[c]).join("");
-    let row1 = quadGridHistory[i][1].map(c => colorToEmoji[c]).join("");
-    text += `${row0}  ${row1}\n`;
-  }
-  text += "\n";
-  for(let i=0; i<quadGridHistory.length; i++) {
-    let row2 = quadGridHistory[i][2].map(c => colorToEmoji[c]).join("");
-    let row3 = quadGridHistory[i][3].map(c => colorToEmoji[c]).join("");
-    text += `${row2}  ${row3}\n`;
-  }
+  // お洒落に手数を配置するテキストの組み立て
+  let text = `駅ドル Quad ${currentMode}文字モード\n\n`;
+  const emojify = (t) => t === "X" ? "🟥 ✕" : `🟩 ${t}手`;
+  text += `① ${emojify(clearTurns[0])}  ② ${emojify(clearTurns[1])}\n`;
+  text += `③ ${emojify(clearTurns[2])}  ④ ${emojify(clearTurns[3])}\n\n`;
 
   let currentUrl = window.location.href.split('?')[0];
-  text += `\n#駅ドル #駅ドルQuad\n${currentUrl}`;
-  // 共通のシェア実行関数を呼ぶ
+  // 指定された新しいハッシュタグを追加
+  text += `#駅ドル #駅ドルQuad #駅ドルQuad${currentMode}\n${currentUrl}`;
+  
+  // 共通のシェア実行関数を呼び出し
   executeSharedShare(type, text, currentUrl);
 }
 
