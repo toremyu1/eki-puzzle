@@ -92,6 +92,8 @@ function getCleanStations(rawStations) {
     if (!s.pref || s.pref === "") return false;
     if (!s.address || s.address === "") return false;
     if (s.min_km == null) return false;
+    // 【追加】事業者が登録されていない（配列が空、または存在しない）駅を除外 (Pythonに合わせる)
+    if (!s.companies || s.companies.length === 0) return false;
     // 貨物専用駅を除外
     if (s.companies && s.companies.length === 1 && s.companies[0] === "日本貨物鉄道") return false;
     
