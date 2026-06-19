@@ -684,5 +684,19 @@
             "pref": "広島県",
             "municipality": "広島市"
         }
+    },
+    "2026-08-01": {
+        "normal": {
+            "kanji": "日頃市駅",
+            "yomi": "ひころいち",
+            "pref": "岩手県",
+            "municipality": "大船渡市"
+        },
+        "hard": {
+            "kanji": "滝井駅",
+            "yomi": "たきい",
+            "pref": "大阪府",
+            "municipality": "守口市"
+        }
     }
 }
