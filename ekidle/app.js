@@ -101,11 +101,22 @@ async function initGame() {
 function setupCommonUI() {
   // 1. 共通関数の呼び出し（これだけでメニューやモーダルが動きます）
   setupSharedSideMenu("menu-btn", "side-menu", "side-menu-overlay", "close-menu-btn");
-  setupSharedModal("help-btn", "help-modal", "close-help-btn");
-  setupSharedModal("", "result-modal", "close-modal-btn");    // 第1引数を空文字（""）にして、強制的に開く処理を無効化します
-  // クアッド用モーダルの開閉処理を紐付け
+  // ▼▼▼ 修正：「help-btn」の固定紐付けを解除し、各モーダルは閉じるボタンのみ設定します ▼▼▼
+  setupSharedModal("", "help-modal", "close-help-btn");
+  setupSharedModal("", "result-modal", "close-modal-btn");    
   setupSharedModal("", "quad-help-modal", "close-quad-help-btn");
   setupSharedModal("", "quad-result-modal", "close-quad-modal-btn");
+
+  // 「？」ボタンが押された時、現在のモードに応じて表示するモーダルを切り替えます
+  document.getElementById("help-btn")?.addEventListener("click", () => {
+    if (isQuadMode) {
+      // クアッドモード中は専用の説明画面を開く
+      document.getElementById("quad-help-modal")?.classList.remove("hidden");
+    } else {
+      // 通常モード中は通常の説明画面を開く
+      document.getElementById("help-modal")?.classList.remove("hidden");
+    }
+  });
   
   // 2. タイトル画面とゲーム画面の遷移制御（駅ドル専用の処理なので残す）
   const returnToTitleScreen = () => {
@@ -2415,10 +2426,19 @@ document.getElementById("btn-quad-mode")?.addEventListener("click", async () => 
   maxGuesses = CONFIG_MAX_GUESSES_QUAD;
   
   await startQuadMode();
+  
+  // ▼▼▼ 修正：1日1回だけ自動でクアッド用の説明モーダルを開く処理 ▼▼▼
+  const todayStr = getJSTDateString(); // 日本時間の今日の日付を取得
+  const hasSeenHelpToday = localStorage.getItem("ekiQuadHelpSeen") === todayStr;
 
-  // タイトル画面から飛んできた「初回のみ」モーダルを開く
-  const helpModal = document.getElementById("quad-help-modal");
-  if (helpModal) helpModal.classList.remove("hidden");
+  if (!hasSeenHelpToday) {
+    const helpModal = document.getElementById("quad-help-modal");
+    if (helpModal) {
+      helpModal.classList.remove("hidden");
+      localStorage.setItem("ekiQuadHelpSeen", todayStr); // 今日表示した日付を保存
+    }
+  }
+  // ▲▲▲ 修正ここまで ▲▲▲
 });
 
 // 内部の色名を実際のカラーコード（CSS変数）に変換する関数
