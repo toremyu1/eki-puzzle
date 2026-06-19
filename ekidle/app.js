@@ -152,10 +152,12 @@ function setupCommonUI() {
       // 通常盤面を表示し、クアッド盤面を隠す
       document.getElementById("game-board")?.classList.remove("hidden");
       document.getElementById("quad-board-container")?.classList.add("hidden");
+      document.getElementById("expand-toggle-btn")?.classList.add("hidden");
       
       // 文字数セレクターとハードモードスイッチを表示する
       document.querySelector(".mode-selector")?.classList.remove("hidden");
       document.querySelector(".hardmode-container")?.classList.remove("hidden");
+
       
       // ▼▼▼ 追加：現在の文字数に合わせて通常モードの変数を設定し直し、盤面を再構築する ▼▼▼
       if (currentMode === 4) maxGuesses = CONFIG_MAX_GUESSES_4;
@@ -265,6 +267,41 @@ function setupGameSpecificUI() {
   document.getElementById("enter-btn")?.addEventListener("click", () => handleKeyPress("ENTER"));
   document.getElementById("back-btn")?.addEventListener("click", () => handleKeyPress("BACK"));
   document.getElementById("clear-btn")?.addEventListener("click", () => handleKeyPress("CLEAR"));
+  // ▼▼▼ ここから追加：クアッドモード専用の一括展開・縮小ボタンの処理 ▼▼▼
+  document.getElementById("expand-toggle-btn")?.addEventListener("click", () => {
+    // クアッドモード以外、またはまだ1手も打っていない場合は動作させない
+    if (!isQuadMode || guessesSubmitted === 0) return;
+    
+    let allPastRows = [];
+    
+    // 4つの盤面から、過去に入力済みの行（inactive-rowクラスを持つもの）をすべて集める
+    for (let b = 0; b < 4; b++) {
+      const board = document.getElementById(`board-${b}`);
+      if (!board) continue;
+      // 現在入力中の行は含めず、過去の行だけを対象にする
+      for (let i = 0; i < guessesSubmitted; i++) {
+        const row = board.children[i];
+        if (row && row.classList.contains("inactive-row")) {
+          allPastRows.push(row);
+        }
+      }
+    }
+
+    if (allPastRows.length === 0) return;
+
+    // 1つでも縮小中の行（force-expandが付いていない行）があれば、「すべて拡大」を目標にする
+    const isExpanding = allPastRows.some(row => !row.classList.contains("force-expand"));
+    
+    // 集めた過去の行すべてに対して、一斉に拡大・縮小を適用する
+    allPastRows.forEach(row => {
+      if (isExpanding) {
+        row.classList.add("force-expand");
+      } else {
+        row.classList.remove("force-expand");
+      }
+    });
+  });
+  
   // クアッド用のシェアボタン紐付け
   document.getElementById("quad-share-btn")?.addEventListener("click", () => shareQuadResult("twitter"));
   document.getElementById("quad-copy-btn")?.addEventListener("click", () => shareQuadResult("copy"));
@@ -1880,6 +1917,7 @@ async function startQuadMode() {
   // クアッド用の盤面コンテナを表示する
   const quadContainer = document.getElementById("quad-board-container");
   if (quadContainer) quadContainer.classList.remove("hidden");
+  document.getElementById("expand-toggle-btn")?.classList.remove("hidden");
 
   // 通常用の盤面コンテナを非表示にする
   const normalBoard = document.getElementById("game-board");
@@ -2172,6 +2210,8 @@ function submitQuadGuess(isRestore = false) {
 
   // 各盤面の色結果を集約するための多次元配列
   let allBoardResults = [];
+  // ▼▼▼ 追加：今回の判定前に、どの盤面が既にクリア済みだったかを記憶しておく ▼▼▼
+  const prevQuadSolved = [...quadSolved];
 
   // 4つの盤面をループ処理して1つずつ色を判定していく
   for (let b = 0; b < 4; b++) {
@@ -2209,6 +2249,11 @@ function submitQuadGuess(isRestore = false) {
     if (isCorrectAll) {
       quadSolved[b] = true;
       board.classList.add("cleared"); // 盤面全体をグレーアウト
+      // ▼▼▼ 追加：今回新しくクリアした盤面にのみ、アニメーション演出を出す ▼▼▼
+      // 復元時（isRestore）には演出を出さないようにガードする
+      if (!isRestore && !prevQuadSolved[b]) {
+        showClearedAnimation(board);
+      }
     }
   }
 
@@ -2267,6 +2312,25 @@ function submitQuadGuess(isRestore = false) {
     if (!isRestore) saveGameState();
   }
 }
+
+// 盤面クリア時のジャンプアニメーション生成関数 
+// 指定された盤面（boardElement）の上に、CLEARED!の文字を配置します
+function showClearedAnimation(boardElement) {
+  const container = document.createElement("div");
+  container.className = "cleared-animation-container";
+  
+  const text = "CLEARED!";
+  // 1文字ずつspanタグで囲み、アニメーションの開始時間を0.05秒ずつズラすことでウェーブ状にジャンプさせる
+  for (let i = 0; i < text.length; i++) {
+    const span = document.createElement("span");
+    span.textContent = text[i];
+    span.style.animationDelay = `${i * 0.05}s`;
+    container.appendChild(span);
+  }
+  
+  boardElement.appendChild(container);
+}
+
 
 // クアッド専用の結果モーダルを表示する処理
 function showQuadResultModal() {
