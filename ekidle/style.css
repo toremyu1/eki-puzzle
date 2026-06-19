@@ -804,3 +804,47 @@ body.event-nye .key { background-color:#25202b; color:#d1c7bd; }
   -webkit-user-select: none; /* iPhoneやSafariブラウザ用の設定です */
   user-select: none;         /* パソコンやAndroid等の標準的な文字選択禁止設定です */
 }
+
+/* ▼▼▼ 追加：クアッドモードのクリア演出アニメーション ▼▼▼ */
+/* 盤面を基準にして文字を中央に配置するため、相対位置（relative）を追加 */
+.quad-board {
+  position: relative; 
+}
+
+/* CLEARED!の文字全体をまとめるコンテナの設定 */
+.cleared-animation-container {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  font-size: 26px;
+  font-weight: 900;
+  color: #ffca28; /* お祝い感のあるゴールドカラー */
+  /* 文字が背景に埋もれないよう、太めの縁取りと影をつける */
+  text-shadow: 
+    -2px -2px 0 #e65100,  
+     2px -2px 0 #e65100,
+    -2px  2px 0 #e65100,
+     2px  2px 0 #e65100,
+     0px  4px 8px rgba(0,0,0,0.5);
+  z-index: 20;
+  pointer-events: none; /* 演出の文字がタップ操作の邪魔にならないようにする */
+}
+
+/* 1文字ずつの設定（最初は透明にしておく） */
+.cleared-animation-container span {
+  display: inline-block;
+  opacity: 0;
+  animation: jumpBounce 0.6s ease forwards;
+}
+
+/* 順番に上へ跳ねながら現れるキーフレームアニメーション */
+@keyframes jumpBounce {
+  0% { transform: translateY(10px) scale(0.8); opacity: 0; }
+  50% { transform: translateY(-15px) scale(1.1); opacity: 1; }
+  70% { transform: translateY(0px) scale(1); opacity: 1; }
+  85% { transform: translateY(-5px) scale(1); opacity: 1; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+/* ▲▲▲ 追加ここまで ▲▲▲ */
