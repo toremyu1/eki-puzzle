@@ -195,14 +195,31 @@
         <div class="stat-box" style="width:40%;">
           <span id="ts-played" style="font-size:24px; font-weight:bold;">0</span><br>プレイ回数
         </div>
-        <div class="stat-box" style="width:40%;">
-          <span id="ts-winrate" style="font-size:24px; font-weight:bold;">0</span>%<br>勝率
         </div>
-        <div class="stat-box" style="width:40%;">
-          <span id="ts-streak" style="font-size:24px; font-weight:bold;">0</span><br>現在連勝
+
+      <div style="display:flex; flex-direction:column; gap:15px; margin-top:15px;">
+        <div style="font-weight:bold; border-left:4px solid #6aaa64; padding-left:8px; text-align:left;">4文字モード</div>
+        <div style="display:flex; justify-content:space-around; background:#f8f9fa; padding:8px; border-radius:6px; text-align:center;">
+          <div class="stat-box" style="font-size:11px;"><span id="ts-4-played" style="font-size:18px; font-weight:bold;">0</span><br>プレイ</div>
+          <div class="stat-box" style="font-size:11px;"><span id="ts-4-winrate" style="font-size:18px; font-weight:bold;">0</span>%<br>勝率</div>
+          <div class="stat-box" style="font-size:11px;"><span id="ts-4-streak" style="font-size:18px; font-weight:bold;">0</span><br>連勝</div>
+          <div class="stat-box" style="font-size:11px;"><span id="ts-4-maxstreak" style="font-size:18px; font-weight:bold;">0</span><br>最大</div>
         </div>
-        <div class="stat-box" style="width:40%;">
-          <span id="ts-maxstreak" style="font-size:24px; font-weight:bold;">0</span><br>最大連勝
+
+        <div style="font-weight:bold; border-left:4px solid #03a9f4; padding-left:8px; text-align:left;">5文字モード</div>
+        <div style="display:flex; justify-content:space-around; background:#f8f9fa; padding:8px; border-radius:6px; text-align:center;">
+          <div class="stat-box" style="font-size:11px;"><span id="ts-5-played" style="font-size:18px; font-weight:bold;">0</span><br>プレイ</div>
+          <div class="stat-box" style="font-size:11px;"><span id="ts-5-winrate" style="font-size:18px; font-weight:bold;">0</span>%<br>勝率</div>
+          <div class="stat-box" style="font-size:11px;"><span id="ts-5-streak" style="font-size:18px; font-weight:bold;">0</span><br>連勝</div>
+          <div class="stat-box" style="font-size:11px;"><span id="ts-5-maxstreak" style="font-size:18px; font-weight:bold;">0</span><br>最大</div>
+        </div>
+
+        <div style="font-weight:bold; border-left:4px solid #9c27b0; padding-left:8px; text-align:left;">6文字モード</div>
+        <div style="display:flex; justify-content:space-around; background:#f8f9fa; padding:8px; border-radius:6px; text-align:center;">
+          <div class="stat-box" style="font-size:11px;"><span id="ts-6-played" style="font-size:18px; font-weight:bold;">0</span><br>プレイ</div>
+          <div class="stat-box" style="font-size:11px;"><span id="ts-6-winrate" style="font-size:18px; font-weight:bold;">0</span>%<br>勝率</div>
+          <div class="stat-box" style="font-size:11px;"><span id="ts-6-streak" style="font-size:18px; font-weight:bold;">0</span><br>連勝</div>
+          <div class="stat-box" style="font-size:11px;"><span id="ts-6-maxstreak" style="font-size:18px; font-weight:bold;">0</span><br>最大</div>
         </div>
       </div>
     </div>
@@ -239,7 +256,9 @@
       </div>
       
       <div class="modal-buttons">
-        <button id="quad-share-btn" class="btn btn-share-x">Xでシェア</button>
+        <button id="quad-share-btn" class="btn btn-share-x">X</button>
+        <button id="quad-line-btn" class="btn btn-share-line">LINE</button>
+        <button id="quad-fb-btn" class="btn btn-share-fb">Facebook</button>
         <button id="quad-copy-btn" class="btn btn-share-copy">コピー</button>
       </div>
     </div>
