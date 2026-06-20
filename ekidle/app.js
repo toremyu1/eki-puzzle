@@ -191,6 +191,14 @@ function setupCommonUI() {
 
       
       // ▼▼▼ 追加：現在の文字数に合わせて通常モードの変数を設定し直し、盤面を再構築する ▼▼▼
+      // 現在アクティブになっているボタンから文字数を読み取って復元します
+      const activeModeBtn = document.querySelector(".mode-btn.active");
+      if (activeModeBtn) {
+        currentMode = parseInt(activeModeBtn.id.replace("mode-", ""), 10);
+      } else {
+        currentMode = 4;
+      }
+
       if (currentMode === 4) maxGuesses = CONFIG_MAX_GUESSES_4;
       else if (currentMode === 5) maxGuesses = CONFIG_MAX_GUESSES_5;
       else if (currentMode === 6) maxGuesses = CONFIG_MAX_GUESSES_6;
@@ -312,8 +320,8 @@ function setupCommonUI() {
   });
   
   // タブ切り替え処理
+  document.getElementById("tab-yuru")?.addEventListener("click", () => { if(typeof updateTitleStatsDisplay === "function") updateTitleStatsDisplay("yuru"); });
   document.getElementById("tab-normal")?.addEventListener("click", () => { if(typeof updateTitleStatsDisplay === "function") updateTitleStatsDisplay("normal"); });
-  document.getElementById("tab-hard")?.addEventListener("click", () => { if(typeof updateTitleStatsDisplay === "function") updateTitleStatsDisplay("hard"); });
   document.getElementById("tab-quad")?.addEventListener("click", () => { if(typeof updateTitleStatsDisplay === "function") updateTitleStatsDisplay("quad"); });
 }
 
@@ -449,7 +457,7 @@ function setupGameSpecificUI() {
   const hardSwitch = document.getElementById("hardmode-switch");
   if (hardSwitch) {
     hardSwitch.addEventListener("click", (e) => {
-      let stateKey = isPlayingRandom ? "random" : currentMode;
+      let stateKey = isPlayingRandom ? "random" : (isYuruMode ? "yuru" : currentMode);
       let currentSt = savedState[stateKey];
       
       // ゲームが既に終了（クリアor失敗）している場合
@@ -486,27 +494,42 @@ function setupGameSpecificUI() {
 // 【修正後】 各文字数（4, 5, 6文字）のデータを一度に集計・表示する運行記録更新関数
 function updateTitleStatsDisplay(modeType) {
   // タブボタン要素の取得
+  const tabYuru = document.getElementById("tab-yuru");
   const tabNormal = document.getElementById("tab-normal");
-  const tabHard = document.getElementById("tab-hard");
   const tabQuad = document.getElementById("tab-quad"); 
 
   // 全タブのスタイルを一旦リセット
-  [tabNormal, tabHard, tabQuad].forEach(t => { if(t) t.className = "btn btn-small btn-outline"; });
+  [tabYuru, tabNormal, tabQuad].forEach(t => { if(t) t.className = "btn btn-small btn-outline"; });
 
   // 選択されたタブに応じた色の強調表示
   if (modeType === "normal") {
     if (tabNormal) tabNormal.className = "btn btn-small btn-green-outline";
-  } else if (modeType === "hard") {
-    if (tabHard) tabHard.className = "btn btn-small btn-danger";
+  } else if (modeType === "yuru") {
+    if (tabYuru) tabYuru.className = "btn btn-small btn-green-outline"; // ゆる鉄も緑色
   } else if (modeType === "quad") {
     if (tabQuad) tabQuad.className = "btn btn-small btn-primary"; 
   }
 
+  // ゆる鉄モードの時は、4文字と6文字の枠を隠して5文字だけを表示します
+  const area4 = document.getElementById("stats-area-4");
+  const area6 = document.getElementById("stats-area-6");
+  if (area4) area4.style.display = (modeType === "yuru") ? "none" : "block";
+  if (area6) area6.style.display = (modeType === "yuru") ? "none" : "block";
+
+  // 5文字枠のタイトルを変更します
+  const title5 = document.getElementById("stats-title-5");
+  if (title5) {
+    title5.innerHTML = (modeType === "yuru") ? "ゆる鉄モード (5文字)" : "5文字モード";
+  }
+
   // 4, 5, 6文字それぞれのデータをループで取得し、それぞれの表示枠へ一斉に流し込みます
   [4, 5, 6].forEach(num => {
+    // ゆる鉄モードの時は、5文字以外の計算をスキップします
+    if (modeType === "yuru" && num !== 5) return;
+
     let targetMode = num.toString();
-    if (modeType === "hard") {
-      targetMode += "_hard";
+    if (modeType === "yuru") {
+      targetMode = "yuru"; // ゆる鉄モードの成績データを読み込むキー
     } else if (modeType === "quad") {
       targetMode = "quad" + num;
     }
@@ -629,7 +652,7 @@ function loadStats(){
 
 //今回のゲーム結果をこれまでのデータに加算して新しく保存する
 function saveStats(isWin,actualGuesses){
-  let stateKey = isPlayingRandom ? "random" : currentMode;
+  let stateKey = isPlayingRandom ? "random" : (isYuruMode ? "yuru" : currentMode);
   let currentState = savedState[stateKey];
   
   // 保存先のキーを決定する（ハードモードなら "4_hard" などの専用の箱にする）
@@ -689,7 +712,7 @@ function loadGameState(dayIdx){
   if(logData[dayIdx]){
     savedState=logData[dayIdx];
     // 【安全装置】ハードモード用のセーブ枠が不足していればその場で自動追加する
-    ["4_hard", "5_hard", "6_hard", "quad4", "quad5", "quad6"].forEach(k => {
+    ["4_hard", "5_hard", "6_hard", "yuru", "quad4", "quad5", "quad6"].forEach(k => {
       if(!savedState[k]) {
         // クアッド用の枠の場合は、4つの盤面クリア状態などを記憶する変数を入れる
         if(k.startsWith("quad")) {
@@ -709,6 +732,7 @@ function loadGameState(dayIdx){
     4:{guesses:[],guessTimes:[],startTime:null,endTime:null,usedHint:false,isWin:false,isOver:false}, 
     5:{guesses:[],guessTimes:[],startTime:null,endTime:null,usedHint:false,isWin:false,isOver:false}, 
     6:{guesses:[],guessTimes:[],startTime:null,endTime:null,usedHint:false,isWin:false,isOver:false},
+    "yuru":{guesses:[],guessTimes:[],startTime:null,endTime:null,usedHint:false,isWin:false,isOver:false}, 
     "4_hard":{guesses:[],guessTimes:[],startTime:null,endTime:null,usedHint:false,isWin:false,isOver:false}, 
     "5_hard":{guesses:[],guessTimes:[],startTime:null,endTime:null,usedHint:false,isWin:false,isOver:false}, 
     "6_hard":{guesses:[],guessTimes:[],startTime:null,endTime:null,usedHint:false,isWin:false,isOver:false},
@@ -999,7 +1023,7 @@ function restoreBoard(){
     if (modal) {
       modal.classList.add("hidden");
     }
-  let stateKey = isPlayingRandom ? "random" : currentMode;
+  let stateKey = isPlayingRandom ? "random" : (isYuruMode ? "yuru" : currentMode);
   let st=savedState[stateKey];
   // セーブデータが存在する場合のみ、過去の回答を盤面に1手ずつ再現して復元します
   if (st && st.guesses) {
@@ -1047,7 +1071,7 @@ function handleKeyPress(char){
     const isAllCleared = quadSolved.every(s => s === true);
     if (isAllCleared || guessesSubmitted >= maxGuesses) return;
   } else {
-    let stateKey = isPlayingRandom ? "random" : currentMode;
+    let stateKey = isPlayingRandom ? "random" : (isYuruMode ? "yuru" : currentMode);
     let st = savedState[stateKey];
     if(!st || st.isOver || guessesSubmitted >= maxGuesses) return;
     
@@ -1226,7 +1250,7 @@ function submitGuess(isRestore=false){
     }
   }
   
-  let stateKey = isPlayingRandom ? "random" : currentMode;
+  let stateKey = isPlayingRandom ? "random" : (isYuruMode ? "yuru" : currentMode);
   let st = savedState[stateKey];
   if(!st) {
     st = {guesses: [], guessTimes: [], startTime: null, endTime: null, usedHint: false, isWin: false, isOver: false};
@@ -1458,7 +1482,7 @@ clearTimeout(msgTimeout); msgTimeout=setTimeout(()=>box.classList.add("hidden"),
 //ゲーム終了時に、正解の駅名、Wikipediaへのリンク、旅行サイトへの広告、過去の戦績グラフをまとめて表示する大きな画面を作る
 function showResultModal(isWin,isRestore){
   // 難易度ごとに戦績グラフや勝率を別々に集計・表示するための切り替え
-  let stateKey = isPlayingRandom ? "random" : currentMode;
+  let stateKey = isPlayingRandom ? "random" : (isYuruMode ? "yuru" : currentMode);
   let currentState = savedState[stateKey];
   
   // ここでも、ハードモードなら専用の箱からデータを読み込むようにする
@@ -1534,30 +1558,37 @@ function shareResult(type){
   let scoreStr=isWin?`${gridHistory.length}/${maxGuesses}`:`X/${maxGuesses}`;
   let currentUrl=window.location.href.split('?')[0];
 
-  // ハードモードONのときはタイトルを「駅ドルHard」に変更する
-  let currentState = savedState[isPlayingRandom ? "random" : currentMode];
-  let isHard = !!currentState.isHardMode;
-  let gameTitle = ekiSettings.hardMode ? "駅ドルHard" : "駅ドル";
-  let text=`${gameTitle} ${currentMode}文字モード ${scoreStr}\n\n`;
+  // ハードモードONやゆる鉄モードのときはタイトルとハッシュタグを変更する
+  let currentState = savedState[isPlayingRandom ? "random" : (isYuruMode ? "yuru" : currentMode)];
+  
+  let gameTitle = "駅ドル ガチ鉄モード";
+  if (isYuruMode) {
+    gameTitle = "駅ドル ゆる鉄モード";
+  } else if (ekiSettings.hardMode) {
+    gameTitle = "駅ドル ガチ鉄モード Hard";
+  }
+  
+  let text=`${gameTitle} ${isYuruMode ? 5 : currentMode}文字 ${scoreStr}\n\n`;
 
   text+=gridHistory.map((row,i)=>{
     let r=row.map(c=>colorToEmoji[c]).join("");
     return (isWin&&i===gridHistory.length-1)?r+"💮":r;
   }).join("\n");
 
-  // ハードモードONのときは専用のハッシュタグ（#駅ドルHard と #駅ドルHard[文字数]）を追加する
   let hashtagStr = `#駅ドル\n`;
-  if (ekiSettings.hardMode) {
-    hashtagStr += `#駅ドルHard\n`;
-  }
-  hashtagStr += `#駅ドル${currentMode}\n`;
-  if (ekiSettings.hardMode) {
-    hashtagStr += `#駅ドルHard${currentMode}\n`;
+  if (isYuruMode) {
+    hashtagStr += `#駅ドルゆる鉄モード\n`;
+  } else {
+    hashtagStr += `#駅ドルガチ鉄モード\n`;
+    hashtagStr += `#駅ドルガチ鉄モード${currentMode}\n`;
+    if (ekiSettings.hardMode) {
+      hashtagStr += `#駅ドルガチ鉄モードHard\n`;
+    }
   }
 
   text += `\n\n${hashtagStr}`;
 
-  // 【修正】実際のシェア送信処理を共通関数に任せる
+  // 実際のシェア送信処理を共通関数に任せる
   executeSharedShare(type, text, currentUrl);
 }
 
