@@ -2293,6 +2293,7 @@ function submitQuadGuess(isRestore = false) {
       }
     }
   }
+}
 
   // 4色ブレンドキーボードの表示更新
   updateQuadKeyboardLogic(currentGuess, allBoardResults);
