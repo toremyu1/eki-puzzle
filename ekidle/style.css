@@ -855,6 +855,25 @@ body.event-nye .key { background-color:#25202b; color:#d1c7bd; }
   animation: jumpBounce 0.6s ease forwards;
 }
 
+/* 【追加】クアッド盤面ごとの残り駅数カウンターの見た目 */
+.quad-remain-counter {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  font-size: 10px;
+  font-weight: bold;
+  color: #ffffff;
+  background: rgba(0, 0, 0, 0.6); /* 黒ベースの半透明背景で文字をくっきり見せる */
+  padding: 1px 4px;
+  border-radius: 4px;
+  z-index: 15;
+  pointer-events: none; /* タップやShift選択の邪魔をしない設定 */
+}
+/* すでにクリアされた盤面ではカウンターを非表示にする */
+.quad-board.cleared .quad-remain-counter {
+  display: none;
+}
+
 /* 順番に上へ跳ねながら現れるキーフレームアニメーション */
 @keyframes jumpBounce {
   0% { transform: translateY(10px) scale(0.8); opacity: 0; }
