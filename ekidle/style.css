@@ -147,6 +147,14 @@ body.theme-dark #title-stats-modal .btn {
   color: #000000 !important;
 }
 
+/* 【追加】ダークテーマのとき、運行記録モーダルの各文字数ボックス内の数値を黒文字にして見やすくする */
+.theme-dark #title-stats-modal .stat-box {
+  color: #1a1a1b !important;
+}
+.theme-dark #title-stats-modal .stat-box span {
+  color: #000000 !important;
+}
+
 /* ボタンが押された瞬間の沈み込みアクション */
 .btn:active:not([disabled]) {
   transform: translateY(4px);
@@ -239,6 +247,14 @@ body.theme-dark #title-stats-modal .btn {
   color: #ffffff !important;
   border-color: #03a9f4 !important;
   font-weight: bold;
+}
+
+/* 【追加】ダークテーマのとき、運行記録モーダルの各文字数ボックス内の数値を黒文字にして見やすくする */
+.theme-dark #title-stats-modal .stat-box {
+  color: #1a1a1b !important;
+}
+.theme-dark #title-stats-modal .stat-box span {
+  color: #000000 !important;
 }
 
 
