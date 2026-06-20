@@ -2371,16 +2371,17 @@ function submitQuadGuess(isRestore = false) {
   } else {
     // 途中経過を保存
     if (!isRestore) saveGameState();
-    // ▼▼▼ 追加：駅を入力し終わったら、次の行を拡大するためにタイル状態を更新します ▼▼▼
-    if (typeof updateTiles === "function") {
-    updateTiles();
-  }
+    
+    // ▼▼▼ 修正：復元中（再読み込み時）は、タイルに余計な文字が残らないよう更新をスキップします ▼▼▼
+    if (!isRestore && typeof updateTiles === "function") {
+      updateTiles();
+    }
 
-  // ▼▼▼ 【重要】ここで残り駅数を再計算して画面を更新します ▼▼▼
-  if (!isRestore && typeof updateQuadRemainingCounts === "function") {
-    updateQuadRemainingCounts();
+    // ▼▼▼ 【重要】ここで残り駅数を再計算して画面を更新します ▼▼▼
+    if (!isRestore && typeof updateQuadRemainingCounts === "function") {
+      updateQuadRemainingCounts();
+    }
   }
-}
 }
 
 // 盤面クリア時のジャンプアニメーション生成関数 
