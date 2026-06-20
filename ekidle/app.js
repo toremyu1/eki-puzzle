@@ -2485,7 +2485,7 @@ function shareQuadResult(type) {
 
   let currentUrl = window.location.href.split('?')[0];
   // 指定された新しいハッシュタグを追加
-  text += `#駅ドル #駅ドルQuad #駅ドルQuad${currentMode}\n${currentUrl}`;
+  text += `#駅ドル\n#駅ドルQuad\n#駅ドルQuad${currentMode}\n`;
   
   // 共通のシェア実行関数を呼び出し
   executeSharedShare(type, text, currentUrl);
