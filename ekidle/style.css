@@ -264,6 +264,19 @@ body.theme-dark #title-stats-modal .btn {
   color: #1a1a1b !important;
 }
 
+/* 運行記録モーダルの高さを固定し、タブ切り替え時のガタつきを防ぐ */
+#title-stats-modal .modal-content {
+  min-height: 480px !important; /* コンテンツの中身に関わらず常に一定の高さを確保します */
+  display: flex;
+  flex-direction: column;
+}
+
+/* タブ部分のレイアウト固定 */
+.stats-tabs-container {
+  flex-shrink: 0; /* タブ自体が潰れないように保護します */
+  margin-bottom: 15px;
+}
+
 
 /* ------------------------------------------
    結果画面のシェアボタン等（立体カラーデザイン）
