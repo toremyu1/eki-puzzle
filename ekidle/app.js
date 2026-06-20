@@ -268,31 +268,26 @@ function setupGameSpecificUI() {
   document.getElementById("back-btn")?.addEventListener("click", () => handleKeyPress("BACK"));
   document.getElementById("clear-btn")?.addEventListener("click", () => handleKeyPress("CLEAR"));
   // ▼▼▼ ここから追加：クアッドモード専用の一括展開・縮小ボタンの処理 ▼▼▼
+  // 【修正後】展開ボタンのイベント処理
   document.getElementById("expand-toggle-btn")?.addEventListener("click", () => {
-    // クアッドモード以外、またはまだ1手も打っていない場合は動作させない
     if (!isQuadMode || guessesSubmitted === 0) return;
     
     let allPastRows = [];
-    
-    // 4つの盤面から、過去に入力済みの行（inactive-rowクラスを持つもの）をすべて集める
     for (let b = 0; b < 4; b++) {
       const board = document.getElementById(`board-${b}`);
       if (!board) continue;
-      // 現在入力中の行は含めず、過去の行だけを対象にする
+      // board-rowクラスを持つ過去の行だけを正確に集める
+      const rows = Array.from(board.children).filter(r => r.classList.contains("board-row"));
       for (let i = 0; i < guessesSubmitted; i++) {
-        const row = board.children[i];
-        if (row && row.classList.contains("inactive-row")) {
-          allPastRows.push(row);
-        }
+        if (rows[i]) allPastRows.push(rows[i]);
       }
     }
 
     if (allPastRows.length === 0) return;
 
-    // 1つでも縮小中の行（force-expandが付いていない行）があれば、「すべて拡大」を目標にする
     const isExpanding = allPastRows.some(row => !row.classList.contains("force-expand"));
-    
-    // 集めた過去の行すべてに対して、一斉に拡大・縮小を適用する
+    isQuadExpanded = isExpanding; // ★現在の展開状態をフラグに保存
+
     allPastRows.forEach(row => {
       if (isExpanding) {
         row.classList.add("force-expand");
@@ -300,6 +295,8 @@ function setupGameSpecificUI() {
         row.classList.remove("force-expand");
       }
     });
+
+    updateTiles(); // ★新しい回答行にも状態を即座に反映させる
   });
   
   // クアッド用のシェアボタン紐付け
@@ -1904,6 +1901,7 @@ function incrementClearAchievements(actualGuesses, clearTimeMs) {
 // ==========================================
 
 let isQuadMode = false;              // 現在クアッドモードかどうか
+let isQuadExpanded = false;          // 一括展開モードがONになっているかを記憶するフラグ
 let quadStations = [];               // 4つの正解駅オブジェクトを格納する配列
 let quadSolved = [false, false, false, false]; // 各盤面がクリアされたかを管理するフラグ
 let quadKeyColors = {};              // キーボード用の4分割色ログ
