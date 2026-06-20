@@ -157,7 +157,7 @@ body.theme-dark #title-stats-modal .btn {
 
 /* ダークテーマ時のXシェアボタンの影を修正 */
 .theme-dark .btn-share-x {
-  border-color: #333333 !important; /* ボタンが背景に沈まないよう境界線を設定 */
+  /* border-color: #333333 !important; /* ボタンが背景に沈まないよう境界線を設定 */
   box-shadow: 0 4px 0 #111111 !important; /* 影を背景より暗い完全な黒に変更 */
 }
 
