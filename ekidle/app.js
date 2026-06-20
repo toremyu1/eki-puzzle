@@ -321,6 +321,13 @@ function setupGameSpecificUI() {
       }
     });
 
+    // クアッドモードのセーブデータに現在の展開状態を保存します
+    let stateKey = "quad" + currentMode;
+    if (savedState[stateKey]) {
+      savedState[stateKey].isExpanded = isQuadExpanded;
+      saveGameState(); // ローカルストレージへ保存を実行します
+    }
+
     updateTiles(); // ★新しい回答行にも状態を即座に反映させる
   });
   
@@ -1986,6 +1993,9 @@ async function startQuadMode() {
   // クアッドモードのセーブデータ復元処理
   let stateKey = "quad" + currentMode;
   let st = savedState[stateKey];
+
+  // 保存された展開設定があれば復元し、無ければデフォルト（false）にします
+  isQuadExpanded = st && st.isExpanded ? true : false;
   
   // まだ保存枠がない場合は新しく作成する
   if (!st) {
@@ -2166,9 +2176,13 @@ function buildQuadBoards() {
       
       // 1行目固定ではなく、現在入力待ちのアクティブな行（guessesSubmitted）を最初から拡大します
       if (i === guessesSubmitted) {
-        row.classList.add("force-expand");
+        row.classList.add("force-expand"); // 現在入力中の行は常に拡大
       } else {
         row.classList.add("inactive-row");
+        // もし前回「一括展開」されていた場合は、過去の行も最初から拡大状態にします
+        if (i < guessesSubmitted && isQuadExpanded) {
+          row.classList.add("force-expand");
+        }
       }
       
       for (let j = 0; j < currentMode; j++) {
