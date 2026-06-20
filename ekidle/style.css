@@ -606,10 +606,10 @@ body.event-nye .key { background-color:#25202b; color:#d1c7bd; }
   --c3: #d3d6da; /* 左下：盤面2 */
   --c4: #d3d6da; /* 右下：盤面3 */
   
-  /* conic-gradient（円錐）を廃止し、linear-gradientで上下・左右を完璧な直線で4分割する */
+  /* 高さを51%にして中央をわずかに重ね、隙間の黒い線を解消します */
   background: 
-    linear-gradient(to right, var(--c1) 50%, var(--c2) 50%) top / 100% 50% no-repeat,
-    linear-gradient(to right, var(--c3) 50%, var(--c4) 50%) bottom / 100% 50% no-repeat
+    linear-gradient(to right, var(--c1) 50%, var(--c2) 50%) top / 100% 51% no-repeat,
+    linear-gradient(to right, var(--c3) 50%, var(--c4) 50%) bottom / 100% 51% no-repeat
   !important;
   
   /* 枠線を完全に消し、色のはみ出しを防ぐ */
