@@ -189,11 +189,15 @@ body.theme-dark #title-stats-modal .btn {
 .btn-gray  { background-color: #95a5a6; color: white; border-color: #7f8c8d; box-shadow: 0 4px 0 #7f8c8d; }
 .btn-outline{background-color: #ffffff; color: var(--text-color); border-color: #d3d6da; box-shadow: 0 4px 0 #bdc3c7; }
 
-/* 運行記録タブ用の、枠線と文字だけが緑色になるスタイル */
+/* -------------------------------------------------- */
+/* 【修正箇所】style.css の 110行目付近 */
+/* 「.btn-green-outline」の定義を以下のように修正します */
+/* -------------------------------------------------- */
 .btn-green-outline {
-  border-color: #6aaa64;
-  color: #6aaa64;
-  background: #ffffff
+  border-color: #6aaa64 !important;
+  color: #6aaa64 !important;
+  background: transparent !important; /* 背景を透明にしてテーマ色に馴染ませます */
+  box-shadow: 0 4px 0 rgba(106, 170, 100, 0.4) !important; /* 緑色の影を追加します */
 }
 
 /* ------------------------------------------
