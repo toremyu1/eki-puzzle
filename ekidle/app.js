@@ -2728,6 +2728,19 @@ function simulateUnifiedAnswers(validPool, targetDayIndex, length) {
 
   let dailyAnswers = {}; // 今日の全モードの答えを格納する箱
 
+  const SECRET_SALT = "EkiDoru_Secret_2026!";
+  
+  // 日付とソルトから、絶対に予測不可能な初期シードを作る関数
+  const generateSaltedSeed = (day, salt) => {
+    let str = day.toString() + salt;
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      hash = ((hash << 5) - hash) + str.charCodeAt(i);
+      hash |= 0; // 32bit整数に変換
+    }
+    return Math.abs(hash);
+  };
+
   for (let d = startDay; d <= targetDayIndex; d++) {
     // その日使える駅（出禁期間中のものは除外）
     let pool = validPool.filter(s => 
@@ -2736,7 +2749,8 @@ function simulateUnifiedAnswers(validPool, targetDayIndex, length) {
       !(bannedDays[s.yomi] && bannedDays[s.yomi] > d)
     );
 
-    let seed = d * 12345;
+    // 【修正後】ソルトを混ぜた強固なシードに変更します
+    let seed = generateSaltedSeed(d, SECRET_SALT);
     // 1回ガチャを引いて、出禁リストに入れる内部処理
     const drawGacha = (charLen) => {
       let candidates = pool.filter(s => s.yomi.length === charLen);
