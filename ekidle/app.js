@@ -2630,10 +2630,12 @@ function getQuadStrongerColor(curr, next) {
   return (p[next] || 0) > (p[curr] || 0) ? next : curr;
 }
 
-// キーボードの4分割色を割り当ててCSS変数を書き換える処理
+// キーボードの4分割色を割り当ててCSS変数を書き換える処理（清音・濁音連動版）
 function updateQuadKeyboardLogic(guessStr, resultsArray) {
   for (let i = 0; i < guessStr.length; i++) {
     let char = guessStr[i];
+    
+    // 1. 入力された文字自体の色を更新
     if (!quadKeyColors[char]) {
       quadKeyColors[char] = ["default", "default", "default", "default"];
     }
@@ -2641,14 +2643,46 @@ function updateQuadKeyboardLogic(guessStr, resultsArray) {
       let color = resultsArray[b][i];
       quadKeyColors[char][b] = getQuadStrongerColor(quadKeyColors[char][b], color);
     }
-    const keyBtn = document.getElementById(`key-${char}`);
-    if (keyBtn) {
-      keyBtn.classList.add("quad-mode");
-      keyBtn.style.setProperty("--c1", getQuadColorCodeStr(quadKeyColors[char][0])); // 左上
-      keyBtn.style.setProperty("--c2", getQuadColorCodeStr(quadKeyColors[char][1])); // 右上
-      keyBtn.style.setProperty("--c3", getQuadColorCodeStr(quadKeyColors[char][2])); // 左下
-      keyBtn.style.setProperty("--c4", getQuadColorCodeStr(quadKeyColors[char][3])); // 右下
+
+    // 2. 灰色（absent）だった場合、濁音・半濁音・小文字グループにも灰色を伝播させる
+    for (let b = 0; b < 4; b++) {
+      let color = resultsArray[b][i];
+      // クリア済みの盤面は計算をスキップする
+      if (color === "absent" && !quadSolved[b]) { 
+        let base = getBaseChar(char);
+        let targetBaseChars = quadStations[b].yomi.split("").map(getBaseChar);
+        
+        // その盤面の答えに、文字グループ（か・が等）が一切含まれていない場合のみ処理
+        if (!targetBaseChars.includes(base)) {
+          let variants = Object.keys(baseMap).filter(k => baseMap[k] === base);
+          variants.push(base); // ベース文字も含める
+          
+          variants.forEach(v => {
+            if (!quadKeyColors[v]) {
+              quadKeyColors[v] = ["default", "default", "default", "default"];
+            }
+            // より強い色がついていなければ、灰色（absent）で上書きする
+            quadKeyColors[v][b] = getQuadStrongerColor(quadKeyColors[v][b], "absent");
+            applyQuadKeyStyle(v); // バリエーションのキーボード表示を更新
+          });
+        }
+      }
     }
+    
+    // 3. 最後に、入力した文字自身のキーボード表示を更新
+    applyQuadKeyStyle(char);
+  }
+}
+
+// キーボードのDOM（見た目）を更新する専用関数
+function applyQuadKeyStyle(c) {
+  const keyBtn = document.getElementById(`key-${c}`);
+  if (keyBtn && quadKeyColors[c]) {
+    keyBtn.classList.add("quad-mode");
+    keyBtn.style.setProperty("--c1", getQuadColorCodeStr(quadKeyColors[c][0])); // 左上
+    keyBtn.style.setProperty("--c2", getQuadColorCodeStr(quadKeyColors[c][1])); // 右上
+    keyBtn.style.setProperty("--c3", getQuadColorCodeStr(quadKeyColors[c][2])); // 左下
+    keyBtn.style.setProperty("--c4", getQuadColorCodeStr(quadKeyColors[c][3])); // 右下
   }
 }
 
