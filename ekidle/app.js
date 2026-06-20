@@ -2797,6 +2797,7 @@ function simulateUnifiedAnswers(validPool, targetDayIndex, length) {
         "quad6": quad6 
       };
     }
+  }
 
   // 出禁帳簿の保存
   let stateToSave = { lastCalculatedDay: targetDayIndex, bannedDays: {} };
