@@ -198,34 +198,40 @@
       <h2 style="text-align:center; margin-top:0;">これまでの記録</h2>
       
       <div class="stats-tabs">
-        <button id="tab-normal" class="btn btn-small btn-outline">通常</button>
-        <button id="tab-hard" class="btn btn-small btn-outline">ハード</button>
-        <button id="tab-quad" class="btn btn-small btn-outline">クアッド</button>
+        <button id="tab-yuru" class="btn btn-small btn-outline">ゆる鉄</button>
+        <button id="tab-normal" class="btn btn-small btn-outline">ガチ鉄</button>
+        <button id="tab-quad" class="btn btn-small btn-outline">チャレンジ</button>
       </div>
 
       <div style="display:flex; flex-direction:column; gap:15px; margin-top:15px;">
-        <div style="font-weight:bold; border-left:4px solid #6aaa64; padding-left:8px; text-align:left;">4文字モード</div>
-        <div style="display:flex; justify-content:space-around; background:#f8f9fa; padding:8px; border-radius:6px; text-align:center;">
-          <div class="stat-box" style="font-size:11px;"><span id="ts-4-played" style="font-size:18px; font-weight:bold;">0</span><br>プレイ</div>
-          <div class="stat-box" style="font-size:11px;"><span id="ts-4-winrate" style="font-size:18px; font-weight:bold;">0</span>%<br>勝率</div>
-          <div class="stat-box" style="font-size:11px;"><span id="ts-4-streak" style="font-size:18px; font-weight:bold;">0</span><br>連勝</div>
-          <div class="stat-box" style="font-size:11px;"><span id="ts-4-maxstreak" style="font-size:18px; font-weight:bold;">0</span><br>最大</div>
+        <div id="stats-area-4">
+          <div style="font-weight:bold; border-left:4px solid #6aaa64; padding-left:8px; text-align:left;">4文字モード</div>
+          <div style="display:flex; justify-content:space-around; background:#f8f9fa; padding:8px; border-radius:6px; text-align:center;">
+            <div class="stat-box" style="font-size:11px;"><span id="ts-4-played" style="font-size:18px; font-weight:bold;">0</span><br>プレイ</div>
+            <div class="stat-box" style="font-size:11px;"><span id="ts-4-winrate" style="font-size:18px; font-weight:bold;">0</span>%<br>勝率</div>
+            <div class="stat-box" style="font-size:11px;"><span id="ts-4-streak" style="font-size:18px; font-weight:bold;">0</span><br>連勝</div>
+            <div class="stat-box" style="font-size:11px;"><span id="ts-4-maxstreak" style="font-size:18px; font-weight:bold;">0</span><br>最大</div>
+          </div>
         </div>
 
-        <div style="font-weight:bold; border-left:4px solid #03a9f4; padding-left:8px; text-align:left;">5文字モード</div>
-        <div style="display:flex; justify-content:space-around; background:#f8f9fa; padding:8px; border-radius:6px; text-align:center;">
-          <div class="stat-box" style="font-size:11px;"><span id="ts-5-played" style="font-size:18px; font-weight:bold;">0</span><br>プレイ</div>
-          <div class="stat-box" style="font-size:11px;"><span id="ts-5-winrate" style="font-size:18px; font-weight:bold;">0</span>%<br>勝率</div>
-          <div class="stat-box" style="font-size:11px;"><span id="ts-5-streak" style="font-size:18px; font-weight:bold;">0</span><br>連勝</div>
-          <div class="stat-box" style="font-size:11px;"><span id="ts-5-maxstreak" style="font-size:18px; font-weight:bold;">0</span><br>最大</div>
+        <div id="stats-area-5">
+          <div id="stats-title-5" style="font-weight:bold; border-left:4px solid #03a9f4; padding-left:8px; text-align:left;">5文字モード</div>
+          <div style="display:flex; justify-content:space-around; background:#f8f9fa; padding:8px; border-radius:6px; text-align:center;">
+            <div class="stat-box" style="font-size:11px;"><span id="ts-5-played" style="font-size:18px; font-weight:bold;">0</span><br>プレイ</div>
+            <div class="stat-box" style="font-size:11px;"><span id="ts-5-winrate" style="font-size:18px; font-weight:bold;">0</span>%<br>勝率</div>
+            <div class="stat-box" style="font-size:11px;"><span id="ts-5-streak" style="font-size:18px; font-weight:bold;">0</span><br>連勝</div>
+            <div class="stat-box" style="font-size:11px;"><span id="ts-5-maxstreak" style="font-size:18px; font-weight:bold;">0</span><br>最大</div>
+          </div>
         </div>
 
-        <div style="font-weight:bold; border-left:4px solid #9c27b0; padding-left:8px; text-align:left;">6文字モード</div>
-        <div style="display:flex; justify-content:space-around; background:#f8f9fa; padding:8px; border-radius:6px; text-align:center;">
-          <div class="stat-box" style="font-size:11px;"><span id="ts-6-played" style="font-size:18px; font-weight:bold;">0</span><br>プレイ</div>
-          <div class="stat-box" style="font-size:11px;"><span id="ts-6-winrate" style="font-size:18px; font-weight:bold;">0</span>%<br>勝率</div>
-          <div class="stat-box" style="font-size:11px;"><span id="ts-6-streak" style="font-size:18px; font-weight:bold;">0</span><br>連勝</div>
-          <div class="stat-box" style="font-size:11px;"><span id="ts-6-maxstreak" style="font-size:18px; font-weight:bold;">0</span><br>最大</div>
+        <div id="stats-area-6">
+          <div style="font-weight:bold; border-left:4px solid #9c27b0; padding-left:8px; text-align:left;">6文字モード</div>
+          <div style="display:flex; justify-content:space-around; background:#f8f9fa; padding:8px; border-radius:6px; text-align:center;">
+            <div class="stat-box" style="font-size:11px;"><span id="ts-6-played" style="font-size:18px; font-weight:bold;">0</span><br>プレイ</div>
+            <div class="stat-box" style="font-size:11px;"><span id="ts-6-winrate" style="font-size:18px; font-weight:bold;">0</span>%<br>勝率</div>
+            <div class="stat-box" style="font-size:11px;"><span id="ts-6-streak" style="font-size:18px; font-weight:bold;">0</span><br>連勝</div>
+            <div class="stat-box" style="font-size:11px;"><span id="ts-6-maxstreak" style="font-size:18px; font-weight:bold;">0</span><br>最大</div>
+          </div>
         </div>
       </div>
     </div>
