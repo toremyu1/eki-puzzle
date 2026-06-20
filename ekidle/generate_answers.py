@@ -78,7 +78,19 @@ def generate_answers():
         # 通常のガチャ用プール（出禁駅を除外）
         pool = [s for s in valid_pool if banned_days.get(s['yomi'], 0) <= d]
 
-        seed = d * 12345
+        # シード値にもソルトを混ぜ込む処理
+        def generate_salted_seed(day, salt):
+            text = str(day) + salt
+            hash_val = 0
+            for char in text:
+                hash_val = ((hash_val << 5) - hash_val) + ord(char)
+                hash_val &= 0xFFFFFFFF # 32bit整数化
+                if hash_val & 0x80000000:
+                    hash_val -= 0x100000000 # JSと同じ符号付き整数に変換
+            return abs(hash_val)
+
+        # ソルトを混ぜた強固なシードに変更します
+        seed = generate_salted_seed(d, SECRET_SALT)
 
         def draw_gacha(char_len):
             nonlocal seed, pool, valid_pool
