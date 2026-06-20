@@ -1013,23 +1013,39 @@ function handleKeyPress(char){
 // タイルに入力中文字を表示し、クアッドの場合は縮小アニメーションも適用する
 function updateTiles() {
   // クアッドモード用の処理
+  // 【修正後】updateTiles関数内のクアッドモード処理部分
   if (isQuadMode) {
     for (let b = 0; b < 4; b++) {
-      if (quadSolved[b]) continue; // クリア済みの盤面はスキップ
+      if (quadSolved[b]) continue; 
       const board = document.getElementById(`board-${b}`);
       if (!board) continue;
-      const row = board.children[guessesSubmitted];
-      if (!row) continue;
       
-      // 現在入力している行以外を縮小して目立たなくする
-      Array.from(board.children).forEach((r, idx) => {
-        if (idx === guessesSubmitted) r.classList.remove("inactive-row");
-        else r.classList.add("inactive-row");
+      // カウンター等を除外して「駅名の行」だけを正確に取得
+      const rows = Array.from(board.children).filter(r => r.classList.contains("board-row"));
+      
+      rows.forEach((r, idx) => {
+        if (idx === guessesSubmitted) {
+          // 現在入力中の新しい行の処理
+          if (isQuadExpanded) {
+            r.classList.remove("inactive-row");
+            r.classList.add("force-expand"); // 一括展開中は新しい行も拡大状態にする
+          } else {
+            r.classList.remove("inactive-row");
+            r.classList.remove("force-expand");
+          }
+        } else if (idx < guessesSubmitted) {
+          // 過去の行の処理
+          r.classList.add("inactive-row");
+          if (isQuadExpanded) r.classList.add("force-expand");
+        }
       });
 
-      // キーボードで打った文字を4つすべての盤面に反映
-      for (let j = 0; j < rowLength; j++) {
-        row.children[j].textContent = currentGuess[j] || "";
+      // 入力中の文字をタイルに反映
+      const currentRow = rows[guessesSubmitted];
+      if (currentRow) {
+        for (let j = 0; j < rowLength; j++) {
+          currentRow.children[j].textContent = currentGuess[j] || "";
+        }
       }
     }
     return;
@@ -2104,6 +2120,14 @@ function buildQuadBoards() {
     board.innerHTML = "";
     board.style.setProperty("--row-length", currentMode);
 
+    // ▼▼▼ 追加：残り駅数をリアルタイム表示する要素を左上に配置 ▼▼▼
+    const counter = document.createElement("div");
+    counter.className = "quad-remain-counter";
+    counter.id = `quad-remain-${b}`;
+    counter.textContent = "残り -- 駅";
+    board.appendChild(counter);
+    // ▲▲▲ 追加ここまで ▲▲▲
+
     // この盤面（ボード）内で最後にクリックされた行の番号を記憶する変数
     let lastClickedIdx = null;
 
@@ -2220,7 +2244,8 @@ function submitQuadGuess(isRestore = false) {
   // 4つの盤面をループ処理して1つずつ色を判定していく
   for (let b = 0; b < 4; b++) {
     const board = document.getElementById(`board-${b}`);
-    const row = board.children[guessesSubmitted];
+    // 【修正後】クラス名から正確に何手目の行かを引っ張るように変更します
+    const row = board.getElementsByClassName("board-row")[guessesSubmitted];
     const targetStation = quadStations[b];
 
     // すでにその盤面がクリア済みの場合は、灰色文字のスキップ表示にする
@@ -2510,6 +2535,53 @@ function getQuadColorCode(colorName) {
   if (colorName === "diacritic") return "var(--diacritic-color)";
   if (colorName === "absent") return "var(--absent-color)";
   return "#d3d6da"; // 未入力のデフォルト灰色
+}
+
+
+/* 【追加】クアッドモードの4つの盤面ごとに残り候補駅数をリアルタイム計算して表示する関数 */
+function updateQuadRemainingCounts() {
+  if (!isQuadMode) return;
+
+  // 現在の文字数（4,5,6）に一致する全現役駅のプールを用意
+  const basePool = stations.filter(s => s.yomi.length === currentMode);
+
+  for (let b = 0; b < 4; b++) {
+    const counterEl = document.getElementById(`quad-remain-${b}`);
+    if (!counterEl) continue;
+
+    // すでにクリアしている盤面は計算をスキップ
+    if (quadSolved[b]) {
+      counterEl.textContent = "CLEAR!";
+      continue;
+    }
+
+    const targetYomi = quadStations[b].yomi;
+    let pool = [...basePool];
+    
+    // これまでに送信したすべての回答履歴を使って、この盤面に対する残り駅を絞り込む
+    const stateKey = "quad" + currentMode;
+    const guesses = savedState[stateKey]?.guesses || [];
+
+    for (let i = 0; i < guessesSubmitted; i++) {
+      const g = guesses[i];
+      if (!g) continue;
+
+      // 過去の回答が、この盤面の正解駅に対してどのような色を返したかを算出
+      const actualColors = checkRowColors(g, targetYomi);
+      const gArr = g.split("");
+
+      // 条件に合致しない駅をプールから排除
+      pool = pool.filter(s => {
+        let simColors = evaluateGuess(g, s.yomi, gArr);
+        for (let j = 0; j < currentMode; j++) {
+          if (simColors[j] !== actualColors[j]) return false;
+        }
+        return true;
+      });
+    }
+
+    counterEl.textContent = `残り ${pool.length} 駅`;
+  }
 }
 
 
