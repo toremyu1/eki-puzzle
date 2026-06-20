@@ -597,23 +597,26 @@ body.event-nye .key { background-color:#25202b; color:#d1c7bd; }
    キーボードの4分割カラーリング（クアッドモード用）
 ========================================== */
 /* 【修正後】キーボードの4分割グラデーションと縁取りなし設定 */
+/* ==========================================
+   キーボードの4分割カラーリング（クアッドモード用）
+========================================== */
 .key.quad-mode {
   --c1: #d3d6da; /* 左上：盤面0 */
   --c2: #d3d6da; /* 右上：盤面1 */
   --c3: #d3d6da; /* 左下：盤面2 */
   --c4: #d3d6da; /* 右下：盤面3 */
   
-  /* conic-gradientのゆがみを防ぐため、2つのlinear-gradientを上下で分けて完璧な十字を作る */
+  /* conic-gradient（円錐）を廃止し、linear-gradientで上下・左右を完璧な直線で4分割する */
   background: 
     linear-gradient(to right, var(--c1) 50%, var(--c2) 50%) top / 100% 50% no-repeat,
     linear-gradient(to right, var(--c3) 50%, var(--c4) 50%) bottom / 100% 50% no-repeat
   !important;
   
-  /* borderの縁取りを消す */
+  /* 枠線を完全に消し、色のはみ出しを防ぐ */
   border: none !important;
   color: white !important;
   
-  /* 文字の周りだけをしっかり縁取って見やすくする */
+  /* 枠線を消した代わりに、文字の周りを黒く縁取って視認性を高める */
   text-shadow: 
     -1px -1px 0 #000,  
      1px -1px 0 #000,
@@ -668,24 +671,7 @@ body.event-nye .key { background-color:#25202b; color:#d1c7bd; }
   transition: opacity 0.5s ease;
 }
 
-/* キーボードの4分割グラデーション用（conic-gradientで4つの盤面の状態を表現） */
-.key.quad-mode {
-  --c1: #d3d6da; /* 左上：盤面0 */
-  --c2: #d3d6da; /* 右上：盤面1 */
-  --c3: #d3d6da; /* 左下：盤面2 */
-  --c4: #d3d6da; /* 右下：盤面3 */
-  
-  background: conic-gradient(
-    var(--c2) 0deg 90deg,
-    var(--c4) 90deg 180deg,
-    var(--c3) 180deg 270deg,
-    var(--c1) 270deg 360deg
-  ) !important;
-  
-  border: 1px solid rgba(0, 0, 0, 0.2) !important;
-  color: white !important;
-  text-shadow: 1px 1px 1px rgba(0,0,0,0.8), -1px -1px 1px rgba(0,0,0,0.8) !important;
-}
+
 
 
 /* ==========================================
@@ -733,24 +719,7 @@ body.event-nye .key { background-color:#25202b; color:#d1c7bd; }
   transition: opacity 0.5s ease;
 }
 
-/* キーボードの4分割グラデーション用（conic-gradientで4つの盤面の状態を表現） */
-.key.quad-mode {
-  --c1: #d3d6da; /* 左上：盤面0 */
-  --c2: #d3d6da; /* 右上：盤面1 */
-  --c3: #d3d6da; /* 左下：盤面2 */
-  --c4: #d3d6da; /* 右下：盤面3 */
-  
-  background: conic-gradient(
-    var(--c2) 0deg 90deg,
-    var(--c4) 90deg 180deg,
-    var(--c3) 180deg 270deg,
-    var(--c1) 270deg 360deg
-  ) !important;
-  
-  border: 1px solid rgba(0, 0, 0, 0.2) !important;
-  color: white !important;
-  text-shadow: 1px 1px 1px rgba(0,0,0,0.8), -1px -1px 1px rgba(0,0,0,0.8) !important;
-}
+
 
 /* ==========================================
    クアッドモード・UIの追加デザイン修正（完全版）
