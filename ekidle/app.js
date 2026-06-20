@@ -1023,20 +1023,20 @@ function updateTiles() {
       // カウンター等を除外して「駅名の行」だけを正確に取得
       const rows = Array.from(board.children).filter(r => r.classList.contains("board-row"));
       
+      // 【修正3】各行の縮小・展開状態をリアルタイムに同期させる処理
       rows.forEach((r, idx) => {
         if (idx === guessesSubmitted) {
-          // 現在入力中の新しい行の処理
-          if (isQuadExpanded) {
-            r.classList.remove("inactive-row");
-            r.classList.add("force-expand"); // 一括展開中は新しい行も拡大状態にする
-          } else {
-            r.classList.remove("inactive-row");
-            r.classList.remove("force-expand");
-          }
+          // 現在入力中のアクティブな行は、一括展開のON/OFFに関わらず常に拡大（ライトアップ）状態をキープ
+          r.classList.remove("inactive-row");
+          r.classList.add("force-expand");
         } else if (idx < guessesSubmitted) {
-          // 過去の行の処理
+          // 過去の回答行の処理
           r.classList.add("inactive-row");
-          if (isQuadExpanded) r.classList.add("force-expand");
+          if (isQuadExpanded) {
+            r.classList.add("force-expand"); // 一括展開ONなら過去の行もすべて広げる
+          } else {
+            r.classList.remove("force-expand"); // 一括展開OFFなら過去の行はペチャンコに縮める
+          }
         }
       });
 
@@ -2131,12 +2131,17 @@ function buildQuadBoards() {
     // この盤面（ボード）内で最後にクリックされた行の番号を記憶する変数
     let lastClickedIdx = null;
 
+    // 【修正3】全回答行をループで生成する処理
     for (let i = 0; i < maxGuesses; i++) {
       const row = document.createElement("div");
       row.className = "board-row";
       
-      // 【修正】1行目固定ではなく、現在の入力待ち行（guessesSubmitted）以外を縮小状態にする
-      if (i !== guessesSubmitted) row.classList.add("inactive-row");
+      // 1行目固定ではなく、現在入力待ちのアクティブな行（guessesSubmitted）を最初から拡大します
+      if (i === guessesSubmitted) {
+        row.classList.add("force-expand");
+      } else {
+        row.classList.add("inactive-row");
+      }
       
       for (let j = 0; j < currentMode; j++) {
         const tile = document.createElement("div");
@@ -2144,6 +2149,7 @@ function buildQuadBoards() {
         row.appendChild(tile);
       }
       board.appendChild(row);
+      
       
       // 行をタップ（クリック）したときの処理
       row.addEventListener("click", function(e) {
@@ -2292,14 +2298,14 @@ function submitQuadGuess(isRestore = false) {
   // 履歴に今回の4盤面分の色結果（🟩🟨など）を保存する
   quadGridHistory.push(allBoardResults);
 
-  // ▼▼▼ 保存処理（復元中でない場合のみ） ▼▼▼
-  if (!isRestore) {
-    st.guesses.push(currentGuess);
-    st.guessTimes.push(Date.now());
-    st.quadSolved = [...quadSolved];
-    st.quadGridHistory = [...quadGridHistory];
+  // ▼▼▼ 【修正2】クアッドモードのセーブデータに今回の回答をその場で蓄積させます ▼▼▼
+  let stateKey = "quad" + currentMode;
+  if (!savedState[stateKey]) {
+    savedState[stateKey] = { guesses: [], guessTimes: [], quadSolved: [false,false,false,false], quadGridHistory: [], isOver: false };
   }
-  // ▲▲▲ 保存処理 ▲▲▲
+  savedState[stateKey].guesses.push(currentGuess);
+  savedState[stateKey].quadSolved = [...quadSolved];
+  saveGameState(); // ローカルストレージへのセーブを実行
 
   // 手数を1つ進め、入力欄を空にする
   guessesSubmitted++;
@@ -2542,7 +2548,9 @@ function getQuadColorCode(colorName) {
 function updateQuadRemainingCounts() {
   if (!isQuadMode) return;
 
-  // 現在の文字数（4,5,6）に一致する全現役駅のプールを用意
+  // セーブデータからこれまでの回答履歴（単語リスト）を安全に取得
+  let stateKey = "quad" + currentMode;
+  const guesses = savedState[stateKey]?.guesses || [];
   const basePool = stations.filter(s => s.yomi.length === currentMode);
 
   for (let b = 0; b < 4; b++) {
@@ -2558,19 +2566,14 @@ function updateQuadRemainingCounts() {
     const targetYomi = quadStations[b].yomi;
     let pool = [...basePool];
     
-    // これまでに送信したすべての回答履歴を使って、この盤面に対する残り駅を絞り込む
-    const stateKey = "quad" + currentMode;
-    const guesses = savedState[stateKey]?.guesses || [];
-
-    for (let i = 0; i < guessesSubmitted; i++) {
+    // 送信済みの回答リストを1単語ずつシミュレーションにかけて駅プールを絞り込みます
+    for (let i = 0; i < guesses.length; i++) {
       const g = guesses[i];
       if (!g) continue;
 
-      // 過去の回答が、この盤面の正解駅に対してどのような色を返したかを算出
       const actualColors = checkRowColors(g, targetYomi);
       const gArr = g.split("");
 
-      // 条件に合致しない駅をプールから排除
       pool = pool.filter(s => {
         let simColors = evaluateGuess(g, s.yomi, gArr);
         for (let j = 0; j < currentMode; j++) {
