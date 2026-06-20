@@ -2478,14 +2478,14 @@ function shareQuadResult(type) {
   }
 
   // お洒落に手数を配置するテキストの組み立て
-  let text = `駅ドル Quad ${currentMode}文字モード\n\n`;
+  let text = `駅ドル Challenge ${currentMode}文字モード\n\n`;
   const emojify = (t) => t === "X" ? "🟥 ✕" : `🟩 ${t}手`;
   text += `① ${emojify(clearTurns[0])}  ② ${emojify(clearTurns[1])}\n`;
   text += `③ ${emojify(clearTurns[2])}  ④ ${emojify(clearTurns[3])}\n\n`;
 
   let currentUrl = window.location.href.split('?')[0];
   // 指定された新しいハッシュタグを追加
-  text += `#駅ドル\n#駅ドルQuad\n#駅ドルQuad${currentMode}\n`;
+  text += `#駅ドル\n#駅ドルChallenge\n#駅ドルChallenge${currentMode}\n`;
   
   // 共通のシェア実行関数を呼び出し
   executeSharedShare(type, text, currentUrl);
