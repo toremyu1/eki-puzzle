@@ -181,6 +181,31 @@ function setupCommonUI() {
     });
   }
 
+    // 【修正】タイトル画面からクアッドモードを起動する処理
+    document.getElementById("btn-quad-mode")?.addEventListener("click", async () => {
+    document.getElementById("title-screen").classList.add("hidden");
+    document.getElementById("game-screen").classList.remove("hidden");
+    // ▼▼▼ この1行を追加（クアッドモードでも4, 5, 6文字を選べるようにする） ▼▼▼
+    document.querySelector(".mode-selector")?.classList.remove("hidden");
+    // ▼▼▼ この1行を追加（クアッド用の回答回数を確実にセットする） ▼▼▼
+    maxGuesses = CONFIG_MAX_GUESSES_QUAD;
+  
+    await startQuadMode();
+  
+    // ▼▼▼ 修正：1日1回だけ自動でクアッド用の説明モーダルを開く処理 ▼▼▼
+    const todayStr = getJSTDateString(); // 日本時間の今日の日付を取得
+    const hasSeenHelpToday = localStorage.getItem("ekiQuadHelpSeen") === todayStr;
+
+    if (!hasSeenHelpToday) {
+      const helpModal = document.getElementById("quad-help-modal");
+      if (helpModal) {
+        helpModal.classList.remove("hidden");
+        localStorage.setItem("ekiQuadHelpSeen", todayStr); // 今日表示した日付を保存
+      }
+    }
+    // ▲▲▲ 修正ここまで ▲▲▲
+  });
+
   const homeBtn = document.getElementById("home-btn");
   if (homeBtn) {
     homeBtn.addEventListener("click", () => {
@@ -2293,7 +2318,6 @@ function submitQuadGuess(isRestore = false) {
       }
     }
   }
-}
 
   // 4色ブレンドキーボードの表示更新
   updateQuadKeyboardLogic(currentGuess, allBoardResults);
@@ -2356,6 +2380,7 @@ function submitQuadGuess(isRestore = false) {
   if (!isRestore && typeof updateQuadRemainingCounts === "function") {
     updateQuadRemainingCounts();
   }
+}
 }
 
 // 盤面クリア時のジャンプアニメーション生成関数 
@@ -2519,30 +2544,6 @@ function getQuadColorCodeStr(name) {
   return "#d3d6da";
 }
 
-// 【修正】タイトル画面からクアッドモードを起動する処理
-document.getElementById("btn-quad-mode")?.addEventListener("click", async () => {
-  document.getElementById("title-screen").classList.add("hidden");
-  document.getElementById("game-screen").classList.remove("hidden");
-  // ▼▼▼ この1行を追加（クアッドモードでも4, 5, 6文字を選べるようにする） ▼▼▼
-  document.querySelector(".mode-selector")?.classList.remove("hidden");
-  // ▼▼▼ この1行を追加（クアッド用の回答回数を確実にセットする） ▼▼▼
-  maxGuesses = CONFIG_MAX_GUESSES_QUAD;
-  
-  await startQuadMode();
-  
-  // ▼▼▼ 修正：1日1回だけ自動でクアッド用の説明モーダルを開く処理 ▼▼▼
-  const todayStr = getJSTDateString(); // 日本時間の今日の日付を取得
-  const hasSeenHelpToday = localStorage.getItem("ekiQuadHelpSeen") === todayStr;
-
-  if (!hasSeenHelpToday) {
-    const helpModal = document.getElementById("quad-help-modal");
-    if (helpModal) {
-      helpModal.classList.remove("hidden");
-      localStorage.setItem("ekiQuadHelpSeen", todayStr); // 今日表示した日付を保存
-    }
-  }
-  // ▲▲▲ 修正ここまで ▲▲▲
-});
 
 // 内部の色名を実際のカラーコード（CSS変数）に変換する関数
 function getQuadColorCode(colorName) {
