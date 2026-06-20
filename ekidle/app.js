@@ -12,8 +12,9 @@ let todayStation=null;　　　 //今日の正解駅
 let currentGuess="";　　　　 //プレイヤーが入力している途中の文字を記憶する箱
 let guessesSubmitted=0;　　　//プレイヤーの回答送信回数カウンター 
 let maxGuesses=8;　　　　　　//上限回答数(文字数により変動)
-let rowLength=4;　　　　　　 //入力パネルの文字数
+let rowLength=4;　　　　　　 //入力パネルの文字数(文字数により変動)
 let currentMode=4;　　　　　 //現在遊んでいるモードの文字数
+let isYuruMode = false;     //ゆる鉄モード判定用
 let keyColors={};　　　　　　//キーボードの各ボタンについている色を記憶する箱
 let gridHistory=[];         //プレイヤーが送信した過去の回答の色の結果を履歴として残す箱
 let debugOffset=0;　　　　　 //デバッグ時に日付を強制的にずらすための数値
@@ -791,92 +792,98 @@ async function selectTodayStation() {
     console.warn("⚠️ サーバーの答えファイル読み込み失敗。自力でシミュレーション計算します:", err);
 
     // ユニークな読みの数をカウントし、出禁期間を決定します
-    let uniqueYomiCount = new Set(strictModeStations.map(s => s.yomi)).size;
-    let lookback = Math.min(1000, Math.floor(uniqueYomiCount * 0.7));
+    //let uniqueYomiCount = new Set(strictModeStations.map(s => s.yomi)).size;
+    //let lookback = Math.min(1000, Math.floor(uniqueYomiCount * 0.7));
 
     // ローカルストレージに保存するための専用キーと変数の準備
-    let nextAvailableDay = {};
-    let startDay = 0;
-    const rngStateKey = `ekidle_rng_state_${currentMode}`;
+    //let nextAvailableDay = {};
+    //let startDay = 0;
+    //const rngStateKey = `ekidle_rng_state_${currentMode}`;
 
     // ==========================================
     // ① ローカルストレージから前回の計算状態を読み込む（軽量化）
     // ==========================================
-    const savedStateStr = localStorage.getItem(rngStateKey);
-    if (savedStateStr) {
-      try {
-        const savedState = JSON.parse(savedStateStr);
-        nextAvailableDay = savedState.nextAvailableDay || {};
+    //const savedStateStr = localStorage.getItem(rngStateKey);
+    //if (savedStateStr) {
+    //  try {
+    //    const savedState = JSON.parse(savedStateStr);
+    //    nextAvailableDay = savedState.nextAvailableDay || {};
         // 前回計算した次の日からスタートします
-        startDay = (savedState.lastCalculatedDay !== undefined) ? savedState.lastCalculatedDay + 1 : 0;
-      } catch (e) {
-        console.error("シミュレーション状態の復元に失敗しました", e);
-      }
-    }
+    //    startDay = (savedState.lastCalculatedDay !== undefined) ? savedState.lastCalculatedDay + 1 : 0;
+    //  } catch (e) {
+    //    console.error("シミュレーション状態の復元に失敗しました", e);
+    //  }
+    //}
 
     // ==========================================
     // ② 堅牢な総当たり方式での歴史シミュレーション
     // ==========================================
-    for (let d = startDay; d <= currentDayIndex; d++) {
+    //for (let d = startDay; d <= currentDayIndex; d++) {
       
       // その日(d)の時点で現役の駅だけを、毎回まっさらな状態から抽出します
-      let pool = strictModeStations.filter(s => {
+    //  let pool = strictModeStations.filter(s => {
         // まだ開業していない未来の駅なら除外
-        if (s.startDay != null && s.startDay > d) return false;
+    //    if (s.startDay != null && s.startDay > d) return false;
         // 既に廃止された駅なら除外（999999は廃止予定なしの意味）
-        if (s.endDay != null && s.endDay !== 999999 && s.endDay <= d) return false;
+    //    if (s.endDay != null && s.endDay !== 999999 && s.endDay <= d) return false;
         // お休み（出禁）期間中なら除外
-        if (nextAvailableDay[s.yomi] && nextAvailableDay[s.yomi] > d) return false;
+    //    if (nextAvailableDay[s.yomi] && nextAvailableDay[s.yomi] > d) return false;
         
-        return true;
-      });
+    //    return true;
+    //  });
 
       // 【安全装置】万が一、条件が厳しすぎてくじ引き箱が空になった場合は全駅を復活させます
-      if (pool.length === 0) {
-        pool = strictModeStations.filter(s => {
-          if (s.startDay != null && s.startDay > d) return false;
-          if (s.endDay != null && s.endDay !== 999999 && s.endDay <= d) return false;
-          return true;
-        });
-      }
+    // if (pool.length === 0) {
+    //    pool = strictModeStations.filter(s => {
+    //      if (s.startDay != null && s.startDay > d) return false;
+    //      if (s.endDay != null && s.endDay !== 999999 && s.endDay <= d) return false;
+    //      return true;
+    //    });
+    //  }
 
       // ③ 日付と文字数モードを利用した独自ハッシュによる答えの選出
-      let seed = d * 12345 + currentMode * 6789;
-      let hash = Math.imul(seed ^ (seed >>> 15), 2246822507);
-      hash = Math.imul(hash ^ (hash >>> 13), 3266489909);
-      hash = (hash ^ (hash >>> 16)) >>> 0;
+    //let seed = d * 12345 + currentMode * 6789;
+    //  let hash = Math.imul(seed ^ (seed >>> 15), 2246822507);
+    //  hash = Math.imul(hash ^ (hash >>> 13), 3266489909);
+    //  hash = (hash ^ (hash >>> 16)) >>> 0;
 
-      let candidate = pool[hash % pool.length];
+    //  let candidate = pool[hash % pool.length];
       
       // 選ばれた駅の次回の出禁日を帳簿に登録します
-      nextAvailableDay[candidate.yomi] = d + lookback + 1;
+    //  nextAvailableDay[candidate.yomi] = d + lookback + 1;
 
       // シミュレーションが「今日」に到達したら最終結果として確定します
-      if (d === currentDayIndex) {
-        todayStation = candidate;
-      }
-    }
+    //  if (d === currentDayIndex) {
+    //    todayStation = candidate;
+    //  }
+    //}
     
     // ==========================================
     // ④ 不要になった過去の出禁データを掃除して保存（移し替え方式）
     // ==========================================
     // 保存用の新しい箱（オブジェクト）を準備し、今日の日付を記録します
-    let stateToSave = { 
-      lastCalculatedDay: currentDayIndex, 
-      nextAvailableDay: {} 
-    };
+    //let stateToSave = { 
+    //  lastCalculatedDay: currentDayIndex, 
+    //  nextAvailableDay: {} 
+    //};
     
     // 古い帳簿から1つずつデータを取り出します
-    for (const yomi in nextAvailableDay) {
+    //for (const yomi in nextAvailableDay) {
       // 出禁解除日が「今日より未来」のデータだけを、新しい箱にコピーします
-      if (nextAvailableDay[yomi] > currentDayIndex) {
-        stateToSave.nextAvailableDay[yomi] = nextAvailableDay[yomi];
-      }
-    }
+    //  if (nextAvailableDay[yomi] > currentDayIndex) {
+    //    stateToSave.nextAvailableDay[yomi] = nextAvailableDay[yomi];
+    //  }
+    //}
     
     // 今日の答え（シミュレーション状態）をローカルに保存します
-    localStorage.setItem(rngStateKey, JSON.stringify(stateToSave));
-  } // ← catchブロックの終わり
+    //localStorage.setItem(rngStateKey, JSON.stringify(stateToSave));
+  //} // ← catchブロックの終わり
+
+    // 統合版
+    // 統合関数を呼び出し、モードに合わせて答えをセットするだけ
+    let answers = simulateUnifiedAnswers(strictModeStations, currentDayIndex, currentMode);
+    todayStation = isYuruMode ? answers.yuru : answers.gachi;
+  }
 }
 
 
@@ -1155,14 +1162,25 @@ function submitGuess(isRestore=false){
   // 【修正前】const isValid=stations.filter(s=>s.yomi.length===currentMode).some(s=>s.yomi===currentGuess);
   // 【修正後】無駄なリスト作りをやめ、見つかった瞬間に検索を終えるスマートな書き方に変更します
   // 【修正】廃止から40日間の「入力猶予期間（グレースピリオド）」を設ける
-  const isValid = stations.some(s => 
-    s.yomi === currentGuess && 
-    s.yomi.length === currentMode && 
-    (s.startDay === undefined || s.startDay <= currentDayIndex) && 
-    // 【ここがポイント】今日から32日引いた日よりも「後」に廃止された駅なら入力を許す（=過去32日以内に廃止された駅は入力を受け付ける）
-    (s.endDay === undefined || s.endDay > (currentDayIndex - 32) || s.endDay === 999999)
-  );
-  if(!isValid){ if(!isRestore)showMessage("実在しない駅名です"); return; }
+  // ▼▼▼ 修正後 ▼▼▼
+  let isValid = false;
+  if (isYuruMode) {
+    // ゆる鉄モード：5文字であれば無条件で入力を許可（辞書チェックなし）
+    isValid = (currentGuess.length === 5);
+  } else {
+    // ガチ鉄・チャレンジモード：従来通り実在駅のチェックを行う
+    isValid = stations.some(s => 
+      s.yomi === currentGuess && 
+      s.yomi.length === currentMode && 
+      (s.startDay === undefined || s.startDay <= currentDayIndex) && 
+      (s.endDay === undefined || s.endDay > (currentDayIndex - 32) || s.endDay === 999999)
+    );
+  }
+  
+  if (!isValid) { 
+    if (!isRestore) showMessage(isYuruMode ? "5文字で入力してください" : "実在しない駅名です"); 
+    return; 
+  }
   
   // ランダムモード（周年モード）でもハードモードの縛りを適用する。
   // ただし、エイプリルフールモード時は強制的に縛りを無効化する。
@@ -2094,70 +2112,77 @@ async function selectQuadStations(modeLength) {
     console.warn("クアッドのファイル読み込み失敗。シミュレーションで決定します:", err);
     
     // 【修正1】通常モードの出禁辞書を読み込む（通常モードと被らないようにするため）
-    const normalStateKey = `ekidle_rng_state_${currentMode}`;
-    let normalSaved = JSON.parse(localStorage.getItem(normalStateKey) || "{}");
-    let normalBanned = normalSaved.nextAvailableDay || {};
+    //const normalStateKey = `ekidle_rng_state_${currentMode}`;
+    //let normalSaved = JSON.parse(localStorage.getItem(normalStateKey) || "{}");
+    //let normalBanned = normalSaved.nextAvailableDay || {};
 
     // 【修正2】クアッド専用の「日付辞書（nextAvailableDay）」を新設して読み込む
-    const quadStateKey = `ekidle_rng_state_quad_${currentMode}_v2`;
-    let quadSaved = JSON.parse(localStorage.getItem(quadStateKey) || "{}");
-    let quadNextAvailableDay = quadSaved.nextAvailableDay || {};
-    let startDay = quadSaved.lastCalculatedDay !== undefined ? quadSaved.lastCalculatedDay + 1 : 0;
+    //const quadStateKey = `ekidle_rng_state_quad_${currentMode}_v2`;
+    //let quadSaved = JSON.parse(localStorage.getItem(quadStateKey) || "{}");
+    //let quadNextAvailableDay = quadSaved.nextAvailableDay || {};
+    //let startDay = quadSaved.lastCalculatedDay !== undefined ? quadSaved.lastCalculatedDay + 1 : 0;
 
-    let uniqueYomiCount = new Set(validPool.map(s => s.yomi)).size;
-    let lookback = Math.min(1000, Math.floor(uniqueYomiCount * 0.7));
+    //let uniqueYomiCount = new Set(validPool.map(s => s.yomi)).size;
+    //let lookback = Math.min(1000, Math.floor(uniqueYomiCount * 0.7));
 
     // 【修正3】通常モードと同じく、0日目（または計算の続き）から今日までを一気にシミュレーションする
-    for (let d = startDay; d <= currentDayIndex; d++) {
+    //for (let d = startDay; d <= currentDayIndex; d++) {
       
       // 現役の駅であり、通常モードでもクアッドモードでも出禁になっていない駅だけを抽出
-      let pool = validPool.filter(s =>
-        (s.startDay === undefined || s.startDay <= d) &&
-        (s.endDay === undefined || s.endDay > d || s.endDay === 999999) &&
-        !(normalBanned[s.yomi] && normalBanned[s.yomi] > d) &&
-        !(quadNextAvailableDay[s.yomi] && quadNextAvailableDay[s.yomi] > d)
-      );
+    //  let pool = validPool.filter(s =>
+    //    (s.startDay === undefined || s.startDay <= d) &&
+    //    (s.endDay === undefined || s.endDay > d || s.endDay === 999999) &&
+    //    !(normalBanned[s.yomi] && normalBanned[s.yomi] > d) &&
+    //    !(quadNextAvailableDay[s.yomi] && quadNextAvailableDay[s.yomi] > d)
+    //  );
 
-      let seed = d * 12345 + modeLength * 6789;
-      const random = () => {
-        seed = Math.imul(seed ^ (seed >>> 15), 2246822507);
-        seed = Math.imul(seed ^ (seed >>> 13), 3266489909);
-        return ((seed ^ (seed >>> 16)) >>> 0) / 4294967296;
-      };
+    //  let seed = d * 12345 + modeLength * 6789;
+    //  const random = () => {
+    //    seed = Math.imul(seed ^ (seed >>> 15), 2246822507);
+    //    seed = Math.imul(seed ^ (seed >>> 13), 3266489909);
+    //    return ((seed ^ (seed >>> 16)) >>> 0) / 4294967296;
+    //  };
 
-      quadStations = [];
-      for (let i = 0; i < 4; i++) {
+    //  quadStations = [];
+    //  for (let i = 0; i < 4; i++) {
         // 枯渇時の安全装置
-        if (pool.length === 0) {
-          pool = validPool.filter(s =>
-            (s.startDay === undefined || s.startDay <= d) &&
-            (s.endDay === undefined || s.endDay > d || s.endDay === 999999) &&
-            !quadStations.map(q => q.yomi).includes(s.yomi)
-          );
-        }
+    //    if (pool.length === 0) {
+    //      pool = validPool.filter(s =>
+    //        (s.startDay === undefined || s.startDay <= d) &&
+    //        (s.endDay === undefined || s.endDay > d || s.endDay === 999999) &&
+    //        !quadStations.map(q => q.yomi).includes(s.yomi)
+    //      );
+    //    }
         
-        const r = Math.floor(random() * pool.length);
-        const selected = pool[r];
-        quadStations.push(selected);
+    //   const r = Math.floor(random() * pool.length);
+    //    const selected = pool[r];
+    //    quadStations.push(selected);
         
         // 選ばれた駅と同音異字をこのターンのくじ引き箱からすべて捨てる
-        pool = pool.filter(s => s.yomi !== selected.yomi);
+    //    pool = pool.filter(s => s.yomi !== selected.yomi);
         
         // クアッド専用の辞書に「次回出禁解除日」を登録
-        quadNextAvailableDay[selected.yomi] = d + lookback + 1;
-      }
-    }
+    //    quadNextAvailableDay[selected.yomi] = d + lookback + 1;
+    //  }
+    //}
     
     // 【修正4】不要な過去の出禁データを掃除し、最新の状態だけを保存する
-    let stateToSave = { lastCalculatedDay: currentDayIndex, nextAvailableDay: {} };
-    for (const yomi in quadNextAvailableDay) {
-      if (quadNextAvailableDay[yomi] > currentDayIndex) {
-        stateToSave.nextAvailableDay[yomi] = quadNextAvailableDay[yomi];
-      }
-    }
-    localStorage.setItem(quadStateKey, JSON.stringify(stateToSave));
+    //let stateToSave = { lastCalculatedDay: currentDayIndex, nextAvailableDay: {} };
+    //for (const yomi in quadNextAvailableDay) {
+    //  if (quadNextAvailableDay[yomi] > currentDayIndex) {
+    //    stateToSave.nextAvailableDay[yomi] = quadNextAvailableDay[yomi];
+    //  }
+    //}
+    //localStorage.setItem(quadStateKey, JSON.stringify(stateToSave));
+  //}
+
+    // 統合後
+    // 統合関数を呼び出し、クアッド用の4つの答えをセットするだけ
+    let answers = simulateUnifiedAnswers(validPool, currentDayIndex, modeLength);
+    quadStations = answers.quad;
   }
 }
+
 
 
 // 【修正後】行の独立トグル化およびShiftキーでの範囲一括拡大機能
@@ -2638,6 +2663,97 @@ function updateQuadRemainingCounts() {
   }
 }
 
+
+// ==========================================
+// 全モードの答えを一括生成し、出禁リストを完全に共有する
+// ==========================================
+function simulateUnifiedAnswers(validPool, targetDayIndex, length) {
+  const unifiedStateKey = "ekidle_unified_rng_state_v3";
+  const cacheKey = "ekidle_daily_cached_answers";           // 今日の答え専用のキャッシュキー
+
+  // ▼▼▼ 2回目以降の高速起動処理 ▼▼▼
+  const cachedDataStr = localStorage.getItem(cacheKey);
+  if (cachedDataStr) {
+    try {
+      const cache = JSON.parse(cachedDataStr);
+      // 保存されたキャッシュの日付が「今日」と完全に一致していれば、計算をすべてスキップしてそのまま答えを返します
+      if (cache.dayIndex === targetDayIndex) {
+        return cache.answers;
+      }
+    } catch (e) {
+      console.error("キャッシュの読み込みに失敗しました", e);
+    }
+  }
+  
+  let savedState = JSON.parse(localStorage.getItem(unifiedStateKey) || "{}");
+  let bannedDays = savedState.bannedDays || {};
+  let startDay = savedState.lastCalculatedDay !== undefined ? savedState.lastCalculatedDay + 1 : 0;
+  
+  let uniqueYomiCount = new Set(validPool.map(s => s.yomi)).size;
+  let lookback = Math.min(1000, Math.floor(uniqueYomiCount * 0.7)); 
+
+  let dailyAnswers = {}; // 今日の全モードの答えを格納する箱
+
+  for (let d = startDay; d <= targetDayIndex; d++) {
+    // その日使える駅（出禁期間中のものは除外）
+    let pool = validPool.filter(s => 
+      (s.startDay === undefined || s.startDay <= d) &&
+      (s.endDay === undefined || s.endDay > d || s.endDay === 999999) &&
+      !(bannedDays[s.yomi] && bannedDays[s.yomi] > d)
+    );
+
+    let seed = d * 12345;
+    // 1回ガチャを引いて、出禁リストに入れる内部処理
+    const drawGacha = (charLen) => {
+      let candidates = pool.filter(s => s.yomi.length === charLen);
+      
+      // 【枯渇時】出禁などの条件をすべて無視し、大元のリストから文字数が合う全駅を強制的に復活させる
+      if (candidates.length === 0) {
+        // 出禁条件だけを外し、「その日(d)に現役である」という条件は維持して復活させます
+        candidates = validPool.filter(s => 
+          s.yomi.length === charLen &&
+          (s.startDay === undefined || s.startDay <= d) &&
+          (s.endDay === undefined || s.endDay > d || s.endDay === 999999)
+        );
+      }
+      
+      seed = Math.imul(seed ^ (seed >>> 15), 2246822507);
+      seed = Math.imul(seed ^ (seed >>> 13), 3266489909);
+      let hash = ((seed ^ (seed >>> 16)) >>> 0) / 4294967296;
+      
+      let selected = candidates[Math.floor(hash * candidates.length)];
+      // 共通の出禁リストに追加し、今日の箱からも消す（同日の被り防止）
+      bannedDays[selected.yomi] = d + lookback + 1;
+      pool = pool.filter(s => s.yomi !== selected.yomi);
+      return selected;
+    };
+
+    // 1つの共通箱から、ガチ・ゆる・クアッドの答えを順番に引く
+    let gachiAns = drawGacha(length);
+    let yuruAns = drawGacha(5);
+    let quadAns = [drawGacha(length), drawGacha(length), drawGacha(length), drawGacha(length)];
+
+    if (d === targetDayIndex) {
+      dailyAnswers = { gachi: gachiAns, yuru: yuruAns, quad: quadAns };
+    }
+  }
+
+  // 出禁帳簿の保存
+  let stateToSave = { lastCalculatedDay: targetDayIndex, bannedDays: {} };
+  for (const y in bannedDays) {
+    if (bannedDays[y] > targetDayIndex) stateToSave.bannedDays[y] = bannedDays[y];
+  }
+  localStorage.setItem(unifiedStateKey, JSON.stringify(stateToSave));
+
+  // 今日計算した答えをLocalStorageに保存する処理 
+  const cacheToSave = {
+    dayIndex: targetDayIndex, // 今日を表す数字（例: 902）
+    answers: dailyAnswers     // 今日選ばれた全モードの答えオブジェクト
+  };
+  localStorage.setItem(cacheKey, JSON.stringify(cacheToSave));
+
+  return dailyAnswers;
+}
 
 
 // ==========================================
