@@ -794,7 +794,9 @@ async function selectTodayStation() {
     if (!res.ok) throw new Error("答えファイルの取得に失敗");
     const answersData = await res.json();
 
-    const targetHash = answersData[todayStr]?.[currentMode];
+    // ▼▼▼ 修正後（ゆる鉄モードは別のキーから取得して被りを防ぎます） ▼▼▼
+    const dictKey = isYuruMode ? "yurutetsu" : currentMode.toString();
+    const targetHash = answersData[todayStr]?.[dictKey];
     if (!targetHash) throw new Error("本日の答えデータがファイル内にありません");
 
     const calcSha256 = async (str) => {
@@ -910,16 +912,10 @@ async function selectTodayStation() {
   //} // ← catchブロックの終わり
 
     // 統合版
-    // 統合関数を呼び出し、モードに合わせて答えをセットするだけ
-    // 全文字数（4,5,6文字）の駅が入ったリストを渡して、統合シミュレーションを1回だけ呼び出す
-    let answers = simulateUnifiedAnswers(stations, currentDayIndex, currentMode);
-    
+    // 全文字数（4,5,6文字）の駅が入ったリストを渡して、統合シミュレーションを1回だけ呼び出す    
     // 自分が何のモードかに応じて、受け取った答えから自分の分だけをセットする
-    if (isQuadMode) {
-      quadStations = answers.quad;
-    } else {
-      todayStation = isYuruMode ? answers.yuru : answers.gachi;
-    }
+    let answers = simulateUnifiedAnswers(stations, currentDayIndex);
+    todayStation = isYuruMode ? answers["yurutetsu"] : answers[currentMode.toString()];
   }
 }
 
@@ -2216,14 +2212,8 @@ async function selectQuadStations(modeLength) {
 
     // 統合後
     // 統合関数を呼び出し、クアッド用の4つの答えをセットするだけ
-    let answers = simulateUnifiedAnswers(stations, currentDayIndex, currentMode);
-    
-    // 自分が何のモードかに応じて、受け取った答えから自分の分だけをセットする
-    if (isQuadMode) {
-      quadStations = answers.quad;
-    } else {
-      todayStation = isYuruMode ? answers.yuru : answers.gachi;
-    }
+    let answers = simulateUnifiedAnswers(stations, currentDayIndex);
+    todayStation = isYuruMode ? answers["yurutetsu"] : answers[currentMode.toString()];
   }
 }
 
@@ -2773,14 +2763,26 @@ function simulateUnifiedAnswers(validPool, targetDayIndex, length) {
     };
 
     // 1つの共通箱から、ガチ・ゆる・クアッドの答えを順番に引く
-    let gachiAns = drawGacha(length);
-    let yuruAns = drawGacha(5);
-    let quadAns = [drawGacha(length), drawGacha(length), drawGacha(length), drawGacha(length)];
+    // 【重要】毎日すべてのモードの答えを「完全に固定された順番」で引くことで乱数消費を同期させます
+    let gachi4 = drawGacha(4);
+    let gachi5 = drawGacha(5);
+    let gachi6 = drawGacha(6);
+    let yuru5  = drawGacha(5);
+    let quad4  = [drawGacha(4), drawGacha(4), drawGacha(4), drawGacha(4)];
+    let quad5  = [drawGacha(5), drawGacha(5), drawGacha(5), drawGacha(5)];
+    let quad6  = [drawGacha(6), drawGacha(6), drawGacha(6), drawGacha(6)];
 
     if (d === targetDayIndex) {
-      dailyAnswers = { gachi: gachiAns, yuru: yuruAns, quad: quadAns };
+      dailyAnswers = { 
+        "4": gachi4, 
+        "5": gachi5, 
+        "6": gachi6, 
+        "yurutetsu": yuru5, 
+        "quad4": quad4, 
+        "quad5": quad5, 
+        "quad6": quad6 
+      };
     }
-  }
 
   // 出禁帳簿の保存
   let stateToSave = { lastCalculatedDay: targetDayIndex, bannedDays: {} };
