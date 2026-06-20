@@ -151,15 +151,8 @@ body.theme-dark #title-stats-modal .btn {
 .theme-dark #title-stats-modal .stat-box {
   color: #1a1a1b !important;
 }
-/* 勝率や連勝記録の数値だけを背景に合わせて黒文字にします */
-.theme-dark #title-stats-modal [id$="-winrate"],
-.theme-dark #title-stats-modal [id$="-streak"],
-.theme-dark #title-stats-modal [id$="-maxstreak"] {
+.theme-dark #title-stats-modal .stat-box span {
   color: #000000 !important;
-}
-/* プレイ回数（-played）の数値だけは黒文字にせず、白文字（テーマカラー）を維持します */
-.theme-dark #title-stats-modal [id$="-played"] {
-  color: #ffffff !important;
 }
 
 /* ボタンが押された瞬間の沈み込みアクション */
