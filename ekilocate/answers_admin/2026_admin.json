@@ -698,5 +698,19 @@
             "pref": "東京都",
             "municipality": "渋谷区"
         }
+    },
+    "2026-08-02": {
+        "normal": {
+            "kanji": "スクリーン駅",
+            "yomi": "スクリーン",
+            "pref": "滋賀県",
+            "municipality": "彦根市"
+        },
+        "hard": {
+            "kanji": "士別駅",
+            "yomi": "しべつ",
+            "pref": "北海道",
+            "municipality": "士別市"
+        }
     }
 }
