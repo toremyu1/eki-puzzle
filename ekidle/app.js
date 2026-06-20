@@ -2017,14 +2017,25 @@ async function startQuadMode() {
     const board = document.getElementById(`board-${b}`);
     if (board) {
       const rows = Array.from(board.getElementsByClassName("board-row"));
+      
+      // 各行（r）が現在何手目（idx）かを判定し、状態を適用する
       rows.forEach((r, idx) => {
-        // まだクリアされていない盤面の、現在入力する行（1手目なら0番目）だけを確実に拡大
+        
+        // まだクリアされていない盤面の、現在入力する行だけを確実に拡大する
         if (idx === guessesSubmitted && !quadSolved[b]) {
           r.classList.remove("inactive-row");
           r.classList.add("force-expand"); 
+          
         } else {
           r.classList.add("inactive-row");
-          r.classList.remove("force-expand");
+          
+          // 過去の行（idx < guessesSubmitted）で、かつ展開設定（isQuadExpanded）がONなら拡大状態を維持する
+          if (idx < guessesSubmitted && isQuadExpanded) {
+            r.classList.add("force-expand");
+          } else {
+            // それ以外（未来の行や、展開設定がOFFの場合）は閉じる
+            r.classList.remove("force-expand");
+          }
         }
       });
     }
