@@ -1064,11 +1064,11 @@ function updateTiles() {
         } else if (idx < guessesSubmitted) {
           // 過去の回答行の処理
           r.classList.add("inactive-row");
-          if (isQuadExpanded) {
-            r.classList.add("force-expand"); // 一括展開ONなら過去の行もすべて広げる
-          } else {
-            r.classList.remove("force-expand"); // 一括展開OFFなら過去の行はペチャンコに縮める
-          }
+          //if (isQuadExpanded) {
+          //  r.classList.add("force-expand"); // 一括展開ONなら過去の行もすべて広げる
+          //} else {
+          //  r.classList.remove("force-expand"); // 一括展開OFFなら過去の行はペチャンコに縮める
+          //}
         }
       });
 
