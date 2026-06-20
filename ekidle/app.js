@@ -1958,7 +1958,7 @@ async function startQuadMode() {
   buildQuadBoards();
   resetKeyboardStyles();
 
-  // ▼▼▼ 追加：クアッドモードのセーブデータ復元処理 ▼▼▼
+  // クアッドモードのセーブデータ復元処理
   let stateKey = "quad" + currentMode;
   let st = savedState[stateKey];
   
@@ -1968,34 +1968,38 @@ async function startQuadMode() {
     savedState[stateKey] = st;
   }
   
-  // セーブデータ（過去の入力単語）が存在する場合は、順番に送信して画面を再現する
+  // セーブデータが存在する場合は、順番に送信して画面を再現する
   if (st && st.guesses && st.guesses.length > 0) {
     st.guesses.forEach(g => {
       currentGuess = g;
-      submitQuadGuess(true); // isRestore=true を渡して復元送信モードにする
+      submitQuadGuess(true); // 復元モードで過去の単語を流し込む
     });
   }
   currentGuess = "";
-  // ▲▲▲ 追加ここまで ▲▲▲
 
-  // ▼▼▼ ここから追加：最後に回答した行（現在入力待ちの行）をライトアップする処理 ▼▼▼
-  // 復元が終わった後の手数（guessesSubmitted）を基準にして、盤面の表示状態を更新します
+  // 復元が終わった後の手数を基準にして、入力行の拡大状態を整える
   for (let b = 0; b < 4; b++) {
     const board = document.getElementById(`board-${b}`);
     if (board) {
       Array.from(board.children).forEach((r, idx) => {
-        // まだクリアされていない盤面の、現在入力する行だけ縮小を解除してライトアップする
-        if (idx === guessesSubmitted && !quadSolved[b]) {
-          r.classList.remove("inactive-row");
-          r.classList.remove("force-expand"); // 念のため拡大バッジも解除しておく
-        } else {
-          // それ以外の行、またはクリア済みの盤面はすべて縮小状態にする
-          r.classList.add("inactive-row");
+        if (r.classList.contains("board-row")) {
+          // 現在の入力行だけ拡大し、それ以外は縮小する
+          if (idx === guessesSubmitted && !quadSolved[b]) {
+            r.classList.remove("inactive-row");
+            r.classList.add("force-expand"); 
+          } else {
+            r.classList.add("inactive-row");
+            r.classList.remove("force-expand");
+          }
         }
       });
     }
   }
-  // ▲▲▲ ここまで追加 ▲▲▲
+
+  // 復元後、初期の残り駅数を計算して表示する
+  if (typeof updateQuadRemainingCounts === "function") {
+    updateQuadRemainingCounts();
+  }
 }
 
 // 4つの駅を決定する処理（ファイル参照 ＋ 失敗時はシミュレーション）
@@ -2298,6 +2302,14 @@ function submitQuadGuess(isRestore = false) {
   // 履歴に今回の4盤面分の色結果（🟩🟨など）を保存する
   quadGridHistory.push(allBoardResults);
 
+  // ▼▼▼ 【重要】保存処理（復元中でない場合のみ） ▼▼▼
+  if (!isRestore) {
+    st.guesses.push(currentGuess);
+    st.guessTimes.push(Date.now());
+    st.quadSolved = [...quadSolved];
+    st.quadGridHistory = [...quadGridHistory];
+  }
+
   // 手数を1つ進め、入力欄を空にする
   guessesSubmitted++;
   if (!isRestore) currentGuess = "";
@@ -2336,6 +2348,11 @@ function submitQuadGuess(isRestore = false) {
   } else {
     // 途中経過を保存
     if (!isRestore) saveGameState();
+  }
+
+  // ▼▼▼ 【重要】ここで残り駅数を再計算して画面を更新します ▼▼▼
+  if (!isRestore && typeof updateQuadRemainingCounts === "function") {
+    updateQuadRemainingCounts();
   }
 }
 
