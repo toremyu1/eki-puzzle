@@ -2298,15 +2298,6 @@ function submitQuadGuess(isRestore = false) {
   // 履歴に今回の4盤面分の色結果（🟩🟨など）を保存する
   quadGridHistory.push(allBoardResults);
 
-  // ▼▼▼ 【修正2】クアッドモードのセーブデータに今回の回答をその場で蓄積させます ▼▼▼
-  let stateKey = "quad" + currentMode;
-  if (!savedState[stateKey]) {
-    savedState[stateKey] = { guesses: [], guessTimes: [], quadSolved: [false,false,false,false], quadGridHistory: [], isOver: false };
-  }
-  savedState[stateKey].guesses.push(currentGuess);
-  savedState[stateKey].quadSolved = [...quadSolved];
-  saveGameState(); // ローカルストレージへのセーブを実行
-
   // 手数を1つ進め、入力欄を空にする
   guessesSubmitted++;
   if (!isRestore) currentGuess = "";
@@ -2544,20 +2535,24 @@ function getQuadColorCode(colorName) {
 }
 
 
-/* 【追加】クアッドモードの4つの盤面ごとに残り候補駅数をリアルタイム計算して表示する関数 */
+/* 【修正版】クアッドモードの残り候補駅数をリアルタイム計算する関数 */
 function updateQuadRemainingCounts() {
+  // クアッドモード以外のときは何もしない
   if (!isQuadMode) return;
 
   // セーブデータからこれまでの回答履歴（単語リスト）を安全に取得
   let stateKey = "quad" + currentMode;
   const guesses = savedState[stateKey]?.guesses || [];
+  
+  // 今の文字数と同じ長さの全駅リストを用意
   const basePool = stations.filter(s => s.yomi.length === currentMode);
 
+  // 4つの盤面を1つずつチェックしていく
   for (let b = 0; b < 4; b++) {
     const counterEl = document.getElementById(`quad-remain-${b}`);
     if (!counterEl) continue;
 
-    // すでにクリアしている盤面は計算をスキップ
+    // すでにクリアしている盤面は計算をスキップして「CLEAR!」と表示
     if (quadSolved[b]) {
       counterEl.textContent = "CLEAR!";
       continue;
@@ -2566,14 +2561,16 @@ function updateQuadRemainingCounts() {
     const targetYomi = quadStations[b].yomi;
     let pool = [...basePool];
     
-    // 送信済みの回答リストを1単語ずつシミュレーションにかけて駅プールを絞り込みます
+    // 送信済みの回答リストを1単語ずつシミュレーションにかけて駅プールを絞り込む
     for (let i = 0; i < guesses.length; i++) {
       const g = guesses[i];
       if (!g) continue;
 
-      const actualColors = checkRowColors(g, targetYomi);
+      // ★修正箇所：判定アルゴリズムのズレを防ぐため、実際の色の判定にも共通関数「evaluateGuess」を使う
+      const actualColors = evaluateGuess(g, targetYomi);
       const gArr = g.split("");
 
+      // 今回の回答結果と矛盾する駅を候補から外していく
       pool = pool.filter(s => {
         let simColors = evaluateGuess(g, s.yomi, gArr);
         for (let j = 0; j < currentMode; j++) {
@@ -2583,6 +2580,7 @@ function updateQuadRemainingCounts() {
       });
     }
 
+    // 計算し終わった残り件数を画面に表示する
     counterEl.textContent = `残り ${pool.length} 駅`;
   }
 }
