@@ -138,6 +138,34 @@ function setupCommonUI() {
     }
   };
 
+  // ゆる鉄モードの起動処理 
+  document.getElementById("btn-yuru-mode")?.addEventListener("click", async () => {
+    isQuadMode = false;
+    isYuruMode = true; // ★ゆる鉄モードをONにする
+    
+    document.getElementById("title-screen")?.classList.add("hidden");
+    document.getElementById("game-screen")?.classList.remove("hidden");
+    document.getElementById("game-board")?.classList.remove("hidden");
+    document.getElementById("quad-board-container")?.classList.add("hidden");
+    document.getElementById("expand-toggle-btn")?.classList.add("hidden");
+    
+    // ゆる鉄は5文字固定なので、文字数セレクターは隠す
+    document.querySelector(".mode-selector")?.classList.add("hidden");
+    document.querySelector(".hardmode-container")?.classList.remove("hidden");
+
+    currentMode = 5; maxGuesses = CONFIG_MAX_GUESSES_5; rowLength = 5;
+    const gameBoard = document.getElementById("game-board");
+    if(gameBoard) {
+      gameBoard.style.setProperty("--row-length", 5);
+      gameBoard.style.setProperty("--row-count", maxGuesses);
+    }
+    
+    await selectTodayStation(); 
+    restoreBoard();
+    if (typeof checkSpecialEvent === "function") checkSpecialEvent();
+  });
+
+
   // 各種ボタンの紐付け
   const btnNormalMode = document.getElementById("btn-normal-mode");
   if (btnNormalMode) {
@@ -145,6 +173,8 @@ function setupCommonUI() {
     btnNormalMode.addEventListener("click", async () => {
       // 1. クアッドモードの状態を完全に解除する
       isQuadMode = false;
+      isYuruMode = false; 
+
       
       // 2. 画面の表示・非表示を通常モード用に切り替える
       document.getElementById("title-screen")?.classList.add("hidden");
@@ -881,10 +911,18 @@ async function selectTodayStation() {
 
     // 統合版
     // 統合関数を呼び出し、モードに合わせて答えをセットするだけ
-    let answers = simulateUnifiedAnswers(strictModeStations, currentDayIndex, currentMode);
-    todayStation = isYuruMode ? answers.yuru : answers.gachi;
+    // 全文字数（4,5,6文字）の駅が入ったリストを渡して、統合シミュレーションを1回だけ呼び出す
+    let answers = simulateUnifiedAnswers(stations, currentDayIndex, currentMode);
+    
+    // 自分が何のモードかに応じて、受け取った答えから自分の分だけをセットする
+    if (isQuadMode) {
+      quadStations = answers.quad;
+    } else {
+      todayStation = isYuruMode ? answers.yuru : answers.gachi;
+    }
   }
 }
+
 
 
 // ==========================================
@@ -2178,8 +2216,14 @@ async function selectQuadStations(modeLength) {
 
     // 統合後
     // 統合関数を呼び出し、クアッド用の4つの答えをセットするだけ
-    let answers = simulateUnifiedAnswers(validPool, currentDayIndex, modeLength);
-    quadStations = answers.quad;
+    let answers = simulateUnifiedAnswers(stations, currentDayIndex, currentMode);
+    
+    // 自分が何のモードかに応じて、受け取った答えから自分の分だけをセットする
+    if (isQuadMode) {
+      quadStations = answers.quad;
+    } else {
+      todayStation = isYuruMode ? answers.yuru : answers.gachi;
+    }
   }
 }
 
