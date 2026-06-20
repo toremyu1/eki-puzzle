@@ -1977,26 +1977,24 @@ async function startQuadMode() {
   }
   currentGuess = "";
 
-  // 復元が終わった後の手数を基準にして、入力行の拡大状態を整える
+  // ★修正：外側のカウンター要素を巻き込まないよう、正確に「board-row」だけを取得してライトアップします
   for (let b = 0; b < 4; b++) {
     const board = document.getElementById(`board-${b}`);
     if (board) {
-      Array.from(board.children).forEach((r, idx) => {
-        if (r.classList.contains("board-row")) {
-          // 現在の入力行だけ拡大し、それ以外は縮小する
-          if (idx === guessesSubmitted && !quadSolved[b]) {
-            r.classList.remove("inactive-row");
-            r.classList.add("force-expand"); 
-          } else {
-            r.classList.add("inactive-row");
-            r.classList.remove("force-expand");
-          }
+      const rows = Array.from(board.getElementsByClassName("board-row"));
+      rows.forEach((r, idx) => {
+        // まだクリアされていない盤面の、現在入力する行（1手目なら0番目）だけを確実に拡大
+        if (idx === guessesSubmitted && !quadSolved[b]) {
+          r.classList.remove("inactive-row");
+          r.classList.add("force-expand"); 
+        } else {
+          r.classList.add("inactive-row");
+          r.classList.remove("force-expand");
         }
       });
     }
   }
 
-  // 復元後、初期の残り駅数を計算して表示する
   if (typeof updateQuadRemainingCounts === "function") {
     updateQuadRemainingCounts();
   }
@@ -2129,6 +2127,7 @@ function buildQuadBoards() {
     counter.className = "quad-remain-counter";
     counter.id = `quad-remain-${b}`;
     counter.textContent = "残り -- 駅";
+    // counter.style.display = "none"; // ★追加：1手目を打つまでは非表示
     board.appendChild(counter);
     // ▲▲▲ 追加ここまで ▲▲▲
 
@@ -2288,9 +2287,8 @@ function submitQuadGuess(isRestore = false) {
     if (isCorrectAll) {
       quadSolved[b] = true;
       board.classList.add("cleared"); // 盤面全体をグレーアウト
-      // ▼▼▼ 追加：今回新しくクリアした盤面にのみ、アニメーション演出を出す ▼▼▼
-      // 復元時（isRestore）には演出を出さないようにガードする
-      if (!isRestore && !prevQuadSolved[b]) {
+      // 復元時であってもクリア済みなら「CLEARED!」の文字を出します
+      if (!prevQuadSolved[b] && typeof showClearedAnimation === "function") {
         showClearedAnimation(board);
       }
     }
@@ -2348,6 +2346,9 @@ function submitQuadGuess(isRestore = false) {
   } else {
     // 途中経過を保存
     if (!isRestore) saveGameState();
+    // ▼▼▼ 追加：駅を入力し終わったら、次の行を拡大するためにタイル状態を更新します ▼▼▼
+    if (typeof updateTiles === "function") {
+    updateTiles();
   }
 
   // ▼▼▼ 【重要】ここで残り駅数を再計算して画面を更新します ▼▼▼
@@ -2568,6 +2569,13 @@ function updateQuadRemainingCounts() {
   for (let b = 0; b < 4; b++) {
     const counterEl = document.getElementById(`quad-remain-${b}`);
     if (!counterEl) continue;
+
+    // ▼▼▼ ここを修正：まだ1手目も入力していない時は、非表示にせず「--駅」のままにする ▼▼▼
+    if (guesses.length === 0) {
+      counterEl.textContent = "残り -- 駅";
+      continue;
+    }
+    // ▲▲▲ 修正ここまで ▲▲▲
 
     // すでにクリアしている盤面は計算をスキップして「CLEAR!」と表示
     if (quadSolved[b]) {
