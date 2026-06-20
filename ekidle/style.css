@@ -646,17 +646,17 @@ body.event-nye .key { background-color:#25202b; color:#d1c7bd; }
 
 /*新方式*/
 /* style.css の一番最後にある .key.quad-mode を以下に差し替えてください */
-.key.quad-mode {
+/*.key.quad-mode {
   --c1: #d3d6da; /* 左上 */
-  --c2: #d3d6da; /* 右上 */
-  --c3: #d3d6da; /* 左下 */
-  --c4: #d3d6da; /* 右下 */
+  /*--c2: #d3d6da; /* 右上 */
+  /*--c3: #d3d6da; /* 左下 */
+  /*--c4: #d3d6da; /* 右下 */
 
   /* ベースを左上の色で完全に塗りつぶします */
-  background-color: var(--c1) !important;
+  /*background-color: var(--c1) !important;
 
   /* 右上、左下、右下だけを正確な直線で上書き配置することで、中央の横線を完全に消し去ります */
-  background-image: 
+  /*background-image: 
     linear-gradient(to right, transparent 50%, var(--c2) 50%),
     linear-gradient(to right, var(--c3) 50%, var(--c4) 50%) !important;
   background-position: top, bottom !important;
@@ -671,7 +671,7 @@ body.event-nye .key { background-color:#25202b; color:#d1c7bd; }
     -1px  1px 0 #000,
      1px  1px 0 #000,
      0px  2px 2px rgba(0,0,0,0.8) !important;
-}
+}*/
 
 
 /* ==========================================
