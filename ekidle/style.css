@@ -147,12 +147,19 @@ body.theme-dark #title-stats-modal .btn {
   color: #000000 !important;
 }
 
-/* 【追加】ダークテーマのとき、運行記録モーダルの各文字数ボックス内の数値を黒文字にして見やすくする */
+/* 【修正4】ダークテーマ時、運行記録モーダルの数値を調整（プレイ回数は黒文字化から除外） */
 .theme-dark #title-stats-modal .stat-box {
   color: #1a1a1b !important;
 }
-.theme-dark #title-stats-modal .stat-box span {
+/* 勝率や連勝記録の数値だけを背景に合わせて黒文字にします */
+.theme-dark #title-stats-modal [id$="-winrate"],
+.theme-dark #title-stats-modal [id$="-streak"],
+.theme-dark #title-stats-modal [id$="-maxstreak"] {
   color: #000000 !important;
+}
+/* プレイ回数（-played）の数値だけは黒文字にせず、白文字（テーマカラー）を維持します */
+.theme-dark #title-stats-modal [id$="-played"] {
+  color: #ffffff !important;
 }
 
 /* ボタンが押された瞬間の沈み込みアクション */
@@ -855,24 +862,32 @@ body.event-nye .key { background-color:#25202b; color:#d1c7bd; }
   animation: jumpBounce 0.6s ease forwards;
 }
 
-/* 【追加】クアッド盤面ごとの残り駅数カウンターの見た目 */
+/* 【修正1】クアッド盤面ごとの残り駅数カウンター（盤面の上部に被らず綺麗に配置） */
 .quad-remain-counter {
-  position: absolute;
-  top: 4px;
-  left: 4px;
-  font-size: 10px;
+  text-align: center;
+  font-size: 11px;
   font-weight: bold;
-  color: #ffffff;
-  background: rgba(0, 0, 0, 0.6); /* 黒ベースの半透明背景で文字をくっきり見せる */
-  padding: 1px 4px;
+  color: var(--text-color);
+  background: rgba(0, 0, 0, 0.05); /* 通常テーマ時の薄い背景 */
+  padding: 3px 0;
   border-radius: 4px;
-  z-index: 15;
-  pointer-events: none; /* タップやShift選択の邪魔をしない設定 */
+  margin-bottom: 5px;
+  width: 100%;
+  box-sizing: border-box;
 }
-/* すでにクリアされた盤面ではカウンターを非表示にする */
+
+/* ダークテーマ時のカウンターの見た目調整 */
+.theme-dark .quad-remain-counter {
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+}
+
+/* すでにクリアされた盤面ではカウンターを隠す */
 .quad-board.cleared .quad-remain-counter {
   display: none;
 }
+
+
 
 /* 順番に上へ跳ねながら現れるキーフレームアニメーション */
 @keyframes jumpBounce {
