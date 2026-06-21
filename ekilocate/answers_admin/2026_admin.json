@@ -712,5 +712,19 @@
             "pref": "神奈川県",
             "municipality": "横須賀市"
         }
+    },
+    "2026-08-03": {
+        "normal": {
+            "kanji": "常陸鴻巣駅",
+            "yomi": "ひたちこうのす",
+            "pref": "茨城県",
+            "municipality": "那珂市"
+        },
+        "hard": {
+            "kanji": "都府楼前駅",
+            "yomi": "とふろうまえ",
+            "pref": "福岡県",
+            "municipality": "太宰府市"
+        }
     }
 }
