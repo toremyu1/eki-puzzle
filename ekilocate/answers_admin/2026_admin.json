@@ -754,5 +754,19 @@
             "pref": "新潟県",
             "municipality": "柏崎市"
         }
+    },
+    "2026-08-06": {
+        "normal": {
+            "kanji": "羽前前波駅",
+            "yomi": "うぜんぜんなみ",
+            "pref": "山形県",
+            "municipality": "新庄市"
+        },
+        "hard": {
+            "kanji": "馬堀駅",
+            "yomi": "うまほり",
+            "pref": "京都府",
+            "municipality": "亀岡市"
+        }
     }
 }
