@@ -768,5 +768,19 @@
             "pref": "京都府",
             "municipality": "亀岡市"
         }
+    },
+    "2026-08-07": {
+        "normal": {
+            "kanji": "ゆいの杜中央停留場",
+            "yomi": "ゆいのもりちゅうおう",
+            "pref": "栃木県",
+            "municipality": "宇都宮市"
+        },
+        "hard": {
+            "kanji": "小金城趾駅",
+            "yomi": "こがねじょうし",
+            "pref": "千葉県",
+            "municipality": "松戸市"
+        }
     }
 }
