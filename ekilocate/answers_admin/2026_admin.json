@@ -782,5 +782,19 @@
             "pref": "千葉県",
             "municipality": "松戸市"
         }
+    },
+    "2026-08-08": {
+        "normal": {
+            "kanji": "波久礼駅",
+            "yomi": "はぐれ",
+            "pref": "埼玉県",
+            "municipality": "寄居町"
+        },
+        "hard": {
+            "kanji": "阿波山川駅",
+            "yomi": "あわやまかわ",
+            "pref": "徳島県",
+            "municipality": "吉野川市"
+        }
     }
 }
