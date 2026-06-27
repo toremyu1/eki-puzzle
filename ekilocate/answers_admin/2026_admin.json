@@ -796,5 +796,19 @@
             "pref": "徳島県",
             "municipality": "吉野川市"
         }
+    },
+    "2026-08-09": {
+        "normal": {
+            "kanji": "水窪駅",
+            "yomi": "みさくぼ",
+            "pref": "静岡県",
+            "municipality": "浜松市"
+        },
+        "hard": {
+            "kanji": "雪が谷大塚駅",
+            "yomi": "ゆきがやおおつか",
+            "pref": "東京都",
+            "municipality": "大田区"
+        }
     }
 }
