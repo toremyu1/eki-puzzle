@@ -810,5 +810,19 @@
             "pref": "東京都",
             "municipality": "大田区"
         }
+    },
+    "2026-08-10": {
+        "normal": {
+            "kanji": "桃川駅",
+            "yomi": "もものかわ",
+            "pref": "佐賀県",
+            "municipality": "伊万里市"
+        },
+        "hard": {
+            "kanji": "三里駅",
+            "yomi": "みさと",
+            "pref": "三重県",
+            "municipality": "いなべ市"
+        }
     }
 }
