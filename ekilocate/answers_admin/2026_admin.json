@@ -838,5 +838,19 @@
             "pref": "山形県",
             "municipality": "最上町"
         }
+    },
+    "2026-08-12": {
+        "normal": {
+            "kanji": "北俣駅",
+            "yomi": "きたまた",
+            "pref": "鹿児島県",
+            "municipality": "曽於市"
+        },
+        "hard": {
+            "kanji": "平石停留場",
+            "yomi": "ひらいし",
+            "pref": "栃木県",
+            "municipality": "宇都宮市"
+        }
     }
 }
