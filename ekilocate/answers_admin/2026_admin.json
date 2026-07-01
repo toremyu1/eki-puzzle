@@ -852,5 +852,19 @@
             "pref": "栃木県",
             "municipality": "宇都宮市"
         }
+    },
+    "2026-08-13": {
+        "normal": {
+            "kanji": "代々木公園駅",
+            "yomi": "よよぎこうえん",
+            "pref": "東京都",
+            "municipality": "渋谷区"
+        },
+        "hard": {
+            "kanji": "島本駅",
+            "yomi": "しまもと",
+            "pref": "大阪府",
+            "municipality": "島本町"
+        }
     }
 }
