@@ -866,5 +866,19 @@
             "pref": "大阪府",
             "municipality": "島本町"
         }
+    },
+    "2026-08-14": {
+        "normal": {
+            "kanji": "新鵜沼駅",
+            "yomi": "しんうぬま",
+            "pref": "岐阜県",
+            "municipality": "各務原市"
+        },
+        "hard": {
+            "kanji": "伊野商業前停留場",
+            "yomi": "いのしょうぎょうまえ",
+            "pref": "高知県",
+            "municipality": "いの町"
+        }
     }
 }
