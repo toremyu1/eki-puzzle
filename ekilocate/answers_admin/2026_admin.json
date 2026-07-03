@@ -880,5 +880,19 @@
             "pref": "高知県",
             "municipality": "いの町"
         }
+    },
+    "2026-08-15": {
+        "normal": {
+            "kanji": "半田埠頭駅",
+            "yomi": "はんだふとう",
+            "pref": "愛知県",
+            "municipality": "半田市"
+        },
+        "hard": {
+            "kanji": "東中神駅",
+            "yomi": "ひがしなかがみ",
+            "pref": "東京都",
+            "municipality": "昭島市"
+        }
     }
 }
