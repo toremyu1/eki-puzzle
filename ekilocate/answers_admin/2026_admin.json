@@ -894,5 +894,19 @@
             "pref": "東京都",
             "municipality": "昭島市"
         }
+    },
+    "2026-08-16": {
+        "normal": {
+            "kanji": "宇治団地前停留場",
+            "yomi": "うじだんちまえ",
+            "pref": "高知県",
+            "municipality": "いの町"
+        },
+        "hard": {
+            "kanji": "荒砥駅",
+            "yomi": "あらと",
+            "pref": "山形県",
+            "municipality": "白鷹町"
+        }
     }
 }
