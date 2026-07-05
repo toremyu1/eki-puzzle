@@ -438,7 +438,7 @@ function setupGameSpecificUI() {
     let stateKey = "quad" + currentMode;
     if (savedState[stateKey]) {
       savedState[stateKey].isExpanded = isQuadExpanded;
-      saveGameState(); // ローカルストレージへ保存を実行します
+      saveQuadGameState();  // ローカルストレージへ保存を実行します
     }
 
     updateTiles(); //新しい回答行にも状態を即座に反映させる
