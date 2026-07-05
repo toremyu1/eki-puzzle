@@ -9,9 +9,20 @@ const CONFIG_MAX_GUESSES_5 = 6;     // 5文字モードの回答回数
 const CONFIG_MAX_GUESSES_6 = 6;     // 6文字モードの回答回数
 const CONFIG_MAX_GUESSES_QUAD = 13; // クアッドモードの回答回数
 
-let stations=[];　　　　　　　//すべての駅データの入れる箱
-let availableStations=[];　　//選択文字数に一致する駅を入れる箱
-let todayStation=null;　　　 //今日の正解駅
+// types.d.ts で定義した「Station」型を使って、配列（[]）の構造を指定します。
+// これにより、stations の中には必ず Station 型のデータが入るようになります。
+/** @type {Station[]} */
+let stations = [];
+
+// こちらも同様に、Station 型のデータが入る配列として定義します。
+/** @type {Station[]} */
+let availableStations = [];
+
+// 今日の答えは最初 null（空っぽ）なので、「Station型 または null」として定義します。
+/** @type {Station | null} */
+let todayStation = null;
+
+
 let currentGuess="";　　　　 //プレイヤーが入力している途中の文字を記憶する箱
 let guessesSubmitted=0;　　　//プレイヤーの回答送信回数カウンター 
 let maxGuesses=8;　　　　　　//上限回答数(文字数により変動)
