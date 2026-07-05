@@ -908,5 +908,19 @@
             "pref": "山形県",
             "municipality": "白鷹町"
         }
+    },
+    "2026-08-17": {
+        "normal": {
+            "kanji": "西川口駅",
+            "yomi": "にしかわぐち",
+            "pref": "埼玉県",
+            "municipality": "川口市"
+        },
+        "hard": {
+            "kanji": "ケーブル八瀬駅",
+            "yomi": "ケーブルやせ",
+            "pref": "京都府",
+            "municipality": "京都市"
+        }
     }
 }
