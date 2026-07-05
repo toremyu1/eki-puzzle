@@ -16,4 +16,8 @@ interface Station {
   endDay?: number;
   url?: string;
   population?: number;
+  municipality?: string;     // 市区町村名
+  ward?: string;             // 区名
+  muni_type?: string;        // 市区町村の種別（市、町、村など）
+  open_year?: number | string; // 開業年（数字または文字）
 }

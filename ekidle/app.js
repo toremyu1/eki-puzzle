@@ -39,6 +39,12 @@ let isAprilFoolMode=false;　 //今がエイプリルフール限定モードを
 let isPlayingRandom=false;   // ランダムモード中かどうかの判定フラグ
 let savedState={};　　　　　　//各文字のモードで今日のゲームの途中経過を保存する箱
 let todayStationCache={};    // 今日の答えをキャッシュに保存する箱
+let isQuadMode = false;              // 現在クアッドモードかどうか
+let isQuadExpanded = false;          // 一括展開モードがONになっているかを記憶するフラグ
+let quadStations = [];               // 4つの正解駅オブジェクトを格納する配列
+let quadSolved = [false, false, false, false]; // 各盤面がクリアされたかを管理するフラグ
+let quadKeyColors = {};              // キーボード用の4分割色ログ
+let quadGridHistory = [];            // 【追加】各手ごとの4盤面の色結果を記憶する箱
 let ekiSettings;    //設定データを保存する箱
 try {
   ekiSettings = JSON.parse(localStorage.getItem("ekiSettings")) || {theme:"", sound:true, fontSize:"normal", hardMode:false};
@@ -2206,17 +2212,6 @@ function incrementClearAchievements(actualGuesses, clearTimeMs) {
 //  document.body.classList.remove('preload-transitions');
 //}
 
-
-// ==========================================
-// 駅ドル・クアッド（4画面）モードの全処理システム
-// ==========================================
-
-let isQuadMode = false;              // 現在クアッドモードかどうか
-let isQuadExpanded = false;          // 一括展開モードがONになっているかを記憶するフラグ
-let quadStations = [];               // 4つの正解駅オブジェクトを格納する配列
-let quadSolved = [false, false, false, false]; // 各盤面がクリアされたかを管理するフラグ
-let quadKeyColors = {};              // キーボード用の4分割色ログ
-let quadGridHistory = [];            // 【追加】各手ごとの4盤面の色結果を記憶する箱
 
 
 // クアッドモードを開始する処理
