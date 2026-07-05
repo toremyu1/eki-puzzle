@@ -25,7 +25,7 @@ let isAprilFoolMode=false;　 //今がエイプリルフール限定モードを
 let isPlayingRandom=false;   // ランダムモード中かどうかの判定フラグ
 let savedState={};　　　　　　//各文字のモードで今日のゲームの途中経過を保存する箱
 let todayStationCache={};    // 今日の答えをキャッシュに保存する箱
-let ekiSettings = {};
+let ekiSettings;    //設定データを保存する箱
 try {
   ekiSettings = JSON.parse(localStorage.getItem("ekiSettings")) || {theme:"", sound:true, fontSize:"normal", hardMode:false};
 } catch(e) {
@@ -33,7 +33,25 @@ try {
 }
 // let ekiLoginStreak=JSON.parse(localStorage.getItem("ekiLoginStreak")||'{"currentStreak":0,"maxStreak":0,"lastLoginDate":""}');　　//連続ログイン日数を保存する箱（ekiZukanMetaに統合するため廃止）
 // let ekiClearedDays=JSON.parse(localStorage.getItem("ekiClearedDays")||'{"4":[],"5":[],"6":[]}');　　　//クリアした日を保存する箱　(ekiPuzzleStateV1_LogのisWinを調べれば復元できるため廃止)
-let ekiAchievements=JSON.parse(localStorage.getItem("ekiAchievements")||'{"bestScores":{},"counters":{"legendStationClears":0,"noAbsentClears":0,"totalYomiLength":0,"noHintClears":0,"hintUsedClears":0,"totalSubmitCount":0},"winStreak":{"currentStreak":0,"maxStreak":0,"lastClearedDate":""},"hourlyClears":{},"unlockedSets":{"prefs":[],"companies":[],"lines":[],"colorCounts":{"4":{"correct":0,"present":0,"diacritic":0,"absent":0}},"clearedEvents":[],"clearedMonthDays":[],"clearedStationNames":[]}}');　　// 実績データの全体構造を定義
+let ekiAchievements;  //実績データを保存する箱
+try {
+  // 保存されている実績データを読み込んでみる
+  ekiAchievements = JSON.parse(localStorage.getItem("ekiAchievements"));
+  if (!ekiAchievements || !ekiAchievements.bestScores) throw new Error("Data missing"); // 中身が空ならエラー扱いで作り直す
+} catch (e) {
+  // データがない、または壊れていた場合は初期構造を作る
+  ekiAchievements = {
+    bestScores: {},
+    counters: {legendStationClears:0, noAbsentClears:0, totalYomiLength:0, noHintClears:0, hintUsedClears:0, totalSubmitCount:0},
+    winStreak: {currentStreak:0, maxStreak:0, lastClearedDate:""},
+    hourlyClears: {},
+    unlockedSets: {
+      prefs:[], companies:[], lines:[],
+      colorCounts: {"4":{"correct":0,"present":0,"diacritic":0,"absent":0}},
+      clearedEvents:[], clearedMonthDays:[], clearedStationNames:[]
+    }
+  };
+}
 //各文字数モード毎の累計プレイ回数、勝率、連勝記録、最大連勝、何回目で当たったかを記録する箱
 let userStats={　　　　　　　
 4:{played:0,won:0,currentStreak:0,maxStreak:0,dist:[0,0,0,0,0,0,0,0,0,0]},
@@ -43,6 +61,15 @@ let userStats={　　　　　　　
 // 過去に解いた問題を記録しておく箱（後から復元可能なため廃止）
 // let dailyArchive={};
 
+
+// ==========================================
+// グローバルで日本時間(JST)を取得する共通関数
+// ==========================================
+function getJSTDate() {
+  const t = new Date();
+  const jstMs = t.getTime() + (t.getTimezoneOffset() * 60000) + (9 * 3600000);
+  return new Date(jstMs);
+}
 
 // ==========================================
 // 1. システム初期化（心臓部）
@@ -190,6 +217,7 @@ function setupCommonUI() {
       document.getElementById("game-board")?.classList.remove("hidden");
       document.getElementById("quad-board-container")?.classList.add("hidden");
       document.getElementById("expand-toggle-btn")?.classList.add("hidden");
+      document.querySelector(".quad-hardmode-container")?.classList.add("hidden");
       
       // 文字数セレクターとハードモードスイッチを表示する
       document.querySelector(".mode-selector")?.classList.remove("hidden");
@@ -426,6 +454,7 @@ function setupGameSpecificUI() {
           // 通常モードとして再スタート
           document.getElementById("quad-board-container")?.classList.add("hidden");
           document.getElementById("game-board")?.classList.remove("hidden");
+
           const hs = document.getElementById("hardmode-switch");
           if (hs) hs.disabled = false;
           
@@ -1272,7 +1301,7 @@ function submitGuess(isRestore=false){
   let isValid = false;
   if (isYuruMode) {
     // ゆる鉄モード：5文字であれば無条件で入力を許可（辞書チェックなし）
-    isValid = (currentGuess.length === 5);
+    isValid = (currentGuess.length === currentMode);
   } else {
     // ガチ鉄・チャレンジモード：従来通り実在駅のチェックを行う
     isValid = stations.some(s => 
