@@ -71,6 +71,16 @@ function getJSTDate() {
   return new Date(jstMs);
 }
 
+// 上で作った日本時間から「YYYY-MM-DD」の文字列を作る共通関数
+function getJSTDateString() {
+  const d = getJSTDate();
+  // 月と日が1桁の場合は 0 を足して 2026-06-05 のように揃えます
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
 // ==========================================
 // 1. システム初期化（心臓部）
 // ==========================================
@@ -728,8 +738,7 @@ function loadStats(){
   }
   
   // 今日の日付文字列を作成（例: "2026-6-5"）
-  const d = new Date();
-  const todayStr = d.getFullYear() + "-" + (d.getMonth()+1) + "-" + d.getDate();
+  const todayStr = getJSTDateString();
 
   // ランダム専用の枠がない、または「前回ランダムを遊んだ日」が今日ではない場合、成績を0にリセットする
   if(!userStats["random"] || userStats["random"].lastDate !== todayStr){
