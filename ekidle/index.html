@@ -54,6 +54,12 @@
         <input type="checkbox" id="hardmode-switch"> 🔥 ハードモード
       </label>
     </div>
+
+    <div class="quad-hardmode-container hidden">
+      <label class="hardmode-label">
+        <input type="checkbox" id="quad-hardmode-switch"> 🔥 ハードモード
+      </label>
+    </div>
   </header>
 
   <div id="title-screen" class="screen-container">
@@ -110,8 +116,9 @@
           <li>各文字数モードごとに、<strong>1日1問</strong>出題されます。</li>
           <li>入力できるのは、<strong>実在する日本の鉄道駅</strong>のみです。</li>
           <li>「ー（長音）」はひらがな1文字として扱います。</li>
-          <li>数字やアルファベットは、その文字の読みとして扱います。<br>（例：JR総持寺 ➔ じぇいあーるそうじじ）</li>
-          <li><strong>記号（・）などは含めずに入力してください。</strong></li>
+          <li>数字やアルファベットは、その文字の読みで扱います。<br>（例：JR総持寺 ➔ じぇいあーるそうじじ）</li>
+          <li><strong>記号（・）などは含めずに入力してください。</strong><br>（例：栂・美木多 ➔ とがみきた）</li>
+          <li>ハードモードでは、オープンしたヒント（緑・黄・紫マス）の条件を、次の回答で必ず含めなければなりません。</li>
         </ul>
         
         <hr class="modal-divider">
@@ -125,7 +132,7 @@
           <div class="tile absent help-tile">ば</div>
           <div class="tile absent help-tile">し</div>
         </div>
-        <p class="help-desc"><strong><span class="text-correct">し</span></strong> は駅名に含まれており、位置も合っています。</p>
+        <p class="help-desc"><strong><span class="text-correct">し</span></strong> は駅名に含まれており、位置も合っています。<br>ハードモードでは次の回答で必ず1文字目に「し」を入れる必要があります。</p>
         
         <div class="help-tiles">
           <div class="tile present help-tile">い</div>
@@ -133,7 +140,7 @@
           <div class="tile absent help-tile">ば</div>
           <div class="tile absent help-tile">し</div>
         </div>
-        <p class="help-desc"><strong><span class="text-present">し</span></strong> は駅名に含まれますが、位置が違います。答えに「し」が1つしか含まれないため、2個目の「し」は灰色になります。</p>
+        <p class="help-desc"><strong><span class="text-present">し</span></strong> は駅名に含まれますが、位置が違います。答えに「し」が1つしか含まれないため、2個目の「し」は灰色になります。<br>ハードモードでは次の回答で必ずいずれかのマスに「し」を入れる必要があります。</p>
         
         <div class="help-tiles">
           <div class="tile diacritic help-tile">か</div>
@@ -141,19 +148,9 @@
           <div class="tile absent help-tile">さ</div>
           <div class="tile absent help-tile">き</div>
         </div>
-        <p class="help-desc"><strong><span class="text-diacritic">か</span></strong> は駅名に含まれませんが、<strong>濁点違い（が）</strong>が含まれます。「は-ば-ぱ」「よ-ょ」「つ-づ-っ」のように、同じ形を持つ文字が含まれていれば紫色になります。</p>
+        <p class="help-desc"><strong><span class="text-diacritic">か</span></strong> は駅名に含まれませんが、<strong>濁点違い（が）</strong>が含まれます。「は-ば-ぱ」「よ-ょ」「つ-づ-っ」のように、同じ形を持つ文字が含まれていれば紫色になります。<br>ハードモードでは次の回答で必ず「か」もしくは「が」を入れる必要があります。</p>
       </div>
 
-      <div id="help-hard-content" class="hidden">
-        <h2 class="text-danger" style="text-align: center;">遊び方（ハード）</h2>
-        <p>オープンしたヒントを、次回の回答で必ず使わなければならない<strong>超高難易度モード</strong>です。</p>
-        <ul class="help-list">
-          <li><strong class="text-correct">🟩 緑マス</strong>：次回も全く同じ位置に配置する必要があります。</li>
-          <li><strong class="text-present">🟨 黄マス</strong>：次回の回答のどこかに必ず含める必要があります。</li>
-          <li><strong class="text-diacritic">🟪 紫マス</strong>：次回の回答のどこかに同じ文字グループ（濁点など）を必ず含める必要があります。</li>
-        </ul>
-      </div>
-      
       <hr class="modal-divider">
       <div class="help-notes">
         ※当ゲームはWikipedia「日本の鉄道駅一覧」のデータを基準としています。<br>
@@ -241,13 +238,14 @@
     <div class="modal-content">
       <span id="close-quad-help-btn" class="modal-close">&times;</span>
       <h2 style="text-align: center; color: #03a9f4;">遊び方（クアッド）</h2>
-      <p>4つの盤面で同時に進行する<strong>超難解モード</strong>です。</p>
+      <p>4つの盤面で同時に進行する<strong>超高難度モード</strong>です。</p>
       <ul class="help-list">
         <li>入力した文字は、4つの盤面<strong>すべてに同時に</strong>反映されます。</li>
         <li>回答回数は全盤面共通で<strong>11回</strong>です。</li>
         <li>1手ごとに、各盤面の答えに対してそれぞれ色が判定されます。</li>
         <li>4つすべての駅名を当てるとクリアになります。</li>
-        <li>盤面を選択することでその行を拡大できます。</li>
+        <li>盤面を選択することでその行を拡大できます（範囲選択可）。</li>
+        <li>ハードモードでは、実在駅しか入力できません。</li>
       </ul>
       <hr class="modal-divider">
       <!--<p style="font-size: 13px;">※クアッドモードの過去問に挑戦したい場合は、後日実装予定のアーカイブ機能をお待ちください。（本日の問題は日付によって完全に固定されています）</p>-->
