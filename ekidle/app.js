@@ -1517,7 +1517,7 @@ function showResultModal(isWin,isRestore){
     ? `＼ 聖地のある「${safePref}」へ巡礼して指の疲れを癒やす ／` 
     : `＼ この駅のある「${isRural ? safePref : safePref + muniMuni}」へ聖地巡礼に行こう！ ／`;
 
-  // 【修正後】消えていた勝率計算と画面への代入処理を復元します
+  // 勝率計算と画面への代入処理
   // 1. プレイ回数から勝率（％）を計算します（0回の場合は0％にします）
   let winRate = st.played > 0 ? Math.round((st.won / st.played) * 100) : 0;
 
@@ -1527,11 +1527,11 @@ function showResultModal(isWin,isRestore){
   document.getElementById("stat-streak").textContent = st.currentStreak;  // 現在の連勝数
   document.getElementById("stat-maxstreak").textContent = st.maxStreak;  // 最大の連勝数
 
-  // 【修正】共通関数を呼んでアフィリエイト広告を生成
+  // 共通関数を呼んでアフィリエイト広告を生成
   const isAF = typeof isAprilFoolMode !== "undefined" && isAprilFoolMode;
   document.getElementById("wiki-link-container").innerHTML = generateSharedAffiliateHTML(todayStation, isAF);
 
-  // 【修正】共通関数を呼んで棒グラフを生成
+  // 共通関数を呼んで棒グラフを生成
   const currentClearTurn = isWin ? gridHistory.length : -1;
   document.getElementById("guess-distribution").innerHTML = generateSharedStatsGraphHTML(st.dist, currentClearTurn, maxGuesses);
 
