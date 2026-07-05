@@ -1568,11 +1568,11 @@ function shareResult(type){
   // ハードモードONやゆる鉄モードのときはタイトルとハッシュタグを変更する
   let currentState = savedState[isPlayingRandom ? "random" : (isYuruMode ? "yuru" : currentMode)];
   
-  let gameTitle = "駅ドル ガチ鉄モード";
+  let gameTitle = "駅ドル チャレンジモード";
   if (isYuruMode) {
-    gameTitle = "駅ドル ゆる鉄モード";
+    gameTitle = "駅ドル デイリーモード";
   } else if (ekiSettings.hardMode) {
-    gameTitle = "駅ドル ガチ鉄モード Hard";
+    gameTitle = "駅ドル チャレンジモード Hard";
   }
   
   let text=`${gameTitle} ${isYuruMode ? 5 : currentMode}文字 ${scoreStr}\n\n`;
@@ -1584,12 +1584,12 @@ function shareResult(type){
 
   let hashtagStr = `#駅ドル\n`;
   if (isYuruMode) {
-    hashtagStr += `#駅ドルゆる鉄モード\n`;
+    hashtagStr += `#駅ドルDaily\n`;
   } else {
-    hashtagStr += `#駅ドルガチ鉄モード\n`;
-    hashtagStr += `#駅ドルガチ鉄モード${currentMode}\n`;
+    hashtagStr += `#駅ドルChallenge\n`;
+    hashtagStr += `#駅ドルChallenge${currentMode}\n`;
     if (ekiSettings.hardMode) {
-      hashtagStr += `#駅ドルガチ鉄モードHard\n`;
+      hashtagStr += `#駅ドルChallenge Hard\n`;
     }
   }
 
@@ -2528,7 +2528,7 @@ function showClearedAnimation(boardElement) {
 // クアッド専用の結果モーダルを表示する処理
 function showQuadResultModal() {
   const isAllCleared = quadSolved.every(s => s === true);
-  document.getElementById("quad-modal-title").textContent = isAllCleared ? "クアッド制覇！" : "残念！ゲームオーバー";
+  document.getElementById("quad-modal-title").textContent = isAllCleared ? "Complete！" : "残念！ゲームオーバー";
   
   // 4つの正解駅を2列のグリッドで表示
   let descHtml = `<div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; font-size:14px; margin-bottom:15px; text-align:center;">`;
@@ -2575,14 +2575,14 @@ function shareQuadResult(type) {
   }
 
   // お洒落に手数を配置するテキストの組み立て
-  let text = `駅ドル Challenge ${currentMode}文字モード\n\n`;
+  let text = `駅ドル Special ${currentMode}文字モード\n\n`;
   const emojify = (t) => t === "X" ? "🟥 ✕" : `🟩 ${t}手`;
   text += `① ${emojify(clearTurns[0])}  ② ${emojify(clearTurns[1])}\n`;
   text += `③ ${emojify(clearTurns[2])}  ④ ${emojify(clearTurns[3])}\n\n`;
 
   let currentUrl = window.location.href.split('?')[0];
   // 指定された新しいハッシュタグを追加
-  text += `#駅ドル\n#駅ドルChallenge\n#駅ドルChallenge${currentMode}\n`;
+  text += `#駅ドル\n#駅ドルSpecial\n#駅ドルSpecial${currentMode}\n`;
   
   // 共通のシェア実行関数を呼び出し
   executeSharedShare(type, text, currentUrl);
