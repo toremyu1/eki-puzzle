@@ -519,7 +519,7 @@ function updateTitleStatsDisplay(modeType) {
   // 5文字枠のタイトルを変更します
   const title5 = document.getElementById("stats-title-5");
   if (title5) {
-    title5.innerHTML = (modeType === "yuru") ? "ゆる鉄モード (5文字)" : "5文字モード";
+    title5.innerHTML = (modeType === "yuru") ? "デイリーモード (5文字)" : "5文字モード";
   }
 
   // 4, 5, 6文字それぞれのデータをループで取得し、それぞれの表示枠へ一斉に流し込みます
