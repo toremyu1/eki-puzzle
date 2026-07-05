@@ -6,6 +6,9 @@ from datetime import datetime, timedelta, timezone
 SECRET_SALT = "EkiDoru_Secret_2026!"
 STATE_FILE = "state.json"
 
+quad4, quad5, quad6 = [], [], []
+
+
 def math_imul(a, b):
     return ((a & 0xffffffff) * (b & 0xffffffff)) & 0xffffffff
 
@@ -69,6 +72,7 @@ def generate_answers():
     generated_hashes = {}
     generated_admin = {}
 
+
     for d in range(start_day, target_day + 1):
         # その日の「現役」駅リスト（出禁考慮なしの復活プール）
         valid_pool = [s for s in stations if 
@@ -117,9 +121,12 @@ def generate_answers():
         gachi5 = draw_gacha(5)
         gachi6 = draw_gacha(6)
         yuru5  = draw_gacha(5)
-        quad4  = [draw_gacha(4) for _ in range(4)]
-        quad5  = [draw_gacha(5) for _ in range(4)]
-        quad6  = [draw_gacha(6) for _ in range(4)]
+        # 基準日(2024-01-01)は月曜日。d % 7 == 0 の時だけクアッドを引く
+        if d % 7 == 0:
+            quad4  = [draw_gacha(4) for _ in range(4)]
+            quad5  = [draw_gacha(5) for _ in range(4)]
+            quad6  = [draw_gacha(6) for _ in range(4)]
+        # 火曜〜日曜はガチャを引かず、直近の月曜日の結果をそのまま保持（または空）にする
 
         if d >= today_index:
             target_date = base_date + timedelta(days=d)
@@ -133,9 +140,9 @@ def generate_answers():
                 "5": get_hash(gachi5['yomi']),
                 "6": get_hash(gachi6['yomi']),
                 "yurutetsu": get_hash(yuru5['yomi']),
-                "quad4": [get_hash(q['yomi']) for q in quad4],
-                "quad5": [get_hash(q['yomi']) for q in quad5],
-                "quad6": [get_hash(q['yomi']) for q in quad6]
+                "quad4": [get_hash(q['yomi']) for q in quad4] if quad4 else [],
+                "quad5": [get_hash(q['yomi']) for q in quad5] if quad5 else [],
+                "quad6": [get_hash(q['yomi']) for q in quad6] if quad6 else []
             }
             
             generated_admin[date_str] = {
