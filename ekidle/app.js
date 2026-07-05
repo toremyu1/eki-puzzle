@@ -25,7 +25,12 @@ let isAprilFoolMode=false;　 //今がエイプリルフール限定モードを
 let isPlayingRandom=false;   // ランダムモード中かどうかの判定フラグ
 let savedState={};　　　　　　//各文字のモードで今日のゲームの途中経過を保存する箱
 let todayStationCache={};    // 今日の答えをキャッシュに保存する箱
-let ekiSettings=JSON.parse(localStorage.getItem("ekiSettings")||'{"theme":"","sound":true,"fontSize":"normal","hardMode":false}');　　　//ユーザー設定を保存する箱
+let ekiSettings = {};
+try {
+  ekiSettings = JSON.parse(localStorage.getItem("ekiSettings")) || {theme:"", sound:true, fontSize:"normal", hardMode:false};
+} catch(e) {
+  ekiSettings = {theme:"", sound:true, fontSize:"normal", hardMode:false}; // 破損時は初期化
+}
 // let ekiLoginStreak=JSON.parse(localStorage.getItem("ekiLoginStreak")||'{"currentStreak":0,"maxStreak":0,"lastLoginDate":""}');　　//連続ログイン日数を保存する箱（ekiZukanMetaに統合するため廃止）
 // let ekiClearedDays=JSON.parse(localStorage.getItem("ekiClearedDays")||'{"4":[],"5":[],"6":[]}');　　　//クリアした日を保存する箱　(ekiPuzzleStateV1_LogのisWinを調べれば復元できるため廃止)
 let ekiAchievements=JSON.parse(localStorage.getItem("ekiAchievements")||'{"bestScores":{},"counters":{"legendStationClears":0,"noAbsentClears":0,"totalYomiLength":0,"noHintClears":0,"hintUsedClears":0,"totalSubmitCount":0},"winStreak":{"currentStreak":0,"maxStreak":0,"lastClearedDate":""},"hourlyClears":{},"unlockedSets":{"prefs":[],"companies":[],"lines":[],"colorCounts":{"4":{"correct":0,"present":0,"diacritic":0,"absent":0}},"clearedEvents":[],"clearedMonthDays":[],"clearedStationNames":[]}}');　　// 実績データの全体構造を定義
@@ -1634,7 +1639,7 @@ function shareResult(type){
     hashtagStr += `#駅ドルChallenge\n`;
     hashtagStr += `#駅ドルChallenge${currentMode}\n`;
     if (ekiSettings.hardMode) {
-      hashtagStr += `#駅ドルChallenge Hard\n`;
+      hashtagStr += `#駅ドルChallenge_Hard\n`;
     }
   }
 
@@ -2441,7 +2446,7 @@ function submitQuadGuess(isRestore = false) {
   }
 
   // 復元中でない（プレイヤーの実際の入力）場合のみ、文字数と駅名のチェックを行う
-  if (!isRestore) 
+  if (!isRestore) {
     // 【共通】文字数チェック
     if (currentGuess.length !== currentMode) {
       showMessage("文字数が足りません");
