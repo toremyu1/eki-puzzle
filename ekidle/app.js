@@ -539,7 +539,13 @@ function setupGameSpecificUI() {
   if (quadHardSwitch) {
     quadHardSwitch.addEventListener("change", (e) => {
       let stateKey = "quad" + currentMode;
-      let quadWeeklyLog = JSON.parse(localStorage.getItem("ekiQuadWeeklyState") || "{}");
+      let quadWeeklyLog = {};
+      try {
+        quadWeeklyLog = JSON.parse(localStorage.getItem("ekiQuadWeeklyState") || "{}");
+      } catch(e) {
+        console.error("クアッド週次データが破損しています:", e);
+        quadWeeklyLog = {};
+      }
       if (!quadWeeklyLog[currentWeekIndex] || !quadWeeklyLog[currentWeekIndex][stateKey]) return;
 
       let st = savedState[stateKey];
@@ -708,7 +714,18 @@ function hideLoadingScreen() {
 //保存されている過去の戦績データを読み込む
 function loadStats(){
   const saved=localStorage.getItem("ekiPuzzleStatsV2");
-  if(saved) userStats=JSON.parse(saved);
+  if(saved) {
+    try {
+      userStats=JSON.parse(saved);
+    } catch(e) {
+      console.error("戦績データが破損しているため初期設定に戻します:", e);
+      userStats={
+        4:{played:0,won:0,currentStreak:0,maxStreak:0,dist:[0,0,0,0,0,0,0,0,0,0]},
+        5:{played:0,won:0,currentStreak:0,maxStreak:0,dist:[0,0,0,0,0,0,0,0,0,0]},
+        6:{played:0,won:0,currentStreak:0,maxStreak:0,dist:[0,0,0,0,0,0,0,0,0,0]}
+      };
+    }
+  }
   
   // 今日の日付文字列を作成（例: "2026-6-5"）
   const d = new Date();
@@ -764,12 +781,22 @@ function saveStats(isWin,actualGuesses){
 // ゲームの進行状況を日付ごとに保存・読み込みする処理です
 function loadGameState(dayIdx){
   const savedLog=localStorage.getItem("ekiPuzzleStateV1_Log");
-  let logData=savedLog?JSON.parse(savedLog):{};
-  //let todayStr=new Date().toISOString().split('T')[0];
-  // 【修正後】端末のローカル時計で「YYYY-MM-DD」を作成する
-  let todayStr = getJSTDateString();
+  let logData={};
+  try {
+    logData=savedLog?JSON.parse(savedLog):{};
+  } catch(e) {
+    console.error("履歴ログデータが破損しています:", e);
+    logData={};
+  }
   
-  let meta=JSON.parse(localStorage.getItem("ekiZukanMeta")||'{"totalLogins":0,"lastLoginDate":"","firstPlayDate":""}');
+  
+  let meta;
+  try {
+    meta=JSON.parse(localStorage.getItem("ekiZukanMeta")||'{"totalLogins":0,"lastLoginDate":"","firstPlayDate":""}');
+  } catch(e) {
+    console.error("図鑑メタデータが破損しているため初期化します:", e);
+    meta={"totalLogins":0,"lastLoginDate":"","firstPlayDate":""};
+  }
   
   if(!meta.firstPlayDate) meta.firstPlayDate=todayStr;
   
@@ -778,7 +805,11 @@ function loadGameState(dayIdx){
     meta.lastLoginDate=todayStr;
     localStorage.setItem("ekiZukanMeta",JSON.stringify(meta));
   }
-  
+
+  //let todayStr=new Date().toISOString().split('T')[0];
+  // 【修正後】端末のローカル時計で「YYYY-MM-DD」を作成する
+  let todayStr = getJSTDateString();
+
   // 過去のセーブデータが存在する場合
   if(logData[dayIdx]){
     savedState=logData[dayIdx];
@@ -825,7 +856,13 @@ function saveGameState() {
   
   // 新方式の履歴ログ用（こちらがページ再読み込み時の復元に絶対必要）
   const savedLog = localStorage.getItem("ekiPuzzleStateV1_Log");
-  let logData = savedLog ? JSON.parse(savedLog) : {};
+  let logData = {};
+  try {
+    logData = savedLog ? JSON.parse(savedLog) : {};
+  } catch(e) {
+    console.error("保存先の履歴ログが読み込めないため新規作成します:", e);
+    logData = {};
+  }
   logData[currentDayIndex] = savedState;
   localStorage.setItem("ekiPuzzleStateV1_Log", JSON.stringify(logData));
 }
@@ -833,7 +870,13 @@ function saveGameState() {
 //クアッドモードの進行状況を「今週の枠」へ保存する専用関数
 function saveQuadGameState() {
   let stateKey = "quad" + currentMode;
-  let quadWeeklyLog = JSON.parse(localStorage.getItem("ekiQuadWeeklyState") || "{}");
+  let quadWeeklyLog = {};
+  try {
+    quadWeeklyLog = JSON.parse(localStorage.getItem("ekiQuadWeeklyState") || "{}");
+  } catch(e) {
+    console.error("クアッドセーブデータが破損しています:", e);
+    quadWeeklyLog = {};
+  }
   
   // 今週の枠が存在しない場合の安全装置
   if (!quadWeeklyLog[currentWeekIndex]) quadWeeklyLog[currentWeekIndex] = {};
@@ -1283,7 +1326,13 @@ return results;
 //駅の読みがなと状態（1=遭遇、2=的中）を受け取ってパソコンに記録する
 function updateZukan(yomi, status){
   const savedZukan=localStorage.getItem("ekiZukanData");
-  let zukan=savedZukan?JSON.parse(savedZukan):{};
+  let zukan={};
+  try {
+    zukan=savedZukan?JSON.parse(savedZukan):{};
+  } catch(e) {
+    console.error("図鑑データが破損しているため初期化します:", e);
+    zukan={};
+  }
   // let todayStr=new Date().toISOString().split('T')[0];
   // 【修正後】端末のローカル時計で「YYYY-MM-DD」を作成する
   let todayStr = getJSTDateString();
@@ -1859,7 +1908,13 @@ if (m === openDate.getMonth() + 1 && day === openDate.getDate() && d.getFullYear
   sessionStorage.setItem("debug_site_anni_year", nYear);
 }
 // ユーザー個人の周年記念判定
-const meta = JSON.parse(localStorage.getItem("ekiZukanMeta") || '{}');
+let meta = {};
+try {
+  meta = JSON.parse(localStorage.getItem("ekiZukanMeta") || '{}');
+} catch(e) {
+  console.error("周年判定用のメタデータが破損しています:", e);
+  meta = {};
+}
 if (meta.firstPlayDate) {
   const firstDate = new Date(meta.firstPlayDate);
   if (firstDate.getMonth() + 1 === m && firstDate.getDate() === day && firstDate.getFullYear() < d.getFullYear()) {
@@ -1947,8 +2002,15 @@ startEventPopups();
 // プレイヤーが正解（クリア）した瞬間に、すべての実績データを一斉に計算して更新する関数
 function incrementClearAchievements(actualGuesses, clearTimeMs) {
   // 保存されている実績データを読み込み、無ければ初期構造を作ります
-  let ach = JSON.parse(localStorage.getItem("ekiAchievements") || '{"bestScores":{},"counters":{"legendStationClears":0,"noAbsentClears":0,"totalYomiLength":0,"noHintClears":0,"hintUsedClears":0,"totalSubmitCount":0},"winStreak":{"currentStreak":0,"maxStreak":0,"lastClearedDate":""},"hourlyClears":{},"unlockedSets":{"prefs":[],"companies":[],"lines":[],"clearedEvents":[],"clearedMonthDays":[],"clearedStationNames":[]}}');
-  
+  const defaultAch = '{"bestScores":{},"counters":{"legendStationClears":0,"noAbsentClears":0,"totalYomiLength":0,"noHintClears":0,"hintUsedClears":0,"totalSubmitCount":0},"winStreak":{"currentStreak":0,"maxStreak":0,"lastClearedDate":""},"hourlyClears":{},"unlockedSets":{"prefs":[],"companies":[],"lines":[],"clearedEvents":[],"clearedMonthDays":[],"clearedStationNames":[]}}';
+  let ach;
+  try {
+    ach = JSON.parse(localStorage.getItem("ekiAchievements") || defaultAch);
+  } catch(e) {
+    console.error("実績データが破損しているため初期化します:", e);
+    ach = JSON.parse(defaultAch);
+  }
+
   // --- 1. 将来のモード（3文字、7文字など）に自動対応する処理 ---
   if (!ach.bestScores[currentMode]) {
     ach.bestScores[currentMode] = { "minGuesses": 8, "bestTimeMs": 9999999 };
@@ -2173,7 +2235,13 @@ async function startQuadMode() {
   // クアッドモードのセーブデータ復元処理
   let stateKey = "quad" + currentMode;
   // クアッド専用の週次セーブデータをローカルストレージから読み込む
-  let quadWeeklyLog = JSON.parse(localStorage.getItem("ekiQuadWeeklyState") || "{}");
+  let quadWeeklyLog = {};
+  try {
+    quadWeeklyLog = JSON.parse(localStorage.getItem("ekiQuadWeeklyState") || "{}");
+  } catch(e) {
+    console.error("クアッド週次データが破損しています:", e);
+    quadWeeklyLog = {};
+  }
   
   // 今週のデータ枠がなければ新しく作成する
   if (!quadWeeklyLog[currentWeekIndex]) {
@@ -2901,7 +2969,13 @@ function simulateUnifiedAnswers(validPool, targetDayIndex, length) {
     }
   }
   
-  let savedState = JSON.parse(localStorage.getItem(unifiedStateKey) || "{}");
+  let savedState = {};
+  try {
+    savedState = JSON.parse(localStorage.getItem(unifiedStateKey) || "{}");
+  } catch(e) {
+    console.error("共有出禁帳簿データが破損しています:", e);
+    savedState = {};
+  }
   let bannedDays = savedState.bannedDays || {};
   let startDay = savedState.lastCalculatedDay !== undefined ? savedState.lastCalculatedDay + 1 : 0;
   
