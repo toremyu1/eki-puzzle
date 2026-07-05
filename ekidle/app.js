@@ -53,7 +53,7 @@ try {
   };
 }
 //各文字数モード毎の累計プレイ回数、勝率、連勝記録、最大連勝、何回目で当たったかを記録する箱
-let userStats={　　　　　　　
+let userStats={
 4:{played:0,won:0,currentStreak:0,maxStreak:0,dist:[0,0,0,0,0,0,0,0,0,0]},
 5:{played:0,won:0,currentStreak:0,maxStreak:0,dist:[0,0,0,0,0,0,0,0,0,0]},
 6:{played:0,won:0,currentStreak:0,maxStreak:0,dist:[0,0,0,0,0,0,0,0,0,0]}
@@ -180,6 +180,7 @@ function setupCommonUI() {
     document.getElementById("game-screen")?.classList.remove("hidden");
     document.getElementById("game-board")?.classList.remove("hidden");
     document.getElementById("quad-board-container")?.classList.add("hidden");
+    document.querySelector(".quad-hardmode-container")?.classList.add("hidden");
     document.getElementById("expand-toggle-btn")?.classList.add("hidden");
     
     // ゆる鉄は5文字固定なので、文字数セレクターは隠す

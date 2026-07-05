@@ -87,7 +87,8 @@ header {
   display: flex;
   gap: 10px;
 }
-.hardmode-container {
+.hardmode-container,
+.quad-hardmode-container {
   margin-top: 10px;
   text-align: center;
 }
