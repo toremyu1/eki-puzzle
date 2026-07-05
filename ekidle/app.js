@@ -3028,9 +3028,13 @@ function simulateUnifiedAnswers(validPool, targetDayIndex, length) {
     let gachi5 = drawGacha(5);
     let gachi6 = drawGacha(6);
     let yuru5  = drawGacha(5);
-    let quad4  = [drawGacha(4), drawGacha(4), drawGacha(4), drawGacha(4)];
-    let quad5  = [drawGacha(5), drawGacha(5), drawGacha(5), drawGacha(5)];
-    let quad6  = [drawGacha(6), drawGacha(6), drawGacha(6), drawGacha(6)];
+    let quad4 = [], quad5 = [], quad6 = [];
+    // 基準日からの日数が7の倍数（月曜日）の時だけクアッドを引く
+    if (d % 7 === 0) {
+      quad4  = [drawGacha(4), drawGacha(4), drawGacha(4), drawGacha(4)];
+      quad5  = [drawGacha(5), drawGacha(5), drawGacha(5), drawGacha(5)];
+      quad6  = [drawGacha(6), drawGacha(6), drawGacha(6), drawGacha(6)];
+    }
 
     if (d === targetDayIndex) {
       dailyAnswers = { 
