@@ -1,3 +1,6 @@
+// 先頭行に追加することで、VS Codeがこのファイル全体をTypeScriptと同等に検査してくれます
+// @ts-check
+
 //1.共通変数の定義　
 const SITE_OPEN_DATE = "2025-06-25";　 // 【設定】サイトを公開した日（周年記念の基準日）
 const FALLBACK_URL = "/stationdle";  // 【設定】読み込みエラー時に戻るルートフォルダのURL
