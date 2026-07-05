@@ -818,7 +818,6 @@ function loadGameState(dayIdx){
     logData={};
   }
   
-  
   let meta;
   try {
     meta=JSON.parse(localStorage.getItem("ekiZukanMeta")||'{"totalLogins":0,"lastLoginDate":"","firstPlayDate":""}');
@@ -826,7 +825,9 @@ function loadGameState(dayIdx){
     console.error("図鑑メタデータが破損しているため初期化します:", e);
     meta={"totalLogins":0,"lastLoginDate":"","firstPlayDate":""};
   }
-  
+
+  let todayStr = getJSTDateString();
+
   if(!meta.firstPlayDate) meta.firstPlayDate=todayStr;
   
   if(meta.lastLoginDate!==todayStr){
@@ -836,8 +837,6 @@ function loadGameState(dayIdx){
   }
 
   //let todayStr=new Date().toISOString().split('T')[0];
-  // 【修正後】端末のローカル時計で「YYYY-MM-DD」を作成する
-  let todayStr = getJSTDateString();
 
   // 過去のセーブデータが存在する場合
   if(logData[dayIdx]){
