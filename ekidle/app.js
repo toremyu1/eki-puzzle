@@ -1288,7 +1288,7 @@ function submitGuess(isRestore=false){
       //   localStorage.setItem("ekiAllGuesses",JSON.stringify(allGuessed));
       // }
       
-      // 【安全性強化】図鑑機能が実装されている場合のみ呼び出し、エラーを防ぐ
+      // 図鑑機能が実装されている場合のみ呼び出し、エラーを防ぐ
       if(typeof updateZukan === "function") updateZukan(currentGuess, 2);
     }
   }
