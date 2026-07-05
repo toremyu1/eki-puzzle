@@ -143,6 +143,17 @@ function setupCommonUI() {
 
   // 「？」ボタンが押された時、現在のモードに応じて表示するモーダルを切り替えます
   document.getElementById("help-btn")?.addEventListener("click", () => {
+
+    // ゆる鉄モードの時は「実在する駅のみ」の注意書きを隠します
+    const realStationRule = document.getElementById("help-real-station-rule");
+    if (realStationRule) {
+      if (isYuruMode) {
+        realStationRule.classList.add("hidden");
+      } else {
+        realStationRule.classList.remove("hidden");
+      }
+    }
+
     if (isQuadMode) {
       // クアッドモード中は専用の説明画面を開く
       document.getElementById("quad-help-modal")?.classList.remove("hidden");
@@ -840,13 +851,10 @@ function saveQuadGameState() {
 async function selectTodayStation() {
   const SECRET_SALT = "EkiDoru_Secret_2026!";
 
-  // 1. 日本時間（JST）ベースの日付とインデックスの計算
-  const t = new Date();
-  const jstMs = t.getTime() + (t.getTimezoneOffset() * 60000) + (9 * 3600000);
-  const jstObj = new Date(jstMs); // 後続の計算で使い回すため、この行は残します
+  const jstObj = getJSTDate(); //今日の日付を共通関数から取得
   const yearStr = jstObj.getFullYear(); // 今年の西暦を取得
   
-  // 先ほど作成した共通関数をここで安全に適用します
+  // 共通関数をここで安全に適用します
   let todayStr = getJSTDateString();
 
   // 基準日（2024年1月1日）から数えて今日が何日目かを計算
@@ -2231,6 +2239,7 @@ async function selectQuadStations(modeLength) {
   const SECRET_SALT = "EkiDoru_Secret_2026!";
   let todayStr = getJSTDateString();
   const yearStr = todayStr.split("-")[0];
+  const jstObj = getJSTDate();
 
   // 曜日を取得 (0:日, 1:月, ... 6:土)
   // 日曜日の場合は7として扱い、月曜始まりの計算をしやすくする
