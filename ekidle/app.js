@@ -567,31 +567,45 @@ function setupGameSpecificUI() {
   //ハードモードボタンの処理（クアッドモード、実在駅縛り）
   const quadHardSwitch = document.getElementById("quad-hardmode-switch");
   if (quadHardSwitch) {
-    quadHardSwitch.addEventListener("change", (e) => {
+    // ※ change ではなく click イベントに変更します
+    quadHardSwitch.addEventListener("click", (e) => {
       let stateKey = "quad" + currentMode;
-      let quadWeeklyLog = {};
-      try {
-        quadWeeklyLog = JSON.parse(localStorage.getItem("ekiQuadWeeklyState") || "{}");
-      } catch(e) {
-        console.error("クアッド週次データが破損しています:", e);
-        quadWeeklyLog = {};
-      }
-      if (!quadWeeklyLog[currentWeekIndex] || !quadWeeklyLog[currentWeekIndex][stateKey]) return;
-
       let st = savedState[stateKey];
-    
-      //チェックが「外された」時の処理
-      if (!quadHardSwitch.checked) {
-        if (confirm("一度ハードモード（実在駅縛り）を解除すると、今週は二度とオンに戻せません。本当によろしいですか？")) {
-          //セーブデータ上のハードモード状態を完全にオフにし、即座に保存する
-          st.isHardMode = false;
-          saveQuadGameState();
-          //二度と操作できないようにグレーアウトする
-          quadHardSwitch.disabled = true; 
+      if (!st) return;
+
+      // ゲームが既に終了している場合
+      if (st.isOver) {
+        e.preventDefault();
+        quadHardSwitch.checked = !quadHardSwitch.checked;
+        showMessage("ゲーム終了後は変更できません");
+        return;
+      }
+
+      // プレイ途中（1手以上送信済み）かどうか
+      let isMidGame = st.guesses && st.guesses.length > 0;
+
+      if (isMidGame) {
+        // プレイ途中にONにしようとした場合
+        if (quadHardSwitch.checked) {
+          e.preventDefault();
+          quadHardSwitch.checked = false;
+          showMessage("プレイ開始後はハードモードをオンにできません");
         } else {
-          //キャンセルした場合はチェック状態を元に戻す
-          quadHardSwitch.checked = true;
+          // プレイ途中にOFFにする場合
+          if (confirm("一度ハードモードを解除すると、今週は二度とオンに戻せません。本当によろしいですか？")) {
+            st.isHardMode = false;
+            saveQuadGameState();
+            quadHardSwitch.disabled = true; // 二度と操作できないようにグレーアウト
+          } else {
+            // キャンセルした場合はチェックを戻す
+            e.preventDefault();
+            quadHardSwitch.checked = true;
+          }
         }
+      } else {
+        // プレイ開始前（未回答）なら自由に切り替え可能
+        st.isHardMode = quadHardSwitch.checked;
+        saveQuadGameState();
       }
     });
   }
@@ -2275,6 +2289,18 @@ async function startQuadMode() {
   
   // 読み込んだデータを現在のグローバル変数にセットする
   savedState[stateKey] = st;
+
+  //ハードモードスイッチを復元
+  const quadHardSwitch = document.getElementById("quad-hardmode-switch");
+  if (quadHardSwitch) {
+    quadHardSwitch.checked = !!st.isHardMode;
+    // 1手以上回答済み かつ ハードモードがオフなら、二度とオンにできないよう操作不可にする
+    if (st.guesses && st.guesses.length > 0 && !st.isHardMode) {
+      quadHardSwitch.disabled = true;
+    } else {
+      quadHardSwitch.disabled = false;
+    }
+  }
   
   // セーブデータが存在する場合は、順番に送信して画面を再現する
   if (st && st.guesses && st.guesses.length > 0) {
@@ -2322,17 +2348,24 @@ async function startQuadMode() {
 // 4つの駅を決定する処理（ファイル参照 ＋ 失敗時はシミュレーション）
 async function selectQuadStations(modeLength) {
   const SECRET_SALT = "EkiDoru_Secret_2026!";
-  let todayStr = getJSTDateString();
-  const yearStr = todayStr.split("-")[0];
-  const jstObj = getJSTDate();
-
-  // 曜日を取得 (0:日, 1:月, ... 6:土)
-  // 日曜日の場合は7として扱い、月曜始まりの計算をしやすくする
-  const dayOfWeek = jstObj.getDay() || 7;
-
-  // 現在の日付から、その週の月曜日の日付に巻き戻す
-  jstObj.setDate(jstObj.getDate() - (dayOfWeek - 1));
   
+  // 現在の日付（今日）
+  const currentJstObj = getJSTDate();
+  // 曜日を取得 (0:日, 1:月, ... 6:土)
+  const dayOfWeek = currentJstObj.getDay() || 7;
+
+  // 今週の「月曜日」の日付を計算する
+  const mondayJstObj = new Date(currentJstObj.getTime());
+  mondayJstObj.setDate(mondayJstObj.getDate() - (dayOfWeek - 1));
+
+  const mondayY = mondayJstObj.getFullYear();
+  const mondayM = String(mondayJstObj.getMonth() + 1).padStart(2, '0');
+  const mondayD = String(mondayJstObj.getDate()).padStart(2, '0');
+  
+  // クアッドの問題を引くための「月曜日」の文字列を作成
+  const mondayStr = `${mondayY}-${mondayM}-${mondayD}`;
+  const yearStr = mondayY.toString();
+
   // クアッド用候補駅（通常の出題条件 ＋ 通常モードの今日の答えとは被らないようにする）
   let validPool = stations.filter(s => 
       s.yomi.length === modeLength && 
@@ -2343,15 +2376,14 @@ async function selectQuadStations(modeLength) {
   );
 
   try {
-    // ① まずは答えファイル（answers.json）の「quad4」などのキーから4つのハッシュを取得
     const answersData = await fetchSharedAnswerDict(yearStr);
-    const targetHashes = answersData[todayStr]?.[`quad${modeLength}`];
+    //todayStrではなく、mondayStrを使って月曜日の答えを取得する
+    const targetHashes = answersData[mondayStr]?.[`quad${modeLength}`];
     
     if (!targetHashes || targetHashes.length !== 4) {
-        throw new Error("本日のクアッド答えデータがありません");
+        throw new Error("本週のクアッド答えデータがありません");
     }
 
-    // 全候補駅のハッシュを計算して逆引きする
     const calcSha256 = async (str) => {
       const buf = new TextEncoder().encode(str);
       const hashBuf = await crypto.subtle.digest('SHA-256', buf);
@@ -2369,80 +2401,21 @@ async function selectQuadStations(modeLength) {
         if (found) quadStations.push(found.station);
         else throw new Error("ハッシュが一致する駅が見つかりません");
     }
-    return; // ファイルから無事に取得できた場合はここで終了
+    return;
     
   } catch (err) {
     console.warn("クアッドのファイル読み込み失敗。シミュレーションで決定します:", err);
     
-    // 【修正1】通常モードの出禁辞書を読み込む（通常モードと被らないようにするため）
-    //const normalStateKey = `ekidle_rng_state_${currentMode}`;
-    //let normalSaved = JSON.parse(localStorage.getItem(normalStateKey) || "{}");
-    //let normalBanned = normalSaved.nextAvailableDay || {};
+    //月曜日の dayIndex を正確に計算する
+    const mondayUTC = Date.UTC(mondayY, mondayJstObj.getMonth(), mondayJstObj.getDate());
+    const baseUTC = Date.UTC(2024, 0, 1);
+    const mondayDayIndex = Math.round((mondayUTC - baseUTC) / 86400000) + debugOffset;
 
-    // 【修正2】クアッド専用の「日付辞書（nextAvailableDay）」を新設して読み込む
-    //const quadStateKey = `ekidle_rng_state_quad_${currentMode}_v2`;
-    //let quadSaved = JSON.parse(localStorage.getItem(quadStateKey) || "{}");
-    //let quadNextAvailableDay = quadSaved.nextAvailableDay || {};
-    //let startDay = quadSaved.lastCalculatedDay !== undefined ? quadSaved.lastCalculatedDay + 1 : 0;
-
-    //let uniqueYomiCount = new Set(validPool.map(s => s.yomi)).size;
-    //let lookback = Math.min(1000, Math.floor(uniqueYomiCount * 0.7));
-
-    // 【修正3】通常モードと同じく、0日目（または計算の続き）から今日までを一気にシミュレーションする
-    //for (let d = startDay; d <= currentDayIndex; d++) {
-      
-      // 現役の駅であり、通常モードでもクアッドモードでも出禁になっていない駅だけを抽出
-    //  let pool = validPool.filter(s =>
-    //    (s.startDay === undefined || s.startDay <= d) &&
-    //    (s.endDay === undefined || s.endDay > d || s.endDay === 999999) &&
-    //    !(normalBanned[s.yomi] && normalBanned[s.yomi] > d) &&
-    //    !(quadNextAvailableDay[s.yomi] && quadNextAvailableDay[s.yomi] > d)
-    //  );
-
-    //  let seed = d * 12345 + modeLength * 6789;
-    //  const random = () => {
-    //    seed = Math.imul(seed ^ (seed >>> 15), 2246822507);
-    //    seed = Math.imul(seed ^ (seed >>> 13), 3266489909);
-    //    return ((seed ^ (seed >>> 16)) >>> 0) / 4294967296;
-    //  };
-
-    //  quadStations = [];
-    //  for (let i = 0; i < 4; i++) {
-        // 枯渇時の安全装置
-    //    if (pool.length === 0) {
-    //      pool = validPool.filter(s =>
-    //        (s.startDay === undefined || s.startDay <= d) &&
-    //        (s.endDay === undefined || s.endDay > d || s.endDay === 999999) &&
-    //        !quadStations.map(q => q.yomi).includes(s.yomi)
-    //      );
-    //    }
-        
-    //   const r = Math.floor(random() * pool.length);
-    //    const selected = pool[r];
-    //    quadStations.push(selected);
-        
-        // 選ばれた駅と同音異字をこのターンのくじ引き箱からすべて捨てる
-    //    pool = pool.filter(s => s.yomi !== selected.yomi);
-        
-        // クアッド専用の辞書に「次回出禁解除日」を登録
-    //    quadNextAvailableDay[selected.yomi] = d + lookback + 1;
-    //  }
-    //}
+    // 統合関数を呼び出し、クアッド用の4つの答えをセットする
+    let answers = simulateUnifiedAnswers(stations, mondayDayIndex);
     
-    // 【修正4】不要な過去の出禁データを掃除し、最新の状態だけを保存する
-    //let stateToSave = { lastCalculatedDay: currentDayIndex, nextAvailableDay: {} };
-    //for (const yomi in quadNextAvailableDay) {
-    //  if (quadNextAvailableDay[yomi] > currentDayIndex) {
-    //    stateToSave.nextAvailableDay[yomi] = quadNextAvailableDay[yomi];
-    //  }
-    //}
-    //localStorage.setItem(quadStateKey, JSON.stringify(stateToSave));
-  //}
-
-    // 統合後
-    // 統合関数を呼び出し、クアッド用の4つの答えをセットするだけ
-    let answers = simulateUnifiedAnswers(stations, currentDayIndex);
-    todayStation = isYuruMode ? answers["yurutetsu"] : answers[currentMode.toString()];
+    //通常モードの変数(todayStation)ではなく、クアッド用の変数(quadStations)に代入する
+    quadStations = answers[`quad${modeLength}`];
   }
 }
 
@@ -2456,14 +2429,14 @@ function buildQuadBoards() {
     board.innerHTML = "";
     board.style.setProperty("--row-length", currentMode);
 
-    // ▼▼▼ 追加：残り駅数をリアルタイム表示する要素を左上に配置 ▼▼▼
+    // 残り駅数をリアルタイム表示する要素を左上に配置
     const counter = document.createElement("div");
     counter.className = "quad-remain-counter";
     counter.id = `quad-remain-${b}`;
     counter.textContent = "残り -- 駅";
     // counter.style.display = "none"; // ★追加：1手目を打つまでは非表示
     board.appendChild(counter);
-    // ▲▲▲ 追加ここまで ▲▲▲
+    //追加ここまで
 
     // この盤面（ボード）内で最後にクリックされた行の番号を記憶する変数
     let lastClickedIdx = null;
