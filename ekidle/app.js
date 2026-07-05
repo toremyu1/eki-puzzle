@@ -1527,9 +1527,16 @@ function showResultModal(isWin,isRestore){
   document.getElementById("stat-streak").textContent = st.currentStreak;  // 現在の連勝数
   document.getElementById("stat-maxstreak").textContent = st.maxStreak;  // 最大の連勝数
 
-  // 共通関数を呼んでアフィリエイト広告を生成
-  const isAF = typeof isAprilFoolMode !== "undefined" && isAprilFoolMode;
-  document.getElementById("wiki-link-container").innerHTML = generateSharedAffiliateHTML(todayStation, isAF);
+  //※いったん停止 共通関数を呼んでアフィリエイト広告を生成
+  //const isAF = typeof isAprilFoolMode !== "undefined" && isAprilFoolMode;
+  //document.getElementById("wiki-link-container").innerHTML = generateSharedAffiliateHTML(todayStation, isAF);
+
+  //※代わりにWikipediaリンクだけをシンプルに表示する
+  document.getElementById("wiki-link-container").innerHTML = `
+    <div style="margin-bottom:12px; text-align:center;">
+      <a href="${todayStation.url}" target="_blank" style="display:inline-block; padding:8px 12px; background-color:#e0e0e0; color:#333; text-decoration:none; border-radius:4px; font-weight:bold; font-size:12px;">Wikipediaで見る</a>
+    </div>
+  `;
 
   // 共通関数を呼んで棒グラフを生成
   const currentClearTurn = isWin ? gridHistory.length : -1;
