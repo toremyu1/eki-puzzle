@@ -2290,6 +2290,9 @@ async function startQuadMode() {
   // 読み込んだデータを現在のグローバル変数にセットする
   savedState[stateKey] = st;
 
+  // 盤面の展開状態をセット
+  isQuadExpanded = st.isExpanded || false;
+
   //ハードモードスイッチを復元
   const quadHardSwitch = document.getElementById("quad-hardmode-switch");
   if (quadHardSwitch) {
@@ -3080,7 +3083,8 @@ async function exportUserData() {
     achievements: localStorage.getItem("ekiAchievements"),
     settings: localStorage.getItem("ekiSettings"),
     version: localStorage.getItem("ekiSystemVersion"),
-    log: localStorage.getItem("ekiPuzzleStateV1_Log")
+    log: localStorage.getItem("ekiPuzzleStateV1_Log"),
+    quadWeekly: localStorage.getItem("ekiQuadWeeklyState")
   };
 
   try {
@@ -3109,6 +3113,7 @@ async function importUserData(code) {
     if(json.settings) localStorage.setItem("ekiSettings", json.settings);
     if(json.version) localStorage.setItem("ekiSystemVersion", json.version); 
     if(json.log) localStorage.setItem("ekiPuzzleStateV1_Log", json.log);
+    if(json.quadWeekly) localStorage.setItem("ekiQuadWeeklyState", json.quadWeekly);
     
     alert("データを正常に復元しました！再読み込みを行います。");
     location.reload();
