@@ -248,7 +248,7 @@ body.theme-dark #title-stats-modal .btn {
 
 
 /* ==========================================
-   運行記録タブの中央揃えとタイトルボタンの着色
+   運行記録モーダル
 ========================================== */
 /* 難易度選択ボタン（タブ）を中央揃えにする */
 .stats-tabs {
@@ -259,7 +259,7 @@ body.theme-dark #title-stats-modal .btn {
   width: 100%;
 }
 
-/* --- 運行記録タブのアクティブ状態（背景を白に固定し、縁と影だけを着色） --- */
+/* 運行記録タブのアクティブ状態（背景を白に固定し、縁と影だけを着色） */
 .active-tab-yuru {
   border-color: #6aaa64 !important;
   box-shadow: 0 4px 0 #6aaa64 !important;
@@ -309,22 +309,30 @@ body.theme-sakura .active-tab-yuru {
 }
 
 
-/* --- 運行記録の通常・ハード縦並び表示 --- */
+
+/* --- 運行記録の通常・ハード表示（PC横並び・スマホ縦並び対応） --- */
+
+/* PC画面でも横並びに収まるよう、モーダルの最大幅を広げます */
 #title-stats-modal .modal-content {
-  max-width: 400px !important; 
+  max-width: 650px !important; 
+  width: 95%;
 }
 
+/* 基本は「横並び（row）」として設計します */
 .stats-split-container {
   display: flex;
-  flex-direction: column; /* 常に縦並びに固定 */
-  gap: 10px;
-  margin-top: 10px;
+  flex-direction: row; 
+  gap: 15px;
+  margin-top: 15px;
   margin-bottom: 20px;
 }
 
+/* 各戦績ブロックのデザインと、横並び時の幅の確保 */
 .stats-block {
+  flex: 1;
+  min-width: 250px;
   background: rgba(0, 0, 0, 0.03);
-  padding: 10px;
+  padding: 12px 15px;
   border-radius: 8px;
   border: 1px solid #e3e6ea;
   box-sizing: border-box;
@@ -339,12 +347,30 @@ body.theme-sakura .active-tab-yuru {
   text-align: left;
   font-weight: bold;
   font-size: 13px;
-  margin-bottom: 8px;
+  margin-bottom: 12px;
   color: #666;
 }
 
 .theme-dark .stats-block-title {
   color: #ccc;
+}
+
+/* --- レスポンシブ設定（画面サイズによる自動切り替え） --- */
+/* 画面の幅が600px以下（スマートフォンなど）になった瞬間、自動的に縦並びに切り替えます */
+@media (max-width: 600px) {
+  .stats-split-container {
+    flex-direction: column; /* ここで縦並びに変更 */
+    gap: 10px;
+  }
+  
+  .stats-block {
+    min-width: auto; /* スマホ画面では幅の制限を解除し、画面幅に合わせる */
+    padding: 10px;
+  }
+  
+  .stats-block-title {
+    margin-bottom: 8px;
+  }
 }
 
 
