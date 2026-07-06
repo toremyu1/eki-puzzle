@@ -176,12 +176,13 @@ function setupCommonUI() {
 
     // ゆる鉄モードの時は「実在する駅のみ」の注意書きを隠します
     const realStationRule = document.getElementById("help-real-station-rule");
-    if (realStationRule) {
-      if (isYuruMode) {
-        realStationRule.classList.add("hidden");
-      } else {
-        realStationRule.classList.remove("hidden");
-      }
+    const yuruStationRule = document.getElementById("help-yuru-station-rule");
+    if (isYuruMode) {
+      realStationRule?.classList.add("hidden");
+      yuruStationRule?.classList.remove("hidden");
+    } else {
+      realStationRule?.classList.remove("hidden");
+      yuruStationRule?.classList.add("hidden");
     }
 
     if (isQuadMode) {
@@ -1654,14 +1655,15 @@ function shareResult(type){
   let scoreStr=isWin?`${gridHistory.length}/${maxGuesses}`:`X/${maxGuesses}`;
   let currentUrl=window.location.href.split('?')[0];
 
-  // ハードモードONやゆる鉄モードのときはタイトルとハッシュタグを変更する
-  let currentState = savedState[isPlayingRandom ? "random" : (isYuruMode ? "yuru" : currentMode)];
+  // ハードモードの状態を取得
+  let isHard = ekiSettings.hardMode;
   
-  let gameTitle = "駅ドル Challenge";
+  // モードとハードモードの組み合わせに応じて、タイトルを柔軟に切り替えます
+  let gameTitle = "駅ドル チャレンジモード";
   if (isYuruMode) {
-    gameTitle = "駅ドル Daily";
-  } else if (ekiSettings.hardMode) {
-    gameTitle = "駅ドル Challenge Hard";
+    gameTitle = isHard ? "駅ドル デイリーモード Hard" : "駅ドル デイリーモード";
+  } else if (isHard) {
+    gameTitle = "駅ドル チャレンジモード Hard";
   }
   
   let text=`${gameTitle} ${isYuruMode ? 5 : currentMode}文字 ${scoreStr}\n\n`;
@@ -1674,10 +1676,13 @@ function shareResult(type){
   let hashtagStr = `#駅ドル\n`;
   if (isYuruMode) {
     hashtagStr += `#駅ドルDaily\n`;
+    if (isHard) {
+      hashtagStr += `#駅ドルDaily_Hard\n`; // デイリーモード専用のハードタグ
+    }
   } else {
     hashtagStr += `#駅ドルChallenge\n`;
     hashtagStr += `#駅ドルChallenge${currentMode}\n`;
-    if (ekiSettings.hardMode) {
+    if (isHard) {
       hashtagStr += `#駅ドルChallenge_Hard\n`;
     }
   }
@@ -2681,7 +2686,7 @@ function shareQuadResult(type) {
   let isHard = st && st.isHardMode;
 
   // ハードモードの状態に応じて、ゲームタイトルを切り替えます
-  let gameTitle = isHard ? `駅ドル Special Hard` : `駅ドル Special`;
+  let gameTitle = isHard ? `駅ドル スペシャルモード Hard` : `駅ドル スペシャルモード`;
   let text = `${gameTitle} ${currentMode}文字モード\n\n`;
   
   const emojify = (t) => t === "X" ? "🟥 ✕" : `🟩 ${t}手`;
