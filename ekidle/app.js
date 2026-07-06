@@ -1492,8 +1492,8 @@ function validateHardMode(guess) {
   // まだ1手も送信していない（履歴がない）場合はチェック不要
   if (gridHistory.length === 0) return true;
   
-  // 前回の回答文字列と、それぞれのマスの色情報を取得
-  const key = isPlayingRandom ? "random" : currentMode;
+  // 前回の回答文字列と、それぞれのマスの色情報を取得（デイリーモードの判定を挟む）
+  const key = isPlayingRandom ? "random" : (isYuruMode ? "yuru" : currentMode);
   const lastGuess = savedState[key].guesses[gridHistory.length - 1];
   const lastColors = gridHistory[gridHistory.length - 1];
   
