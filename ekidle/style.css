@@ -173,6 +173,27 @@ body.theme-dark #title-stats-modal .btn {
   opacity: 0.5;
   cursor: not-allowed;
 }
+/* --- タイトルの各モードボタンの色・枠・影の設定 --- */
+#btn-yuru-mode {
+  background-color: #6aaa64 !important; /* デイリー（緑） */
+  color: #ffffff !important;
+  border-color: #4a7c46 !important;
+  box-shadow: 0 4px 0 #4a7c46 !important;
+}
+
+#btn-normal-mode {
+  background-color: #03a9f4 !important; /* チャレンジ（水色） */
+  color: #ffffff !important;
+  border-color: #0288d1 !important;
+  box-shadow: 0 4px 0 #0288d1 !important;
+}
+
+#btn-quad-mode {
+  background-color: #e53935 !important; /* スペシャル（赤） */
+  color: #ffffff !important;
+  border-color: #c0392b !important;
+  box-shadow: 0 4px 0 #c0392b !important;
+}
 
 /* 選択中の文字数ボタン（4, 5, 6）を青色で着色して目立たせる */
 .mode-btn.active {
@@ -181,6 +202,7 @@ body.theme-dark #title-stats-modal .btn {
   border-color: #03a9f4 !important;
   font-weight: bold;
 }
+
 
 /* ------------------------------------------
    色のバリエーション（そのまま）
