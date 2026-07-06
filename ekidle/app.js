@@ -619,16 +619,16 @@ function updateTitleStatsDisplay(modeType) {
   const tabNormal = document.getElementById("tab-normal");
   const tabQuad = document.getElementById("tab-quad"); 
 
-  //全タブのスタイルを一旦リセット
+  // 全タブのスタイルを一旦リセットし、枠線のみの標準状態に戻す
   [tabYuru, tabNormal, tabQuad].forEach(t => { if(t) t.className = "btn btn-small btn-outline"; });
 
-  //選択されたタブに応じた色の強調表示
+  // 選択されたタブに対して、縁と影だけを着色する専用のクラスを付与する
   if (modeType === "normal") {
-    if (tabNormal) tabNormal.className = "btn btn-small btn-primary"; //ガチ鉄（チャレンジ）は水色
+    if (tabNormal) tabNormal.className = "btn btn-small btn-outline active-tab-normal"; 
   } else if (modeType === "yuru") {
-    if (tabYuru) tabYuru.className = "btn btn-small btn-green";   //ゆる鉄（デイリー）は緑
+    if (tabYuru) tabYuru.className = "btn btn-small btn-outline active-tab-yuru";   
   } else if (modeType === "quad") {
-    if (tabQuad) tabQuad.className = "btn btn-small btn-danger";  //クアッド（スペシャル）は赤
+    if (tabQuad) tabQuad.className = "btn btn-small btn-outline active-tab-quad";  
   }
 
   //ゆる鉄モードの時は、4文字と6文字の枠を隠して5文字だけを表示します
