@@ -204,7 +204,7 @@ body.theme-dark #title-stats-modal .btn {
 }
 
 
-/* --- 正常なボタンと同じ「影が潰れて沈み込む」挙動を明示的に復元 --- */
+/*  正常なボタンと同じ「影が潰れて沈み込む」挙動を明示的に復元  */
 #btn-yuru-mode:active:not([disabled]),
 #btn-normal-mode:active:not([disabled]),
 #btn-quad-mode:active:not([disabled]) {
@@ -220,23 +220,11 @@ body.theme-dark #title-stats-modal .btn {
 .btn-gray  { background-color: #95a5a6; color: white; border-color: #7f8c8d; box-shadow: 0 4px 0 #7f8c8d; }
 .btn-outline{background-color: #ffffff; color: var(--text-color); border-color: #d3d6da; box-shadow: 0 4px 0 #bdc3c7; }
 
-/* -------------------------------------------------- */
-/* 【修正箇所】style.css の 110行目付近 */
-/* 「.btn-green-outline」の定義を以下のように修正します */
-/* -------------------------------------------------- */
-
-/*.btn-green-outline {
-  border-color: #6aaa64 !important;
-  color: #6aaa64 !important;
-  background: #ffffff !important; 
-  box-shadow: 0 4px 0 rgba(106, 170, 100, 0.4) !important; /* 緑色の影を追加します */
-/*}
-*/
 
 /* ------------------------------------------
    各ボタンのサイズ調整（ここも修正）
 ------------------------------------------ */
-/* 【修正】ヘッダーのアイコンボタンも指で押しやすい大きさに拡大（32px → 40px） */
+/* ヘッダーのアイコンボタンも指で押しやすい大きさに拡大（32px → 40px） */
 .btn-icon {
   width: 40px; height: 40px;
   font-size: 18px;
@@ -245,7 +233,7 @@ body.theme-dark #title-stats-modal .btn {
   background-color: #e3e3e1; color: var(--text-color);
 }
 
-/* 【修正】ゲーム画面のコントロールボタン群の余白を増やし、以前の堂々とした大きさに戻します */
+/* ゲーム画面のコントロールボタン群の余白を増やし、以前の堂々とした大きさに戻します */
 .control-buttons {
   display: flex; justify-content: center; gap: 8px;
   margin: 10px auto 15px; width: 95%; max-width: 400px;
@@ -318,6 +306,45 @@ body.theme-sakura .active-tab-yuru {
 .stats-tabs-container {
   flex-shrink: 0; /* タブ自体が潰れないように保護します */
   margin-bottom: 15px;
+}
+
+
+/* --- 運行記録の通常・ハード縦並び表示 --- */
+#title-stats-modal .modal-content {
+  max-width: 400px !important; 
+}
+
+.stats-split-container {
+  display: flex;
+  flex-direction: column; /* 常に縦並びに固定 */
+  gap: 10px;
+  margin-top: 10px;
+  margin-bottom: 20px;
+}
+
+.stats-block {
+  background: rgba(0, 0, 0, 0.03);
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #e3e6ea;
+  box-sizing: border-box;
+}
+
+.theme-dark .stats-block {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: #444;
+}
+
+.stats-block-title {
+  text-align: left;
+  font-weight: bold;
+  font-size: 13px;
+  margin-bottom: 8px;
+  color: #666;
+}
+
+.theme-dark .stats-block-title {
+  color: #ccc;
 }
 
 
@@ -655,10 +682,7 @@ body.event-nye .key { background-color:#25202b; color:#d1c7bd; }
   filter: grayscale(50%); /* 色をくすませて終わった感を出す */
 }
 
-/* ==========================================
-   キーボードの4分割カラーリング（クアッドモード用）
-========================================== */
-/* 【修正後】キーボードの4分割グラデーションと縁取りなし設定 */
+
 /* ==========================================
    キーボードの4分割カラーリング（クアッドモード用）
 ========================================== */
@@ -686,35 +710,6 @@ body.event-nye .key { background-color:#25202b; color:#d1c7bd; }
      1px  1px 0 #000,
      0px  2px 2px rgba(0,0,0,0.8) !important;
 }
-
-/*新方式*/
-/* style.css の一番最後にある .key.quad-mode を以下に差し替えてください */
-/*.key.quad-mode {
-  --c1: #d3d6da; /* 左上 */
-  /*--c2: #d3d6da; /* 右上 */
-  /*--c3: #d3d6da; /* 左下 */
-  /*--c4: #d3d6da; /* 右下 */
-
-  /* ベースを左上の色で完全に塗りつぶします */
-  /*background-color: var(--c1) !important;
-
-  /* 右上、左下、右下だけを正確な直線で上書き配置することで、中央の横線を完全に消し去ります */
-  /*background-image: 
-    linear-gradient(to right, transparent 50%, var(--c2) 50%),
-    linear-gradient(to right, var(--c3) 50%, var(--c4) 50%) !important;
-  background-position: top, bottom !important;
-  background-size: 100% 50% !important;
-  background-repeat: no-repeat !important;
-
-  border: none !important;
-  color: white !important;
-  text-shadow: 
-    -1px -1px 0 #000,  
-     1px -1px 0 #000,
-    -1px  1px 0 #000,
-     1px  1px 0 #000,
-     0px  2px 2px rgba(0,0,0,0.8) !important;
-}*/
 
 
 /* ==========================================
@@ -862,7 +857,7 @@ body.event-nye .key { background-color:#25202b; color:#d1c7bd; }
 }
 
 
-/* ▼▼▼ 追加：特定の行をタップして拡大する処理 ▼▼▼ */
+/* 追加：特定の行をタップして拡大する処理 */
 .quad-board .board-row {
   cursor: pointer; /* タップできることを示す指マーク */
 }
@@ -882,7 +877,7 @@ body.event-nye .key { background-color:#25202b; color:#d1c7bd; }
   user-select: none;         /* パソコンやAndroid等の標準的な文字選択禁止設定です */
 }
 
-/* ▼▼▼ 追加：クアッドモードのクリア演出アニメーション ▼▼▼ */
+/* クアッドモードのクリア演出アニメーション */
 /* 盤面を基準にして文字を中央に配置するため、相対位置（relative）を追加 */
 .quad-board {
   position: relative; 
@@ -951,4 +946,3 @@ body.event-nye .key { background-color:#25202b; color:#d1c7bd; }
   85% { transform: translateY(-5px) scale(1); opacity: 1; }
   100% { transform: translateY(0); opacity: 1; }
 }
-/* ▲▲▲ 追加ここまで ▲▲▲ */

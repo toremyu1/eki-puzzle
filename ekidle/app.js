@@ -659,20 +659,34 @@ function updateTitleStatsDisplay(modeType) {
       targetMode = "quad" + num;
     }
 
-    // セーブデータから該当モードの戦績を読み出し（存在しない場合は初期値）
-    let st = userStats[targetMode] || { played: 0, won: 0, currentStreak: 0, maxStreak: 0, guesses: [] };
-    let winRate = st.played > 0 ? Math.round((st.won / st.played) * 100) : 0;
+    let normalKey = baseKey;
+    let hardKey = baseKey + "_hard";
 
-    // 対応する文字数のHTML要素に数値を代入
-    const elPlayed = document.getElementById(`ts-${num}-played`);
-    const elWinrate = document.getElementById(`ts-${num}-winrate`);
-    const elStreak = document.getElementById(`ts-${num}-streak`);
-    const elMaxstreak = document.getElementById(`ts-${num}-maxstreak`);
+    // 通常モードのデータ取得と勝率計算
+    let stNormal = userStats[normalKey] || { played: 0, won: 0, currentStreak: 0, maxStreak: 0 };
+    let winRateNormal = stNormal.played > 0 ? Math.round((stNormal.won / stNormal.played) * 100) : 0;
 
-    if (elPlayed) elPlayed.textContent = st.played;
-    if (elWinrate) elWinrate.textContent = winRate;
-    if (elStreak) elStreak.textContent = st.currentStreak;
-    if (elMaxstreak) elMaxstreak.textContent = st.maxStreak;
+    // ハードモードのデータ取得と勝率計算
+    let stHard = userStats[hardKey] || { played: 0, won: 0, currentStreak: 0, maxStreak: 0 };
+    let winRateHard = stHard.played > 0 ? Math.round((stHard.won / stHard.played) * 100) : 0;
+
+    // 対応する文字数のHTML要素に数値を代入（通常）
+    const elNormalPlayed = document.getElementById(`ts-${num}-normal-played`);
+    if (elNormalPlayed) {
+      elNormalPlayed.textContent = stNormal.played;
+      document.getElementById(`ts-${num}-normal-winrate`).textContent = winRateNormal;
+      document.getElementById(`ts-${num}-normal-streak`).textContent = stNormal.currentStreak;
+      document.getElementById(`ts-${num}-normal-maxstreak`).textContent = stNormal.maxStreak;
+    }
+
+    // 対応する文字数のHTML要素に数値を代入（ハード）
+    const elHardPlayed = document.getElementById(`ts-${num}-hard-played`);
+    if (elHardPlayed) {
+      elHardPlayed.textContent = stHard.played;
+      document.getElementById(`ts-${num}-hard-winrate`).textContent = winRateHard;
+      document.getElementById(`ts-${num}-hard-streak`).textContent = stHard.currentStreak;
+      document.getElementById(`ts-${num}-hard-maxstreak`).textContent = stHard.maxStreak;
+    }
   });
 }
 
@@ -793,7 +807,7 @@ function saveStats(isWin,actualGuesses){
   // 保存先のキーを決定する（ハードモードなら "4_hard" などの専用の箱にする）
   let targetMode = stateKey;
   if (!isPlayingRandom && currentState && currentState.isHardMode) {
-    targetMode = currentMode + "_hard";
+    targetMode = stateKey + "_hard"; // currentModeではなく、ベースとなるstateKeyに "_hard" を付け足す
   }
 
   let st = userStats[targetMode];
