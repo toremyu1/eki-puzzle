@@ -193,7 +193,8 @@ function setupCommonUI() {
     }
   });
   
-  // 2. タイトル画面とゲーム画面の遷移制御（駅ドル専用の処理なので残す）
+  // 2. タイトル画面とゲーム画面の遷移制御
+  // タイトル画面に戻る時の処理
   const returnToTitleScreen = () => {
     const titleScreen = document.getElementById("title-screen");
     const gameScreen = document.getElementById("game-screen");
@@ -205,6 +206,7 @@ function setupCommonUI() {
       if (modeSelector) modeSelector.classList.add("hidden");
       const hardmodeContainer = document.querySelector(".hardmode-container");
       if (hardmodeContainer) hardmodeContainer.classList.add("hidden");
+      document.querySelector(".quad-hardmode-container")?.classList.add("hidden");
       
       // メニューを閉じる処理（共通UIに無いので手動で隠す）
       document.getElementById("side-menu").style.right = "-250px";
@@ -1356,10 +1358,6 @@ function submitGuess(isRestore=false){
     // 1手目を送信した時点で、このゲームをハードモードとして集計するかを確定する
     if (st.guesses.length === 0) {
       st.isHardMode = ekiSettings.hardMode;
-
-      // 1手目を送信した瞬間にスイッチを操作不可にする
-      // const hardSwitch = document.getElementById("hardmode-switch");
-      // if (hardSwitch) hardSwitch.disabled = true;
     }
 
     // 回答を配列に保存する
@@ -1761,7 +1759,7 @@ window.triggerEventEffect=(ev)=>{
       bMax.style.backgroundColor="#e91e63";bMax.style.color="#fff";bMax.style.border="none";
       
       bMax.addEventListener("click",()=>{
-        // 【追加】エイプリルフールモードではハードモードスイッチを強制OFFにし、操作不可（グレーアウト）にする
+        // エイプリルフールモードではハードモードスイッチを強制OFFにし、操作不可（グレーアウト）にする
         const hs = document.getElementById("hardmode-switch");
         if(hs) {
           hs.checked = false;
@@ -1891,7 +1889,7 @@ if (meta.firstPlayDate) {
         isPlayingRandom = true; 
         isAprilFoolMode = false; // 【追加】念のためエイプリルフールフラグを解除する
         
-        // 【追加】ハードモードスイッチの操作不可（グレーアウト）状態を解除する
+        // ハードモードスイッチの操作不可（グレーアウト）状態を解除する
         const hs = document.getElementById("hardmode-switch");
         if(hs) hs.disabled = false;
 
@@ -2205,7 +2203,7 @@ async function startQuadMode() {
   // 盤面の展開状態をセット
   isQuadExpanded = st.isExpanded || false;
 
-  //ハードモードスイッチを復元
+  // ハードモードスイッチを復元
   const quadHardSwitch = document.getElementById("quad-hardmode-switch");
   if (quadHardSwitch) {
     quadHardSwitch.checked = !!st.isHardMode;
