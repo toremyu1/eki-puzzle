@@ -44,8 +44,6 @@ let locaSettings = JSON.parse(localStorage.getItem("ekiLocateSettings") || JSON.
 //プレイ途中データ
 let locaSavedState = JSON.parse(localStorage.getItem("ekiLocateStateV2") || '{"date":-1, "normal": {"guessesCount":0, "history":[], "isOver":false}, "hard": {"guessesCount":0, "history":[], "isOver":false}}');
 
-
-// ==========================================
 // ポップアップ順番待ち（キュー）変数
 let locaEventPopupQueue = [];
 
