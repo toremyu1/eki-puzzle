@@ -295,13 +295,6 @@ body.theme-sakura .active-tab-yuru {
   color: #1a1a1b !important;
 }
 
-/* 運行記録モーダルの高さを固定し、タブ切り替え時のガタつきを防ぐ */
-#title-stats-modal .modal-content {
-  min-height: 480px !important; /* コンテンツの中身に関わらず常に一定の高さを確保します */
-  display: flex;
-  flex-direction: column;
-}
-
 /* タブ部分のレイアウト固定 */
 .stats-tabs-container {
   flex-shrink: 0; /* タブ自体が潰れないように保護します */
@@ -316,6 +309,7 @@ body.theme-sakura .active-tab-yuru {
 #title-stats-modal .modal-content {
   max-width: 650px !important; 
   width: 95%;
+  min-height: 550px;
 }
 
 /* 基本は「横並び（row）」として設計します */
@@ -358,6 +352,10 @@ body.theme-sakura .active-tab-yuru {
 /* --- レスポンシブ設定（画面サイズによる自動切り替え） --- */
 /* 画面の幅が600px以下（スマートフォンなど）になった瞬間、自動的に縦並びに切り替えます */
 @media (max-width: 600px) {
+  #title-stats-modal .modal-content {
+    min-height: 850px; 
+  }
+  
   .stats-split-container {
     flex-direction: column; /* ここで縦並びに変更 */
     gap: 10px;
