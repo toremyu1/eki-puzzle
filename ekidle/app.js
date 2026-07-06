@@ -1657,11 +1657,11 @@ function shareResult(type){
   // ハードモードONやゆる鉄モードのときはタイトルとハッシュタグを変更する
   let currentState = savedState[isPlayingRandom ? "random" : (isYuruMode ? "yuru" : currentMode)];
   
-  let gameTitle = "駅ドル チャレンジモード";
+  let gameTitle = "駅ドル Challenge";
   if (isYuruMode) {
-    gameTitle = "駅ドル デイリーモード";
+    gameTitle = "駅ドル Daily";
   } else if (ekiSettings.hardMode) {
-    gameTitle = "駅ドル チャレンジモード Hard";
+    gameTitle = "駅ドル Challenge Hard";
   }
   
   let text=`${gameTitle} ${isYuruMode ? 5 : currentMode}文字 ${scoreStr}\n\n`;
@@ -2619,15 +2619,15 @@ function showQuadResultModal() {
   for(let i = 0; i < 4; i++){
     let st = quadStations[i];
     let icon = quadSolved[i] ? "✅" : "❌";
-    // 背景色や影（box-shadow）をつけて、情報にメリハリと高級感を出す
+    // <a>タグを一番外側に配置し、display: block を指定することでカード全体をボタン化します
     descHtml += `
-      <div style="background:var(--bg-color); padding:10px; border-radius:8px; box-shadow:0 2px 6px rgba(0,0,0,0.15); border:1px solid #d3d6da;">
-        <div style="font-size:12px; margin-bottom:4px;">${icon}</div>
-        <a href="${st.url}" target="_blank" style="color:var(--text-color); text-decoration:none;">
-          <b style="font-size:14px; border-bottom:2px solid var(--correct-color); padding-bottom:2px;">${st.kanji}</b>
-        </a><br>
-        <span style="font-size:11px; color:#888; display:inline-block; margin-top:4px;">(${st.yomi})</span>
-      </div>`;
+      <a href="${st.url}" target="_blank" style="color:var(--text-color); text-decoration:none; display:block;">
+        <div style="background:var(--bg-color); padding:10px; border-radius:8px; box-shadow:0 2px 6px rgba(0,0,0,0.15); border:1px solid #d3d6da; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.03)'" onmouseout="this.style.transform='scale(1)'">
+          <div style="font-size:12px; margin-bottom:4px;">${icon}</div>
+          <b style="font-size:14px; border-bottom:2px solid var(--correct-color); padding-bottom:2px;">${st.kanji}</b><br>
+          <span style="font-size:11px; color:#888; display:inline-block; margin-top:4px;">(${st.yomi})</span>
+        </div>
+      </a>`;
   }
   descHtml += `</div>`;
   document.getElementById("quad-modal-desc").innerHTML = descHtml;
@@ -2675,19 +2675,32 @@ function shareQuadResult(type) {
     }
   }
 
-  // お洒落に手数を配置するテキストの組み立て
-  let text = `駅ドル Special ${currentMode}文字モード\n\n`;
+  // クアッドモードのセーブデータからハードモードの状態を正確に取得します
+  let stateKey = "quad" + currentMode;
+  let st = savedState[stateKey];
+  let isHard = st && st.isHardMode;
+
+  // ハードモードの状態に応じて、ゲームタイトルを切り替えます
+  let gameTitle = isHard ? `駅ドル Special Hard` : `駅ドル Special`;
+  let text = `${gameTitle} ${currentMode}文字モード\n\n`;
+  
   const emojify = (t) => t === "X" ? "🟥 ✕" : `🟩 ${t}手`;
   text += `① ${emojify(clearTurns[0])}  ② ${emojify(clearTurns[1])}\n`;
   text += `③ ${emojify(clearTurns[2])}  ④ ${emojify(clearTurns[3])}\n\n`;
 
   let currentUrl = window.location.href.split('?')[0];
-  // 指定された新しいハッシュタグを追加
-  text += `#駅ドル\n#駅ドルSpecial\n#駅ドルSpecial${currentMode}\n`;
   
-  // 共通のシェア実行関数を呼び出し
+  // ハッシュタグも、ハードモード時は専用のタグ（#駅ドルSpecial_Hard）が追加されるようにします
+  let hashtagStr = `#駅ドル\n#駅ドルSpecial\n#駅ドルSpecial${currentMode}\n`;
+  if (isHard) {
+    hashtagStr += `#駅ドルSpecial_Hard\n`;
+  }
+  text += hashtagStr;
+
+  // 実際のシェア送信処理を実行します
   executeSharedShare(type, text, currentUrl);
 }
+
 
 // 通常モードの色判定処理を流用するためのラッパー（濁点・位置判定）
 function checkRowColors(guess, answer) {
