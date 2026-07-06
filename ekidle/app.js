@@ -1496,12 +1496,20 @@ function validateHardMode(guess) {
   const key = isPlayingRandom ? "random" : (isYuruMode ? "yuru" : currentMode);
   const lastGuess = savedState[key].guesses[gridHistory.length - 1];
   const lastColors = gridHistory[gridHistory.length - 1];
+
+  let guessArr = guess.split("");
+  let guessBases = guess.split("").map(getBaseChar);
   
   // 1. 緑色（位置も文字も一致）の縛りチェック
   for (let i = 0; i < rowLength; i++) {
-    if (lastColors[i] === "correct" && guess[i] !== lastGuess[i]) {
-      showMessage(`${i + 1}文字目は「${lastGuess[i]}」にしてください`);
-      return false;
+    if (lastColors[i] === "correct") {
+      if (guess[i] !== lastGuess[i]) {
+        showMessage(`${i + 1}文字目は「${lastGuess[i]}」にしてください`);
+        return false;
+      }
+      // 緑色の条件を満たした文字は、黄色・紫色の判定で使い回されないよう「消費済み」にする
+      guessArr[i] = null;
+      guessBases[i] = null;
     }
   }
   
@@ -1510,14 +1518,15 @@ function validateHardMode(guess) {
   for (let i = 0; i < rowLength; i++) {
     if (lastColors[i] === "present") requiredChars.push(lastGuess[i]);
   }
-  let guessArr = guess.split("");
   for (let rc of requiredChars) {
     let idx = guessArr.indexOf(rc);
     if (idx === -1) {
       showMessage(`「${rc}」を必ず含めてください`);
       return false;
     }
-    guessArr.splice(idx, 1); // 複数回の重複要求を正しく判定するため、見つかった文字を消費する
+    // 黄色の条件を満たした文字も、紫色の判定で二重取りされないよう「消費済み」にする
+    guessArr[idx] = null;
+    guessBases[idx] = null;
   }
   
   // 3. 紫色（濁点違い・小文字違いの同じ文字グループが含まれる）の縛りチェック
@@ -1525,14 +1534,14 @@ function validateHardMode(guess) {
   for (let i = 0; i < rowLength; i++) {
     if (lastColors[i] === "diacritic") requiredBases.push(getBaseChar(lastGuess[i]));
   }
-  let guessBases = guess.split("").map(getBaseChar);
   for (let rb of requiredBases) {
     let idx = guessBases.indexOf(rb);
     if (idx === -1) {
       showMessage(`「${rb}」グループの文字（濁音など）を含めてください`);
       return false;
     }
-    guessBases.splice(idx, 1);
+    // 消費
+    guessBases[idx] = null;
   }
   
   return true; // すべての縛りをクリアしていれば送信許可
