@@ -168,6 +168,14 @@ body.theme-dark #title-stats-modal .btn {
   box-shadow: 0 0 0 transparent !important;
 }
 
+/* 選択中の文字数ボタン（4, 5, 6）を青色で着色して目立たせる */
+.mode-btn.active {
+  background-color: #03a9f4 !important;
+  color: #ffffff !important;
+  border-color: #03a9f4 !important;
+  font-weight: bold;
+}
+
 /* 無効化（グレーアウト）時のボタン */
 .btn[disabled] {
   opacity: 0.5;
@@ -195,14 +203,14 @@ body.theme-dark #title-stats-modal .btn {
   box-shadow: 0 4px 0 #c0392b !important;
 }
 
-/* 選択中の文字数ボタン（4, 5, 6）を青色で着色して目立たせる */
-.mode-btn.active {
-  background-color: #03a9f4 !important;
-  color: #ffffff !important;
-  border-color: #03a9f4 !important;
-  font-weight: bold;
-}
 
+/* --- 正常なボタンと同じ「影が潰れて沈み込む」挙動を明示的に復元 --- */
+#btn-yuru-mode:active:not([disabled]),
+#btn-normal-mode:active:not([disabled]),
+#btn-quad-mode:active:not([disabled]) {
+  transform: translateY(4px) !important;
+  box-shadow: 0 0 0 transparent !important;
+}
 
 
 /* ------------------------------------------
