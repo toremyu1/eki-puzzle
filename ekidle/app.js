@@ -2612,7 +2612,7 @@ function showClearedAnimation(boardElement) {
 // クアッド専用の結果モーダルを表示する処理
 function showQuadResultModal() {
   const isAllCleared = quadSolved.every(s => s === true);
-  document.getElementById("quad-modal-title").textContent = isAllCleared ? "スペシャル制覇！おめでとう！" : "残念！ゲームオーバー";
+  document.getElementById("quad-modal-title").textContent = isAllCleared ? "スペシャル制覇！" : "残念！ゲームオーバー";
   
   // 4つの正解駅を2列のグリッドで表示
   let descHtml = `<div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; font-size:14px; margin-bottom:15px; text-align:center;">`;
