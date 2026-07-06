@@ -2390,12 +2390,15 @@ function buildQuadBoards() {
           const start = Math.min(lastClickedIdx, currentIdx);
           const end = Math.max(lastClickedIdx, currentIdx);
           
-          // 【追加】今回クリックした行が「これから開く」のか「これから閉じる」のかを判定
+          // 今回クリックした行が「これから開く」のか「これから閉じる」のかを判定
           const isExpanding = !this.classList.contains("force-expand");
+          
+          // board内の「board-row」クラスを持つ要素（行）だけを正確にリスト化する
+          const rows = board.getElementsByClassName("board-row");
           
           // 前回クリックした位置から、今回クリックした位置までの行をすべて同じ状態に合わせる
           for (let k = start; k <= end; k++) {
-            const targetRow = board.children[k];
+            const targetRow = rows[k];
             if (targetRow && targetRow.classList.contains("inactive-row")) {
               if (isExpanding) {
                 targetRow.classList.add("force-expand");
