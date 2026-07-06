@@ -203,27 +203,7 @@ body.theme-dark #title-stats-modal .btn {
   font-weight: bold;
 }
 
-/* --- 運行記録タブのアクティブ状態（アウトラインスタイル） --- */
-.active-tab-yuru {
-  border-color: #6aaa64 !important;
-  box-shadow: 0 4px 0 #6aaa64 !important;
-  background-color: transparent !important;
-  color: white !important;
-}
 
-.active-tab-normal {
-  border-color: #03a9f4 !important;
-  box-shadow: 0 4px 0 #03a9f4 !important;
-  background-color: transparent !important;
-  color: white !important;
-}
-
-.active-tab-quad {
-  border-color: #e53935 !important;
-  box-shadow: 0 4px 0 #e53935 !important;
-  background-color: transparent !important;
-  color: white !important;
-}
 
 /* ------------------------------------------
    色のバリエーション（そのまま）
@@ -272,14 +252,6 @@ body.theme-dark #title-stats-modal .btn {
 
 
 /* ==========================================
-   追加: クアッドモードボタンの文字色を強制的に白にする
-========================================== */
-#btn-quad-mode {
-  color: #ffffff !important;
-}
-
-
-/* ==========================================
    運行記録タブの中央揃えとタイトルボタンの着色
 ========================================== */
 /* 難易度選択ボタン（タブ）を中央揃えにする */
@@ -291,23 +263,38 @@ body.theme-dark #title-stats-modal .btn {
   width: 100%;
 }
 
-/* ガチ鉄モードボタンを緑色に着色（文字は白） */
-#btn-normal-mode {
-  background-color: #6aaa64 !important;
-  color: #ffffff !important;
-  border-color: #4a7c46 !important;
-  font-weight: bold;
+/* --- 運行記録タブのアクティブ状態（背景を白に固定し、縁と影だけを着色） --- */
+.active-tab-yuru {
+  border-color: #6aaa64 !important;
+  box-shadow: 0 4px 0 #6aaa64 !important;
+  background-color: #ffffff !important;
+  color: var(--text-color) !important;
 }
 
-/* クアッドモードボタンを水色に着色（文字は白） */
-#btn-quad-mode {
-  background-color: #03a9f4 !important;
-  color: #ffffff !important;
-  border-color: #0288d1 !important;
-  font-weight: bold;
+.active-tab-normal {
+  border-color: #03a9f4 !important;
+  box-shadow: 0 4px 0 #03a9f4 !important;
+  background-color: #ffffff !important;
+  color: var(--text-color) !important;
 }
 
-/* 【追加】ダークテーマのとき、運行記録モーダルの各文字数ボックス内の数値を黒文字にして見やすくする */
+.active-tab-quad {
+  border-color: #e53935 !important;
+  box-shadow: 0 4px 0 #e53935 !important;
+  background-color: #ffffff !important;
+  color: var(--text-color) !important;
+}
+
+
+
+/* サクラテーマ（theme-sakura）のときだけ、特定のタブの見た目を上書きする例 */
+body.theme-sakura .active-tab-yuru {
+  color: #5d4037 !important;        /* 文字色をテーマ固有の茶色に変更 */
+  /*border-color: #ffcdd2 !important;  /* 縁の色をテーマに合わせた薄ピンクに変更 */
+  /*box-shadow: 0 4px 0 #ffcdd2 !important; /* 影の色も縁と統一 */
+}
+
+/* ダークテーマのとき、運行記録モーダルの各文字数ボックス内の数値を黒文字にして見やすくする */
 .theme-dark #title-stats-modal .stat-box {
   color: #1a1a1b !important;
 }
