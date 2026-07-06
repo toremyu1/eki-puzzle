@@ -3,7 +3,7 @@
 
 //1.共通変数の定義　
 const SITE_OPEN_DATE = "2025-06-25";　 // 【設定】サイトを公開した日（周年記念の基準日）
-const FALLBACK_URL = "/stationdle";  // 【設定】読み込みエラー時に戻るルートフォルダのURL
+const FALLBACK_URL = "/";  // 【設定】読み込みエラー時に戻るルートフォルダのURL（総合TOPの階層)
 const CONFIG_MAX_GUESSES_4 = 8;     // 4文字モードの回答回数
 const CONFIG_MAX_GUESSES_5 = 6;     // 5文字モードの回答回数
 const CONFIG_MAX_GUESSES_6 = 6;     // 6文字モードの回答回数
