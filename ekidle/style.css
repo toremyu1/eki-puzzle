@@ -244,7 +244,7 @@ body.theme-dark #title-stats-modal .btn {
   width: 100%;
 }
 
-/* 通常モードボタンを緑色に着色（文字は白） */
+/* ガチ鉄モードボタンを緑色に着色（文字は白） */
 #btn-normal-mode {
   background-color: #6aaa64 !important;
   color: #ffffff !important;
