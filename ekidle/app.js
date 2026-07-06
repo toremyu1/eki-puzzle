@@ -2336,7 +2336,7 @@ async function selectQuadStations(modeLength) {
 
 
 
-// 【修正後】行の独立トグル化およびShiftキーでの範囲一括拡大機能
+// 行の独立トグル化およびShiftキーでの範囲一括拡大機能
 function buildQuadBoards() {
   for (let b = 0; b < 4; b++) {
     const board = document.getElementById(`board-${b}`);

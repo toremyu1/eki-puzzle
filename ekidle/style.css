@@ -208,21 +208,21 @@ body.theme-dark #title-stats-modal .btn {
   border-color: #6aaa64 !important;
   box-shadow: 0 4px 0 #6aaa64 !important;
   background-color: transparent !important;
-  color: var(--text-color) !important;
+  color: white !important;
 }
 
 .active-tab-normal {
   border-color: #03a9f4 !important;
   box-shadow: 0 4px 0 #03a9f4 !important;
   background-color: transparent !important;
-  color: var(--text-color) !important;
+  color: white !important;
 }
 
 .active-tab-quad {
   border-color: #e53935 !important;
   box-shadow: 0 4px 0 #e53935 !important;
   background-color: transparent !important;
-  color: var(--text-color) !important;
+  color: white !important;
 }
 
 /* ------------------------------------------
