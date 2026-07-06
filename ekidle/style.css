@@ -309,7 +309,7 @@ body.theme-sakura .active-tab-yuru {
 #title-stats-modal .modal-content {
   max-width: 650px !important; 
   width: 95%;
-  min-height: 550px;
+  min-height: 600px;
 }
 
 /* 基本は「横並び（row）」として設計します */
@@ -355,7 +355,7 @@ body.theme-sakura .active-tab-yuru {
   #title-stats-modal .modal-content {
     min-height: 850px; 
   }
-  
+
   .stats-split-container {
     flex-direction: column; /* ここで縦並びに変更 */
     gap: 10px;
