@@ -2612,20 +2612,27 @@ function showClearedAnimation(boardElement) {
 // クアッド専用の結果モーダルを表示する処理
 function showQuadResultModal() {
   const isAllCleared = quadSolved.every(s => s === true);
-  document.getElementById("quad-modal-title").textContent = isAllCleared ? "スペシャル制覇！" : "残念！ゲームオーバー";
+  document.getElementById("quad-modal-title").textContent = isAllCleared ? "Special Completed！" : "残念！ゲームオーバー";
   
-  // 4つの正解駅を2列のグリッドで表示
+  // 1. 4つの正解駅を立体的なカード風デザインにアップグレード
   let descHtml = `<div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; font-size:14px; margin-bottom:15px; text-align:center;">`;
   for(let i = 0; i < 4; i++){
     let st = quadStations[i];
     let icon = quadSolved[i] ? "✅" : "❌";
-    // 駅名部分をWikipediaリンク（st.url）で包み、色を整えます
-    descHtml += `<div style="background:#f9f9f9; padding:5px; border-radius:5px;">${icon} <a href="${st.url}" target="_blank" style="color:inherit; text-decoration:none;"><b style="color:#333; border-bottom:1px dashed #666;">${st.kanji}</b></a><br><span style="font-size:11px; color:#666;">(${st.yomi})</span></div>`;
+    // 背景色や影（box-shadow）をつけて、情報にメリハリと高級感を出す
+    descHtml += `
+      <div style="background:var(--bg-color); padding:10px; border-radius:8px; box-shadow:0 2px 6px rgba(0,0,0,0.15); border:1px solid #d3d6da;">
+        <div style="font-size:12px; margin-bottom:4px;">${icon}</div>
+        <a href="${st.url}" target="_blank" style="color:var(--text-color); text-decoration:none;">
+          <b style="font-size:14px; border-bottom:2px solid var(--correct-color); padding-bottom:2px;">${st.kanji}</b>
+        </a><br>
+        <span style="font-size:11px; color:#888; display:inline-block; margin-top:4px;">(${st.yomi})</span>
+      </div>`;
   }
   descHtml += `</div>`;
   document.getElementById("quad-modal-desc").innerHTML = descHtml;
 
-  // クリア手数の計算と、田の字型への絵文字の流し込み
+  // 2. クリア手数の計算と、田の字型への絵文字の流し込み（ここは元の処理と同じです）
   let clearTurns = ["X", "X", "X", "X"];
   for(let b = 0; b < 4; b++) {
     let gridHtml = "";
@@ -2633,18 +2640,28 @@ function showQuadResultModal() {
       let colors = quadGridHistory[i][b];
       gridHtml += colors.map(c => colorToEmoji[c]).join("") + "<br>";
       if (clearTurns[b] === "X" && colors.every(c => c === "correct")) {
-        clearTurns[b] = i + 1; // 何手目でクリアしたかを記録
+        clearTurns[b] = i + 1;
       }
     }
-    // 盤面ごとに絵文字とクリア手数を反映する
     const qGrid = document.getElementById(`q-grid-${b}`);
     if (qGrid) {
       qGrid.innerHTML = `<div style="font-weight:bold; margin-bottom:5px; font-size:14px;">${clearTurns[b]}</div>` + gridHtml;
     }
   }
 
+  // 3. 【追加】戦績（プレイ回数・勝率など）を計算して画面に表示する
+  let targetMode = "quad" + currentMode;
+  let stUser = userStats[targetMode] || { played: 0, won: 0, currentStreak: 0, maxStreak: 0 };
+  let winRate = stUser.played > 0 ? Math.round((stUser.won / stUser.played) * 100) : 0;
+
+  document.getElementById("quad-stat-played").textContent = stUser.played;
+  document.getElementById("quad-stat-winrate").textContent = winRate;
+  document.getElementById("quad-stat-streak").textContent = stUser.currentStreak;
+  document.getElementById("quad-stat-maxstreak").textContent = stUser.maxStreak;
+
   document.getElementById("quad-result-modal").classList.remove("hidden");
 }
+
 
 // クアッド専用のシェアテキストを組み立てる処理
 // 手数表示をお洒落にコンパクト化し、ハッシュタグを拡張したシェア関数
