@@ -185,7 +185,7 @@ body.theme-dark #title-stats-modal .btn {
 /* ------------------------------------------
    色のバリエーション（そのまま）
 ------------------------------------------ */
-.btn-green { background-color: var(--correct-color); color: white; border-color: #4a7c46; box-shadow: 0 4px 0 #4a7c46; }
+/*.btn-green { background-color: var(--correct-color); color: white; border-color: #4a7c46; box-shadow: 0 4px 0 #4a7c46; }*/
 .btn-gray  { background-color: #95a5a6; color: white; border-color: #7f8c8d; box-shadow: 0 4px 0 #7f8c8d; }
 .btn-outline{background-color: #ffffff; color: var(--text-color); border-color: #d3d6da; box-shadow: 0 4px 0 #bdc3c7; }
 
@@ -193,12 +193,14 @@ body.theme-dark #title-stats-modal .btn {
 /* 【修正箇所】style.css の 110行目付近 */
 /* 「.btn-green-outline」の定義を以下のように修正します */
 /* -------------------------------------------------- */
-.btn-green-outline {
+
+/*.btn-green-outline {
   border-color: #6aaa64 !important;
   color: #6aaa64 !important;
   background: #ffffff !important; 
   box-shadow: 0 4px 0 rgba(106, 170, 100, 0.4) !important; /* 緑色の影を追加します */
-}
+/*}
+*/
 
 /* ------------------------------------------
    各ボタンのサイズ調整（ここも修正）
@@ -223,6 +225,8 @@ body.theme-dark #title-stats-modal .btn {
 /* ゲーム画面ボタンの色指定 */
 .btn-danger { background-color: #fff; color: #e53935; border-color: #e53935; box-shadow: 0 4px 0 #c0392b; }
 .btn-primary{ background-color: #fff; color: #03a9f4; border-color: #03a9f4; box-shadow: 0 4px 0 #0288d1; }
+.btn-green { background-color: #8bc34a; color: #e53935; border-color: #6aaa64; box-shadow: 0 4px 0 #c0392b; }
+
 
 /* ==========================================
    追加: クアッドモードボタンの文字色を強制的に白にする
@@ -248,7 +252,7 @@ body.theme-dark #title-stats-modal .btn {
 #btn-normal-mode {
   background-color: #6aaa64 !important;
   color: #ffffff !important;
-  border-color: #6aaa64 !important;
+  border-color: #4a7c46 !important;
   font-weight: bold;
 }
 
@@ -256,7 +260,7 @@ body.theme-dark #title-stats-modal .btn {
 #btn-quad-mode {
   background-color: #03a9f4 !important;
   color: #ffffff !important;
-  border-color: #03a9f4 !important;
+  border-color: #0288d1 !important;
   font-weight: bold;
 }
 

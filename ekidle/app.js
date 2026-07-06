@@ -612,38 +612,38 @@ function setupGameSpecificUI() {
 }
 
 
-// 【修正後】 各文字数（4, 5, 6文字）のデータを一度に集計・表示する運行記録更新関数
+//各文字数（4, 5, 6文字）のデータを一度に集計・表示する運行記録モーダル更新関数
 function updateTitleStatsDisplay(modeType) {
-  // タブボタン要素の取得
+  //タブボタン要素の取得
   const tabYuru = document.getElementById("tab-yuru");
   const tabNormal = document.getElementById("tab-normal");
   const tabQuad = document.getElementById("tab-quad"); 
 
-  // 全タブのスタイルを一旦リセット
+  //全タブのスタイルを一旦リセット
   [tabYuru, tabNormal, tabQuad].forEach(t => { if(t) t.className = "btn btn-small btn-outline"; });
 
-  // 選択されたタブに応じた色の強調表示
+  //選択されたタブに応じた色の強調表示
   if (modeType === "normal") {
-    if (tabNormal) tabNormal.className = "btn btn-small btn-green-outline";
+    if (tabNormal) tabNormal.className = "btn btn-small btn-primary"; //ガチ鉄（チャレンジ）は水色
   } else if (modeType === "yuru") {
-    if (tabYuru) tabYuru.className = "btn btn-small btn-green-outline"; // ゆる鉄も緑色
+    if (tabYuru) tabYuru.className = "btn btn-small btn-green";   //ゆる鉄（デイリー）は緑
   } else if (modeType === "quad") {
-    if (tabQuad) tabQuad.className = "btn btn-small btn-primary"; 
+    if (tabQuad) tabQuad.className = "btn btn-small btn-danger";  //クアッド（スペシャル）は赤
   }
 
-  // ゆる鉄モードの時は、4文字と6文字の枠を隠して5文字だけを表示します
+  //ゆる鉄モードの時は、4文字と6文字の枠を隠して5文字だけを表示します
   const area4 = document.getElementById("stats-area-4");
   const area6 = document.getElementById("stats-area-6");
   if (area4) area4.style.display = (modeType === "yuru") ? "none" : "block";
   if (area6) area6.style.display = (modeType === "yuru") ? "none" : "block";
 
-  // 5文字枠のタイトルを変更します
+  //5文字枠のタイトルを変更します
   const title5 = document.getElementById("stats-title-5");
   if (title5) {
     title5.innerHTML = (modeType === "yuru") ? "デイリーモード (5文字)" : "5文字モード";
   }
 
-  // 4, 5, 6文字それぞれのデータをループで取得し、それぞれの表示枠へ一斉に流し込みます
+  //4, 5, 6文字それぞれのデータをループで取得し、それぞれの表示枠へ一斉に流し込みます
   [4, 5, 6].forEach(num => {
     // ゆる鉄モードの時は、5文字以外の計算をスキップします
     if (modeType === "yuru" && num !== 5) return;
