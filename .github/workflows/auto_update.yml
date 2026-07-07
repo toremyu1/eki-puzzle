@@ -82,7 +82,7 @@ jobs:
           
           # 【修正2】mainブランチにある「最新の駅データ」と「答えのデータ」の2つを引っ張ってくる
           # ※もし答えのファイル名が違う場合は「daily_answer.json」の部分を書き換えてください
-          git checkout main -- stations.json ekidle/answers/ ekidle/answers_admin/ ekilocate/answers ekilocate/answers_admin
+          git checkout main -- db/stations.json ekidle/answers/ ekidle/answers_admin/ ekilocate/answers ekilocate/answers_admin
           
           # developmentブランチへコミットしてプッシュする
           git commit -m "Sync stations and answers from main" || echo "No changes to sync"
