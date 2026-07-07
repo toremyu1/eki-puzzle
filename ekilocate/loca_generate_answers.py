@@ -1,5 +1,6 @@
 import json
 import hashlib
+from pathlib import Path
 import os
 from datetime import datetime, timedelta, timezone
 
@@ -22,8 +23,14 @@ def get_coord_key(s):
     return s.get('url', 'unknown')
 
 def generate_answers():
+
+    # 1. このスクリプト(generate_answers.py)があるフォルダ（ekidle）のパスを取得
+    current_dir = Path(__file__).resolve().parent
+    # 2. 1つ上の階層（ルート）に移動し、db/stations.json へのパスを作る
+    json_path = current_dir.parent / 'db' / 'stations.json'
+    
     try:
-        with open('/db/stations.json', 'r', encoding='utf-8') as f:
+        with open(json_path, 'r', encoding='utf-8') as f:
             raw_stations = json.load(f)
     except Exception as e:
         print(f"駅データの取得に失敗しました: {e}")
@@ -38,6 +45,12 @@ def generate_answers():
 
     generated_hashes = {}
     generated_admin = {}
+
+    # ▼▼ 状態保存ファイル（loca_state.json）の読み込みと変数の準備 ▼▼
+    STATE_FILE = "loca_state.json"
+    app_state = {}
+    next_available_day = {}
+    start_day = 0
 
     # ==============================================================
     # 修正版：未来の「その日（target_d）」のJS環境を完全に再現するシミュレーション
@@ -66,15 +79,6 @@ def generate_answers():
                                 
             valid_stations.append(s)
 
-        generated_hashes = {}
-        generated_admin = {}
-
-        # ▼▼ 追加：状態保存ファイル（loca_state.json）の読み込みと変数の準備 ▼▼
-        STATE_FILE = "loca_state.json"
-        app_state = {}
-        next_available_day = {}
-        start_day = 0
-
         # 前回の計算データがあれば復元する
         if os.path.exists(STATE_FILE):
             try:
@@ -96,7 +100,12 @@ def generate_answers():
         # ==============================================================
         # JSの自力計算（フォールバック）と1ミリも違わない歴史シミュレーション
         # ==============================================================
-        # ▼▼ 修正：0からではなく、start_day から目標日までループする ▼▼
+        
+        # ▼▼ ループの前に None で初期化しておく ▼▼
+        final_normal = None
+        final_hard = None
+        
+        # ▼▼ 0からではなく、start_day から目標日までループする ▼▼
         for d in range(start_day, target_day):
             pool_normal = []
             pool_hard = []
@@ -146,6 +155,11 @@ def generate_answers():
             if d == target_d:
                 final_normal = candidate_normal
                 final_hard = candidate_hard
+
+        # ▼▼ もし start_day が target_d を過ぎていて None のままならスキップ ▼▼
+        if final_normal is None:
+            # 「すでに過去の実行で計算済みの日」なので、処理を飛ばして次の日へ
+            continue
 
         # 3. 確定した結果を記録
         target_date = base_date + timedelta(days=target_d)

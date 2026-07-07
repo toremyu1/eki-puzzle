@@ -1,12 +1,12 @@
 import json
 import hashlib
+from pathlib import Path
 import os
 from datetime import datetime, timedelta, timezone
 
 SECRET_SALT = "EkiDoru_Secret_2026!"
 STATE_FILE = "state.json"
 
-quad4, quad5, quad6 = [], [], []
 
 
 def math_imul(a, b):
@@ -20,8 +20,13 @@ def to_hiragana(text):
     return "".join([chr(ord(c) - 0x60) if 0x30A1 <= ord(c) <= 0x30F6 else c for c in text])
 
 def generate_answers():
+    # 1. このスクリプト(generate_answers.py)があるフォルダ（ekidle）のパスを取得
+    current_dir = Path(__file__).resolve().parent
+    # 2. 1つ上の階層（ルート）に移動し、db/stations.json へのパスを作る
+    json_path = current_dir.parent / 'db' / 'stations.json'
+    
     try:
-        with open('/db/stations.json', 'r', encoding='utf-8') as f:
+        with open(json_path, 'r', encoding='utf-8') as f:
             raw_stations = json.load(f)
     except Exception as e:
         print(f"駅データの取得に失敗しました: {e}")
@@ -115,12 +120,14 @@ def generate_answers():
             pool = [s for s in pool if s['yomi'] != selected['yomi']]
             
             return selected
+        
 
         # 【重要】JS側と完全に一致させるための固定の順番
         gachi4 = draw_gacha(4)
         gachi5 = draw_gacha(5)
         gachi6 = draw_gacha(6)
         yuru5  = draw_gacha(5)
+        quad4, quad5, quad6 = [], [], []
         # 基準日(2024-01-01)は月曜日。d % 7 == 0 の時だけクアッドを引く
         if d % 7 == 0:
             quad4  = [draw_gacha(4) for _ in range(4)]

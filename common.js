@@ -236,7 +236,7 @@ function updateSharedLoginStreak(metaKey) {
 async function downloadSharedGameData(cacheName, fallbackUrl) {
   let raw = [];
   try {
-    const res = await fetch('/stations.json', { cache: "no-store" });
+    const res = await fetch('/db/stations.json', { cache: "no-store" });
     if (!res.ok) throw new Error(`通信エラー (ステータス: ${res.status})`);
 
     const contentLength = res.headers.get('content-length');
@@ -286,7 +286,7 @@ async function downloadSharedGameData(cacheName, fallbackUrl) {
     if ('caches' in window) {
       const cache = await caches.open(cacheName);
       const resToCache = new Response(textData, { headers: { 'Content-Type': 'application/json' } });
-      cache.put('/stations.json', resToCache).catch(e => console.warn("キャッシュ保存スキップ:", e));
+      cache.put('/db/stations.json', resToCache).catch(e => console.warn("キャッシュ保存スキップ:", e));
     }
     return raw;
 
@@ -295,7 +295,7 @@ async function downloadSharedGameData(cacheName, fallbackUrl) {
     // バックアップ復元処理
     if ('caches' in window) {
       const cache = await caches.open(cacheName);
-      const cachedRes = await cache.match('/stations.json');
+      const cachedRes = await cache.match('/db/stations.json');
       if (cachedRes) {
         if (!document.getElementById("offline-warning-banner")) {
           document.body.insertAdjacentHTML("afterbegin", "<div id='offline-warning-banner' style='background-color: #fff3e0; color: #e65100; font-size: 11px; font-weight: bold; text-align: center; padding: 6px; border-bottom: 1px solid #ffcc80; width: 100%; box-sizing: border-box;'>⚠️ バックアップデータで運行中。最新の駅情報と異なる場合があります。</div>");
