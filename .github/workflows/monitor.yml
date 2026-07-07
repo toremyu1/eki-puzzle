@@ -8,6 +8,12 @@ on:
 jobs:
   check-and-trigger:
     runs-on: ubuntu-latest
+
+    # Actionsの実行権限と、コードの読み取り権限を付与
+    permissions:
+      actions: write
+      contents: read
+      
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
