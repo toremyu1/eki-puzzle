@@ -2,166 +2,209 @@ import json
 import hashlib
 import os
 from datetime import datetime, timedelta, timezone
-import requests
 
 SECRET_SALT = "EkiDoru_Secret_2026!"
+STATE_FILE = "state.json"
+
+quad4, quad5, quad6 = [], [], []
+
 
 def math_imul(a, b):
     return ((a & 0xffffffff) * (b & 0xffffffff)) & 0xffffffff
 
 def zero_fill_right_shift(val, n):
-    return (val % 0x100000000) >> n
+    return (val & 0xffffffff) >> n
+
+# カタカナをひらがなに変換する関数
+def to_hiragana(text):
+    return "".join([chr(ord(c) - 0x60) if 0x30A1 <= ord(c) <= 0x30F6 else c for c in text])
 
 def generate_answers():
-    # 1. 最新の駅データをインターネット経由で直接読み込む
-    # stations_url = "https://eki-puzzle.pages.dev/ekidle/" # ←★ここに実際のstations.jsonのURLを入れます
     try:
         with open('../stations.json', 'r', encoding='utf-8') as f:
             raw_stations = json.load(f)
-    
-    # try:
-        # response = requests.get(stations_url, timeout=10)
-        # response.raise_for_status() # 通信エラーがないかチェック
-        # raw_stations = response.json()
     except Exception as e:
         print(f"駅データの取得に失敗しました: {e}")
-        return # 取得失敗時は安全のため処理を中止する
+        return
 
-    # JS側と同じ「貨物専用駅の除外ロジック」を適用し、配列の数と順序を完全に一致させる
+    # JS側と完全に同じ「完全な駅」だけを抽出するフィルター
     stations = []
     for s in raw_stations:
+        if s.get('is_abolished_confirmed') is True: continue
+        if not s.get('pref'): continue
+        if not s.get('address'): continue
+        if s.get('min_km') is None: continue
         companies = s.get('companies', [])
-        if companies and len(companies) == 1 and companies[0] == "日本貨物鉄道":
-            continue
-            
-        # 【強化版フィルター】都道府県、事業者、住所、営業キロのいずれかが欠けているゴースト駅を除外
-        if not s.get('pref') or not companies or not s.get('address') or s.get('min_km') is None:
-            continue
-            
+        if not companies: continue
+        if len(companies) == 1 and companies[0] == "日本貨物鉄道": continue
+        
+        s['yomi'] = to_hiragana(s['yomi'])
         stations.append(s)
-    
+
     base_date = datetime(2024, 1, 1, tzinfo=timezone.utc)
     now_jst = datetime.now(timezone(timedelta(hours=9)))
     today_index = (now_jst.date() - base_date.date()).days
 
-    # 本番用と管理者用のフォルダをそれぞれ用意する
     os.makedirs('answers', exist_ok=True)
     os.makedirs('answers_admin', exist_ok=True)
 
-    # 後でファイルに書き込むためのデータを一時保存する箱
+    app_state = {}
+    if os.path.exists(STATE_FILE):
+        try:
+            with open(STATE_FILE, 'r', encoding='utf-8') as f:
+                app_state = json.load(f)
+                print("state.json を読み込みました。差分のみ計算します。")
+        except Exception as e:
+            print(f"state.jsonの読み込み失敗。0日目から計算します: {e}")
+
+    target_day = today_index + 43
+    banned_days = app_state.get("banned_days", {})
+    last_calculated_day = app_state.get("last_calculated_day", -1)
+
+    if last_calculated_day >= target_day:
+        print("必要な日数の計算は既に完了しています。")
+        return
+
+    unique_yomi_count = len(set([s['yomi'] for s in stations]))
+    lookback = min(1000, int(unique_yomi_count * 0.7))
+    start_day = last_calculated_day + 1
+
     generated_hashes = {}
     generated_admin = {}
 
-    # 【修正点1】文字数モードごとに、0日目から未来まで一貫してシミュレーションを行う
-    for mode in [4, 5, 6]:
-        mode_stations = [s for s in stations if len(s['yomi']) == mode]
-        if not mode_stations: continue
 
-        unique_yomi_count = len(set([s['yomi'] for s in mode_stations]))
-        lookback = min(1000, int(unique_yomi_count * 0.7))
-        next_available_day = {}
+    for d in range(start_day, target_day + 1):
+        # その日の「現役」駅リスト（出禁考慮なしの復活プール）
+        valid_pool = [s for s in stations if 
+                      (s.get('startDay') is None or s['startDay'] <= d) and 
+                      (s.get('endDay') is None or s['endDay'] > d or s['endDay'] == 999999)]
+        
+        # 通常のガチャ用プール（出禁駅を除外）
+        pool = [s for s in valid_pool if banned_days.get(s['yomi'], 0) <= d]
 
-        # 0日目から、今日＋14日後までを通してループさせる
-        for d in range(0, today_index + 15):
+        # シード値にもソルトを混ぜ込む処理
+        def generate_salted_seed(day, salt):
+            text = str(day) + salt
+            hash_val = 0
+            for char in text:
+                hash_val = ((hash_val << 5) - hash_val) + ord(char)
+                hash_val &= 0xFFFFFFFF # 32bit整数化
+                if hash_val & 0x80000000:
+                    hash_val -= 0x100000000 # JSと同じ符号付き整数に変換
+            return abs(hash_val)
+
+        # ソルトを混ぜた強固なシードに変更します
+        seed = generate_salted_seed(d, SECRET_SALT)
+
+        def draw_gacha(char_len):
+            nonlocal seed, pool, valid_pool
+            candidates = [s for s in pool if len(s['yomi']) == char_len]
             
-            # 【完全再現2】startDay / endDay の未定義（None）判定をJSの挙動と厳密に合わせる
-            active_stations = []
-            for s in mode_stations:
-                s_start = s.get('startDay')
-                s_end = s.get('endDay')
-                
-                # JS側では startDay が undefined の駅は評価が false になり除外される
-                if s_start is None or s_start > d:
-                    continue
-                
-                # JS側では endDay が undefined、またはdより大きい、または999999の駅が現役扱い
-                if s_end is None or s_end > d or s_end == 999999:
-                    active_stations.append(s)
-                    
-            if not active_stations:
-                active_stations = mode_stations
-
-            # ロック期間中ではない駅を絞り込む
-            pool = [s for s in active_stations if next_available_day.get(s['yomi'], 0) <= d]
-            if not pool:
-                pool = active_stations
-
-            # シード計算と駅の抽出
-            seed = d * 12345 + mode * 6789
-            hash_val = math_imul(seed ^ zero_fill_right_shift(seed, 15), 2246822507)
-            hash_val = math_imul(hash_val ^ zero_fill_right_shift(hash_val, 13), 3266489909)
-            hash_val = zero_fill_right_shift(hash_val ^ zero_fill_right_shift(hash_val, 16), 0)
+            # 枯渇時の安全装置：出禁ルールを無視して現役駅全体から復活させる
+            if not candidates:
+                candidates = [s for s in valid_pool if len(s['yomi']) == char_len]
             
-            candidate = pool[hash_val % len(pool)]
+            seed = math_imul(seed ^ zero_fill_right_shift(seed, 15), 2246822507)
+            seed = math_imul(seed ^ zero_fill_right_shift(seed, 13), 3266489909)
+            hash_val = zero_fill_right_shift(seed ^ zero_fill_right_shift(seed, 16), 0) / 4294967296.0
             
-            # 次回出禁日をセットする（これによりシミュレーションの辻褄が合う）
-            next_available_day[candidate['yomi']] = d + lookback + 1
+            selected = candidates[int(hash_val * len(candidates))]
+            
+            # 共通出禁リストに追加し、今日の箱から消す
+            banned_days[selected['yomi']] = d + lookback + 1
+            pool = [s for s in pool if s['yomi'] != selected['yomi']]
+            
+            return selected
 
-            # 【重要】0日目から計算はするが、保存するのは「今日から15日後」の分だけ
-            if d >= today_index:
-                target_date = base_date + timedelta(days=d)
-                date_str = target_date.strftime('%Y-%m-%d')
-                
-                salted_text = SECRET_SALT + candidate['yomi']
-                hashed_text = hashlib.sha256(salted_text.encode('utf-8')).hexdigest()
-                
-                if date_str not in generated_hashes:
-                    generated_hashes[date_str] = {}
-                    generated_admin[date_str] = {}
-                
-                # 暗号化された本番用データ
-                generated_hashes[date_str][str(mode)] = hashed_text
-                
-                # 管理者が確認するための平文データ
-                generated_admin[date_str][str(mode)] = {
-                    "kanji": candidate['kanji'],
-                    "yomi": candidate['yomi']
-                }
+        # 【重要】JS側と完全に一致させるための固定の順番
+        gachi4 = draw_gacha(4)
+        gachi5 = draw_gacha(5)
+        gachi6 = draw_gacha(6)
+        yuru5  = draw_gacha(5)
+        # 基準日(2024-01-01)は月曜日。d % 7 == 0 の時だけクアッドを引く
+        if d % 7 == 0:
+            quad4  = [draw_gacha(4) for _ in range(4)]
+            quad5  = [draw_gacha(5) for _ in range(4)]
+            quad6  = [draw_gacha(6) for _ in range(4)]
+        # 火曜〜日曜はガチャを引かず、直近の月曜日の結果をそのまま保持（または空）にする
 
-    # ---------------------------------------------------------
-    # 最後に、生成された15日分のデータを各ファイルに書き込む処理
-    # ---------------------------------------------------------
-    # ファイルへの書き込み処理
-    for d in range(today_index, today_index + 15):
-        target_date = base_date + timedelta(days=d)
-        year_str = str(target_date.year)
-        date_str = target_date.strftime('%Y-%m-%d')
+        if d >= today_index:
+            target_date = base_date + timedelta(days=d)
+            date_str = target_date.strftime('%Y-%m-%d')
+            
+            def get_hash(text):
+                return hashlib.sha256((SECRET_SALT + text).encode('utf-8')).hexdigest()
+            
+            generated_hashes[date_str] = {
+                "4": get_hash(gachi4['yomi']),
+                "5": get_hash(gachi5['yomi']),
+                "6": get_hash(gachi6['yomi']),
+                "yurutetsu": get_hash(yuru5['yomi']),
+                "quad4": [get_hash(q['yomi']) for q in quad4] if quad4 else [],
+                "quad5": [get_hash(q['yomi']) for q in quad5] if quad5 else [],
+                "quad6": [get_hash(q['yomi']) for q in quad6] if quad6 else []
+            }
+            
+            generated_admin[date_str] = {
+                "4": {"kanji": gachi4['kanji'], "yomi": gachi4['yomi']},
+                "5": {"kanji": gachi5['kanji'], "yomi": gachi5['yomi']},
+                "6": {"kanji": gachi6['kanji'], "yomi": gachi6['yomi']},
+                "yurutetsu": {"kanji": yuru5['kanji'], "yomi": yuru5['yomi']},
+                "quad4": [{"kanji": q['kanji'], "yomi": q['yomi']} for q in quad4],
+                "quad5": [{"kanji": q['kanji'], "yomi": q['yomi']} for q in quad5],
+                "quad6": [{"kanji": q['kanji'], "yomi": q['yomi']} for q in quad6]
+            }
+
+    # 出禁リストのクリーンアップ（今日以前に解けた出禁を掃除）
+    cleaned_banned_days = {k: v for k, v in banned_days.items() if v > today_index}
+    app_state["last_calculated_day"] = target_day
+    app_state["banned_days"] = cleaned_banned_days
+
+    # JSONへの書き込みと保護処理
+    cache_hashes = {}
+    cache_admin = {}
+    
+    for date_str, modes_data in generated_hashes.items():
+        date_obj = datetime.strptime(date_str, '%Y-%m-%d').replace(tzinfo=timezone.utc)
+        d_current = (date_obj.date() - base_date.date()).days
+        year_str = str(date_obj.year)
         
         filepath_hash = f'answers/{year_str}.json'
         filepath_admin = f'answers_admin/{year_str}_admin.json'
 
-        # 本番用（ハッシュ）ファイルの更新
-        existing_hashes = {}
-        if os.path.exists(filepath_hash):
-            with open(filepath_hash, 'r', encoding='utf-8') as f:
-                existing_hashes = json.load(f)
-                
-        # 【対処法】ここが重要ポイント
-        # d が「今日より3日後」以前の場合は、すでにデータがあれば絶対に上書きしない（プレイ中の通信エラーを防ぐため）
-        if d <= today_index + 3:
-            if date_str not in existing_hashes:
-                existing_hashes[date_str] = generated_hashes[date_str]
-        else:
-            # d が4日後以降の場合は、常に最新の駅データに基づいた答えで強制上書きする
-            existing_hashes[date_str] = generated_hashes[date_str]
+        if filepath_hash not in cache_hashes:
+            cache_hashes[filepath_hash] = json.load(open(filepath_hash, 'r', encoding='utf-8')) if os.path.exists(filepath_hash) else {}
+        if filepath_admin not in cache_admin:
+            cache_admin[filepath_admin] = json.load(open(filepath_admin, 'r', encoding='utf-8')) if os.path.exists(filepath_admin) else {}
 
-        with open(filepath_hash, 'w', encoding='utf-8') as f:
-            json.dump(existing_hashes, f, ensure_ascii=False, separators=(',', ':'))
+        if date_str not in cache_hashes[filepath_hash]:
+            cache_hashes[filepath_hash][date_str] = {}
+        if date_str not in cache_admin[filepath_admin]:
+            cache_admin[filepath_admin][date_str] = {}
+            
+        # 3日後までは上書き保護する
+        is_protected = (d_current <= today_index + 3)
 
-        # 管理者用（平文）ファイルの更新（こちらも同様のロジックを適用）
-        existing_admin = {}
-        if os.path.exists(filepath_admin):
-            with open(filepath_admin, 'r', encoding='utf-8') as f:
-                existing_admin = json.load(f)
-                
-        if d <= today_index + 3:
-            if date_str not in existing_admin:
-                existing_admin[date_str] = generated_admin[date_str]
-        else:
-            existing_admin[date_str] = generated_admin[date_str]
+        for mode_key, hashed_text in modes_data.items():
+            if is_protected and mode_key in cache_hashes[filepath_hash][date_str]:
+                continue
+            cache_hashes[filepath_hash][date_str][mode_key] = hashed_text
+            cache_admin[filepath_admin][date_str][mode_key] = generated_admin[date_str][mode_key]
 
-        with open(filepath_admin, 'w', encoding='utf-8') as f:
-            json.dump(existing_admin, f, ensure_ascii=False, indent=4)
+    for filepath, data in cache_hashes.items():
+        with open(filepath, 'w', encoding='utf-8') as f:
+            sorted_data = dict(sorted(data.items()))
+            json.dump(sorted_data, f, ensure_ascii=False, separators=(',', ':'))
+
+    for filepath, data in cache_admin.items():
+        with open(filepath, 'w', encoding='utf-8') as f:
+            sorted_data = dict(sorted(data.items()))
+            json.dump(sorted_data, f, ensure_ascii=False, indent=4)
+
+    with open(STATE_FILE, 'w', encoding='utf-8') as f:
+        json.dump(app_state, f, ensure_ascii=False)
+    
+    print("処理が完了し、状態を保存しました。")
 
 if __name__ == "__main__":
     generate_answers()

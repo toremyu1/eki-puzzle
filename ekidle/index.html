@@ -1,184 +1,368 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>駅ドル - Wordle風駅名推理パズル</title>
-<meta name="keywords" content="駅ドル,鉄道,駅名,パズル,Wordle,地理,教育,旅行,日本,遊び,推理,ワードル,学習,頭の体操,駅名,駅名当て,暇つぶし">
-<meta name="description" content="実在する日本の鉄道駅名を推理して当てるWordle風パズルゲーム「駅ドル」。毎日の頭の体操や地理の教育・学習、旅行や鉄道巡りのきっかけにも最適です。タイルの色をヒントに今日の駅を当てよう！">
-<meta name="theme-color" content="#6aaa64">
-<link rel="canonical" href="https://stationdle.pages.dev/">
-<link rel="icon" href="/ekidle-icon.svg" type="image/svg+xml">
-<link rel="apple-touch-icon" href="/ekidle-icon.png">
-<meta property="og:title" content="駅ドル - Wordle風駅名推理パズル">
-<meta property="og:type" content="website">
-<meta property="og:url" content="https://stationdle.pages.dev/">
-<meta property="og:image" content="https://stationdle.pages.dev/ekidle-icon.png">
-<meta property="og:site_name" content="駅ドル">
-<meta property="og:description" content="実在する日本の鉄道駅名を推理して当てるWordle風パズルゲーム「駅ドル」。毎日の頭の体操や地理の教育・学習、旅行や鉄道巡りのきっかけにも最適です。タイルの色をヒントに今日の駅を当てよう！">
-<meta name="twitter:card" content="summary">
-<link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>駅ドル - Wordle風駅名推理パズル</title>
+  <meta name="keywords" content="駅ドル,鉄道,駅名,パズル,Wordle,地理,教育,旅行,日本,遊び,推理,ワードル,学習,頭の体操,駅名,駅名当て,暇つぶし">
+  <meta name="description" content="実在する日本の鉄道駅名を推理して当てるWordle風パズルゲーム「駅ドル」。毎日の頭の体操や地理の教育・学習、旅行や鉄道巡りのきっかけにも最適です。タイルの色をヒントに今日の駅を当てよう！">
+  <meta name="theme-color" content="#6aaa64">
+  <link rel="canonical" href="https://stationdle.pages.dev/">
+  <link rel="icon" href="/ekidle-icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/ekidle-icon.png">
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<div id="loading-screen">
-<div class="loading-content">
-<div class="loading-title">駅ドル</div>
-<div class="track-container">
-<div id="progress-bar"></div>
-<div id="train-icon">🚃</div>
-</div>
-<p id="loading-text">出発進行！システムを準備しています...</p>
-</div>
-</div>
-<header>
-<div style="display:flex; justify-content:space-between; width:100%; max-width:375px; margin:0 auto 5px;">
-<div style="display:flex; gap:5px;">
-<button id="help-btn" class="btn" style="width:32px; height:32px; font-size:16px; font-weight:bold; padding:0; display:flex; justify-content:center; align-items:center;">？</button>
-<button id="theme-btn" class="btn" style="width:32px; height:32px; font-size:16px; font-weight:bold; padding:0; display:flex; justify-content:center; align-items:center;">🎨</button>
-<button id="stats-btn" class="btn" style="width:32px; height:32px; font-size:16px; font-weight:bold; padding:0; display:flex; justify-content:center; align-items:center;">📊</button>
-</div>
-<div style="display:flex; gap:5px;">
-<button id="menu-btn" class="btn" style="width:32px; height:32px; font-size:16px; font-weight:bold; padding:0; display:flex; justify-content:center; align-items:center;">☰</button>
-</div>
-</div>
-<h1 style="display: flex; justify-content: center; align-items: center; margin-top: 10px; margin-bottom: 10px;">
-<img src="/ekidle-icon.svg" alt="駅ドルロゴ" style="width: 36px; height: 36px; margin-right: 10px; border-radius: 8px;">
-駅ドル
-</h1>
-<div style="font-size: 14px; font-weight: bold; color: #666; margin-top: -5px; margin-bottom: 15px; text-align: center;">Wordle風駅名推理パズル</div>
-<div class="mode-selector">
-<button id="mode-4" class="btn mode-btn active">4文字</button>
-<button id="mode-5" class="btn mode-btn">5文字</button>
-<button id="mode-6" class="btn mode-btn">6文字</button>
-</div>
-<div style="margin-top:10px;text-align:center;">
-<label style="font-size:14px;font-weight:bold;cursor:pointer;user-select:none;">
-<input type="checkbox" id="hardmode-switch"> 🔥 ハードモード
-</label>
-</div>
-</header>
-<main style="display:flex; flex-direction:column; align-items:center; flex-grow:1; width:100%; max-width:500px;">
-<div id="game-board" style="position:relative; margin-bottom:10px;"></div>
-<div class="control-buttons" style="display:flex; justify-content:center; gap:8px; margin:10px auto 15px; width:95%; max-width:400px; box-sizing:border-box;">
-<button id="clear-btn" class="btn" style="flex:1; background-color:#fff; color:#e53935; font-size:14px; padding:8px 0; border:2px solid #e53935; font-weight:bold; border-radius:6px; min-width:0;">✖ 全削除</button>
-<button id="back-btn" class="btn" style="flex:1; background-color:#fff; color:#e53935; font-size:14px; padding:8px 0; border:2px solid #e53935; font-weight:bold; border-radius:6px; min-width:0;">⌫ 1字消す</button>
-<button id="enter-btn" class="btn" style="flex:2; background-color:#fff; color:#03a9f4; font-size:18px; padding:8px 0; border:2px solid #03a9f4; font-weight:bold; border-radius:6px; min-width:0;">回答</button>
-</div>
-<div id="keyboard"></div>
-</main>
-<div id="message-box" class="hidden" style="position:fixed; top:45%; left:50%; transform:translate(-50%, -50%); background-color:rgba(0,0,0,0.85); color:#fff; padding:15px 30px; border-radius:12px; font-weight:bold; font-size:18px; z-index:9999; text-align:center; white-space:nowrap; box-shadow:0 8px 16px rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.2);"></div>
-<div id="help-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background-color:rgba(0,0,0,0.6); justify-content:center; align-items:center; z-index:200;">
-<div class="modal-content" style="text-align:left; font-size:14px; max-width:350px; overflow-y:auto; max-height:90vh;">
-<span id="close-help-btn" style="position:absolute; top:10px; right:15px; cursor:pointer; font-size:24px; color:#aaa;">&times;</span>
-<div id="help-normal-content">
-<h2 style="text-align:center; margin-top:0;">遊び方</h2>
-<p>隠された<strong>駅名の読みがな</strong>を当ててください。</p>
-<ul style="padding-left:20px; line-height:1.6; margin-bottom:15px;">
-<li>各文字数モードごとに、<strong>1日1問</strong>出題されます。</li>
-<li>入力できるのは、<strong>実在する日本の鉄道駅</strong>のみです。</li>
-<li>「ー（長音）」はひらがな1文字として扱います。</li>
-<li>数字やアルファベットは、その文字の読みとして扱います。<br>（例：JR総持寺 ➔ じぇいあーるそうじじ / 空港第2ビル ➔ くうこうだいにびる）</li>
-<li><strong>記号（・）などは含めずに入力してください。</strong><br>（例：栂・美木多 ➔ とがみきた）</li>
-</ul>
-<hr style="border:none; border-top:1px solid #eee; margin:15px 0;">
-<p style="font-weight:bold; font-size:15px; margin-bottom:5px;">タイルの色の意味</p>
-<p style="margin-top:0; font-size:13px; font-weight:bold;">正解が「<span style="color:#6aaa64; font-size:16px;">しながわ</span>」の場合：</p>
-<div style="display:flex; gap:5px; margin-bottom:5px;">
-<div class="tile correct" style="width:40px; height:40px; line-height:40px; font-size:18px; border:none; min-width:40px;">し</div>
-<div class="tile absent" style="width:40px; height:40px; line-height:40px; font-size:18px; border:none; min-width:40px;">ん</div>
-<div class="tile absent" style="width:40px; height:40px; line-height:40px; font-size:18px; border:none; min-width:40px;">ば</div>
-<div class="tile absent" style="width:40px; height:40px; line-height:40px; font-size:18px; border:none; min-width:40px;">し</div>
-</div>
-<p style="margin-top:0; margin-bottom:15px; font-size:13px;"><strong><span style="color:#6aaa64">し</span></strong> は駅名に含まれており、位置も合っています。答えに「し」が1個しか含まれないため、2個めの「し」は灰色になります。</p>
-<div style="display:flex; gap:5px; margin-bottom:5px;">
-<div class="tile present" style="width:40px; height:40px; line-height:40px; font-size:18px; border:none; min-width:40px;">な</div>
-<div class="tile present" style="width:40px; height:40px; line-height:40px; font-size:18px; border:none; min-width:40px;">が</div>
-<div class="tile absent" style="width:40px; height:40px; line-height:40px; font-size:18px; border:none; min-width:40px;">つ</div>
-<div class="tile absent" style="width:40px; height:40px; line-height:40px; font-size:18px; border:none; min-width:40px;">た</div>
-</div>
-<p style="margin-top:0; margin-bottom:15px; font-size:13px;"><strong><span style="color:#c9b458">な・が</span></strong> は駅名に含まれますが、位置が違います。</p>
-<div style="display:flex; gap:5px; margin-bottom:5px;">
-<div class="tile diacritic" style="width:40px; height:40px; line-height:40px; font-size:18px; border:none; min-width:40px;">か</div>
-<div class="tile present" style="width:40px; height:40px; line-height:40px; font-size:18px; border:none; min-width:40px;">わ</div>
-<div class="tile absent" style="width:40px; height:40px; line-height:40px; font-size:18px; border:none; min-width:40px;">さ</div>
-<div class="tile absent" style="width:40px; height:40px; line-height:40px; font-size:18px; border:none; min-width:40px;">き</div>
-</div>
-<p style="margin-top:0; margin-bottom:15px; font-size:13px;"><strong><span style="color:#9c27b0">か</span></strong> は駅名に含まれませんが、<strong>濁点違い（が）</strong>が含まれます。「は・ば・ぱ」「や・ゃ」「つ・づ・っ」など、同じ形の文字が含まれていれば紫色になります。</p>
-</div>
-<div id="help-hard-content" class="hidden">
-<h2 style="text-align:center; margin-top:0; color:#d32f2f;">遊び方（ハード）</h2>
-<p>一度オープンしたヒント（タイルの色）を、次回の回答で必ず使わなければならない<strong>超高難易度モード</strong>です。</p>
-<ul style="padding-left:20px; line-height:1.6; margin-bottom:15px;">
-<li><strong style="color:#6aaa64;">🟩 緑マスのヒント</strong>：次回も全く同じ位置に、その文字を配置しなければなりません。</li>
-<li><strong style="color:#c9b458;">🟨 黄マスのヒント</strong>：次回の回答のどこかに、その文字を必ず含めなければなりません。</li>
-<li><strong style="color:#9c27b0;">🟪 紫マスのヒント</strong>：次回の回答のどこかに、同じ文字グループ（例：「か」なら「が」など）を必ず含めなければなりません。</li>
-</ul>
-<p style="font-weight:bold; font-size:14px; color:#d32f2f;">※ヒントを満たさない駅名は送信できません。</p>
-</div>
-<hr style="border:none; border-top:1px solid #eee; margin:15px 0;">
-<div style="font-size:11px; color:#888; line-height:1.5;">
-※当ゲームはWikipedia「日本の鉄道駅一覧」のデータを基準としています。<br>
-※駅データの更新には最大で1カ月程度かかります。  <br>
-※深夜0時以降にページを再読み込みしたり文字数タブを切り替えると、今日の新しい問題に切り替わります。<br>
-※0時を過ぎてクリアする前に再読み込みを行うと進行状況がリセットされます。
-</div>
-<div style="text-align:center; margin-top:20px; font-size:12px; font-weight:bold; color:#aaa; line-height:1.8;">
-Inspired by Wordle<br>
-<a href="https://forms.gle/Lx7FSbLxLa4B6o5n7" target="_blank" style="color:#03a9f4; text-decoration:none;">問い合わせフォーム</a>
-</div>
-</div>
-</div>
 
-<div id="result-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background-color:rgba(0,0,0,0.6); justify-content:center; align-items:center; z-index:200;">
-<div class="modal-content" style="text-align:left; font-size:14px; max-width:350px; max-height:80vh; overflow-y:auto; overflow-x:hidden; position:relative;">
-<span id="close-modal-btn" style="position:absolute; top:10px; right:15px; cursor:pointer; font-size:24px; color:#aaa;">&times;</span>
-<h2 id="modal-title" style="text-align:center; margin-top:0;"></h2>
-<p id="modal-desc" style="text-align:center; font-size:18px; font-weight:bold; margin-bottom:5px;"></p>
-<div id="wiki-link-container" style="text-align:center; margin-bottom:15px;"></div>
-<div id="modal-grid" style="text-align:center; letter-spacing:2px; line-height:1.2; margin:15px 0; font-size:18px;"></div>
-<div id="stats-container" style="display:flex; justify-content:space-around; margin:15px 0; font-size:12px; text-align:center;">
-<div class="stat-box"><span id="stat-played" style="font-size:20px; font-weight:bold;">0</span><br>プレイ</div>
-<div class="stat-box"><span id="stat-winrate" style="font-size:20px; font-weight:bold;">0</span>%<br>勝率</div>
-<div class="stat-box"><span id="stat-streak" style="font-size:20px; font-weight:bold;">0</span><br>連続正解</div>
-<div class="stat-box"><span id="stat-maxstreak" style="font-size:20px; font-weight:bold;">0</span><br>最大連続</div>
-</div>
-<hr style="border:none; border-top:1px solid #eee; margin:15px 0;">
-<div id="guess-distribution" style="text-align:left; font-size:12px; margin-bottom:15px;"></div>
-<div class="modal-buttons" style="display:flex; gap:10px; justify-content:center; margin-bottom:15px;">
-<button id="share-btn" class="btn share-btn" style="background-color:#000000; color:white; border:none;">Xでシェア</button>
-<button id="line-btn" class="btn line-btn" style="background-color:#06C755; color:white; border:none;">LINE</button>
-<button id="fb-btn" class="btn fb-btn" style="background-color:#1877F2; color:white; border:none;">Facebook</button>
-<button id="copy-btn" class="btn">コピー</button>
-</div>
-<div class="coffee-link" style="text-align:center;">
-<a href="https://buymeacoffee.com/nimuro_stationdle" target="_blank" style="color:#ff813f; font-weight:bold; text-decoration:none; font-size:14px;">☕ コーヒーをおごる (Buy Me a Coffee)</a>
-</div>
-</div>
-</div>
-<script src="app.js"></script>
-<div id="side-menu-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:900;"></div>
-<div id="side-menu" style="position:fixed; top:0; right:-250px; width:250px; height:100%; background:#fff; z-index:901; transition:right 0.3s ease; box-shadow:-2px 0 5px rgba(0,0,0,0.2); padding:20px; box-sizing:border-box;">
-<div style="font-size:18px; font-weight:bold; border-bottom:2px solid #6aaa64; padding-bottom:10px; margin-bottom:15px; display:flex; justify-content:space-between; align-items:center;">
-メニュー <span id="close-menu-btn" style="cursor:pointer; color:#aaa; font-size:24px;">&times;</span>
-</div>
-<ul style="list-style:none; padding:0; margin:0; line-height:3; font-size:14px; font-weight:bold;">
-<li style="border-bottom:1px solid #eee;"><a href="#" style="text-decoration:none; color:#333;" onclick="alert('鋭意開発中です！お楽しみに。'); return false;">🔰 練習モード（準備中）</a></li>
-<li style="border-bottom:1px solid #eee;"><a href="#" style="text-decoration:none; color:#333;" onclick="alert('鋭意開発中です！お楽しみに。'); return false;">🏆 実績（準備中）</a></li>
-<li style="border-bottom:1px solid #eee;"><a href="#" style="text-decoration:none; color:#333;" onclick="alert('鋭意開発中です！お楽しみに。'); return false;">🗓 過去問プレイ（準備中）</a></li>
-<li style="border-bottom:1px solid #eee;"><a href="#" style="text-decoration:none; color:#03a9f4;" id="export-data-btn">📤 引き継ぎコードを発行する</a></li>
-<li style="border-bottom:1px solid #eee;"><a href="#" style="text-decoration:none; color:#4caf50;" id="import-data-btn">📥 データを復活させる</a></li>
-<li style="border-bottom:1px solid #eee;"><a href="https://forms.gle/Lx7FSbLxLa4B6o5n7" target="_blank" style="text-decoration:none; color:#333;">✉️ お問い合わせ</a></li>
-<li style="border-bottom:1px solid #eee;"><a href="https://buymeacoffee.com/nimuro_stationdle" target="_blank" style="text-decoration:none; color:#ff813f;">☕ コーヒーをおごる</a></li>
-</li>
-</ul>
-</div>
-<script>
-const urlParams=new URLSearchParams(window.location.search);
-if(urlParams.get('mode')==='admin'&&window.location.hostname.startsWith('development.')){
-const adminScript=document.createElement('script');
-adminScript.src='admin.js';
-document.body.appendChild(adminScript);
-}
-</script>
+  <div id="loading-screen">
+    <div class="loading-content">
+      <div class="loading-title">駅ドル</div>
+      <div class="track-container">
+        <div id="progress-bar"></div>
+        <div id="train-icon">🚃</div>
+      </div>
+      <p id="loading-text">出発進行！システムを準備しています...</p>
+    </div>
+  </div>
+
+  <header>
+    <div class="toolbar">
+      <div class="toolbar-left">
+        <button id="home-btn" class="btn btn-icon">←</button>
+        <button id="help-btn" class="btn btn-icon">？</button>
+        <button id="theme-btn" class="btn btn-icon">🎨</button>
+        <button id="stats-btn" class="btn btn-icon">📊</button>
+      </div>
+      <div class="toolbar-right">
+        <button id="menu-btn" class="btn btn-icon">☰</button>
+      </div>
+    </div>
+    
+    <h1 class="header-title">
+      <img src="/ekidle-icon.svg" alt="駅ドルロゴ" class="header-logo">
+      駅ドル
+    </h1>
+    <div class="header-subtitle">Wordle風駅名推理パズル</div>
+    
+    <div class="mode-selector hidden">
+      <button id="mode-4" class="btn mode-btn active">4文字</button>
+      <button id="mode-5" class="btn mode-btn">5文字</button>
+      <button id="mode-6" class="btn mode-btn">6文字</button>
+    </div>
+    <!--通常モードのハードモードスイッチ-->
+    <div class="hardmode-container hidden">
+      <label class="hardmode-label">
+        <input type="checkbox" id="hardmode-switch"> 🔥 ハードモード
+      </label>
+    </div>
+
+    <!--クアッドモードのハードモードスイッチ-->
+    <div class="quad-hardmode-container hidden">
+      <label class="hardmode-label">
+        <input type="checkbox" id="quad-hardmode-switch"> 🔥 ハードモード
+      </label>
+    </div>
+  </header>
+
+  <div id="title-screen" class="screen-container">
+    <p class="title-catchphrase">〜 毎日1問、駅名当てパズル 〜</p>
+    
+    <button id="btn-yuru-mode" class="btn btn-large">
+      <span style="font-size: 18px; font-weight: bold;">デイリーモード</span>
+      <span style="font-size: 11px; opacity: 0.9; margin-top: 4px; font-weight: normal;"><br>～毎日1回、脳トレパズル～</span>
+    </button>
+
+    <button id="btn-normal-mode" class="btn btn-large">
+      <span style="font-size: 18px; font-weight: bold;">チャレンジモード</span>
+      <span style="font-size: 11px; opacity: 0.9; margin-top: 4px; font-weight: normal;"><br>～実在駅名だけを手掛かりにできる本格モード～</span>
+    </button>
+
+    <button id="btn-quad-mode" class="btn btn-large">
+      <span style="font-size: 18px; font-weight: bold;">スペシャルモード</span>
+      <span style="font-size: 11px; opacity: 0.9; margin-top: 4px; font-weight: normal;"><br>～4つの盤面を同時に推理～</span>
+    </button>
+
+    <button id="btn-stats-title" class="btn btn-large btn-outline">📊 運行記録を見る</button>
+  </div>
+
+  <main id="game-screen" class="screen-container hidden">
+    <div id="game-board"></div>
+    <!-- 4面モード専用 -->
+    <div id="quad-board-container" class="hidden">
+      <div id="board-0" class="quad-board"></div>
+      <div id="board-1" class="quad-board"></div>
+      <div id="board-2" class="quad-board"></div>
+      <div id="board-3" class="quad-board"></div>
+    </div>
+    
+    <div class="control-buttons">
+      <button id="expand-toggle-btn" class="btn btn-outline btn-small hidden" style="flex:0.8; font-size:12px; padding: 12px 2px; color:#000000;">↕ 展開</button>
+      <button id="clear-btn" class="btn btn-danger btn-small">✖ 全削除</button>
+      <button id="back-btn" class="btn btn-danger btn-small">⌫ 1字消す</button>
+      <button id="enter-btn" class="btn btn-primary btn-medium">回答</button>
+    </div>
+    
+    <div id="keyboard"></div>
+  </main>
+
+  <div id="message-box" class="hidden"></div>
+
+  <div id="help-modal" class="modal-overlay hidden">
+    <div class="modal-content">
+      <span id="close-help-btn" class="modal-close">&times;</span>
+      
+      <div id="help-normal-content">
+        <h2 style="text-align: center;">遊び方</h2>
+        <p>隠された<strong>駅名の読みがな</strong>を当ててください。</p>
+        <ul class="help-list">
+          <li>各文字数モードごとに、<strong>1日1問</strong>出題されます。</li>
+          <li>「ー（長音）」はひらがな1文字として扱います。</li>
+          <li>数字やアルファベットは、その文字の読みで扱います。<br>（例：JR総持寺 ➔ じぇいあーるそうじじ）</li>
+          <li><strong>記号（・）などは含めずに入力してください。</strong><br>（例：栂・美木多 ➔ とがみきた）</li>
+          <li id="help-real-station-rule">入力できるのは、<strong>実在する日本の鉄道駅</strong>のみです。</li>
+          <li id="help-yuru-station-rule" class="hidden">デイリーモードでは<strong>どんな言葉でも入力できます</strong>。</li>
+          <li id="help-yuru-station-rule" class="hidden">デイリーモードの回答回数は<strong>8回</strong>です。</li>
+          <li><b><span style="color: #cc0e0e;">ハードモードでは、オープンしたヒント（緑・黄・紫マス）の条件を、次の回答で必ず含めなければなりません。</span></b></li>
+        </ul>
+        
+        <hr class="modal-divider">
+        
+        <p class="help-subtitle">タイルの色の意味</p>
+        <p class="help-example-text">正解が「<span class="text-correct">しながわ</span>」の場合：</p>
+        
+        <div class="help-tiles">
+          <div class="tile correct help-tile">し</div>
+          <div class="tile absent help-tile">ん</div>
+          <div class="tile absent help-tile">ば</div>
+          <div class="tile absent help-tile">し</div>
+        </div>
+        <p class="help-desc"><strong><span class="text-correct">し</span></strong> は駅名に含まれており、位置も合っています。<br>ハードモードでは、次の回答で必ず1文字目に「し」を入れる必要があります。</p>
+        
+        <div class="help-tiles">
+          <div class="tile present help-tile">い</div>
+          <div class="tile present help-tile">し</div>
+          <div class="tile absent help-tile">ば</div>
+          <div class="tile absent help-tile">し</div>
+        </div>
+        <p class="help-desc"><strong><span class="text-present">し</span></strong> は駅名に含まれますが、位置が違います。答えに「し」が1つしか含まれないため、2個目の「し」は灰色になります。<br>ハードモードでは、次の回答で必ずいずれかのマスに「し」を入れる必要があります。</p>
+        
+        <div class="help-tiles">
+          <div class="tile diacritic help-tile">か</div>
+          <div class="tile present help-tile">わ</div>
+          <div class="tile absent help-tile">さ</div>
+          <div class="tile absent help-tile">き</div>
+        </div>
+        <p class="help-desc"><strong><span class="text-diacritic">か</span></strong> は駅名に含まれませんが、<strong>濁点違い（が）</strong>が含まれます。「は-ば-ぱ」「よ-ょ」「つ-づ-っ」のように、同じ形を持つ文字が含まれていれば紫色になります。<br>ハードモードでは、次の回答で必ず「か」もしくは「が」を入れる必要があります。</p>
+      </div>
+
+      <hr class="modal-divider">
+      <div class="help-notes">
+        ※当ゲームはWikipedia「日本の鉄道駅一覧」のデータを基準としています。<br>
+        ※駅データの更新には最大で1カ月程度かかります。<br>
+        ※0時を過ぎてクリアする前に再読み込みを行うと進行状況がリセットされます。
+      </div>
+
+      <div style="text-align:center; color: #aaaaaa; font-size: 12px; margin-top: 25px; margin-bottom: 10px;">
+        inspired by Wordle
+      </div>
+
+    </div>
+  </div>
+
+  <div id="result-modal" class="modal-overlay hidden">
+    <div class="modal-content result-content">
+      <span id="close-modal-btn" class="modal-close">&times;</span>
+      <h2 id="modal-title"></h2>
+      <p id="modal-desc"></p>
+      <div id="wiki-link-container"></div>
+      
+      <div id="modal-grid"></div>
+      
+      <div id="stats-container">
+        <div class="stat-box"><span id="stat-played">0</span><br>プレイ</div>
+        <div class="stat-box"><span id="stat-winrate">0</span>%<br>勝率</div>
+        <div class="stat-box"><span id="stat-streak">0</span><br>連続正解</div>
+        <div class="stat-box"><span id="stat-maxstreak">0</span><br>最大連続</div>
+      </div>
+      
+      <hr class="modal-divider">
+      <div id="guess-distribution"></div>
+      
+      <div class="modal-buttons">
+        <button id="share-btn" class="btn btn-share-x">Xでシェア</button>
+        <button id="line-btn" class="btn btn-share-line">LINE</button>
+        <button id="fb-btn" class="btn btn-share-fb">Facebook</button>
+        <button id="copy-btn" class="btn btn-share-copy">コピー</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="title-stats-modal" class="modal-overlay hidden">
+    <div class="modal-content">
+      <span id="close-title-stats-btn" class="modal-close">&times;</span>
+      
+      <h2 style="text-align:center; margin-top:0;">これまでの記録</h2>
+      
+      <div class="stats-tabs">
+        <button id="tab-yuru" class="btn btn-small btn-outline">デイリー</button>
+        <button id="tab-normal" class="btn btn-small btn-outline">チャレンジ</button>
+        <button id="tab-quad" class="btn btn-small btn-outline">スペシャル</button>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:15px; margin-top:15px;">
+        <div id="stats-area-4">
+          <div style="font-weight:bold; border-left:4px solid #6aaa64; padding-left:8px; text-align:left;">4文字モード</div>
+          <div class="stats-split-container">
+            <div class="stats-block">
+              <div class="stats-block-title">🟢 通常</div>
+              <div style="display:flex; justify-content:space-around; text-align:center;">
+                <div class="stat-box" style="font-size:11px;"><span id="ts-4-normal-played" style="font-size:18px; font-weight:bold;">0</span><br>プレイ</div>
+                <div class="stat-box" style="font-size:11px;"><span id="ts-4-normal-winrate" style="font-size:18px; font-weight:bold;">0</span>%<br>勝率</div>
+                <div class="stat-box" style="font-size:11px;"><span id="ts-4-normal-streak" style="font-size:18px; font-weight:bold;">0</span><br>連勝</div>
+                <div class="stat-box" style="font-size:11px;"><span id="ts-4-normal-maxstreak" style="font-size:18px; font-weight:bold;">0</span><br>最大</div>
+              </div>
+            </div>
+            <div class="stats-block">
+              <div class="stats-block-title">🔥 ハード</div>
+              <div style="display:flex; justify-content:space-around; text-align:center;">
+                <div class="stat-box" style="font-size:11px;"><span id="ts-4-hard-played" style="font-size:18px; font-weight:bold;">0</span><br>プレイ</div>
+                <div class="stat-box" style="font-size:11px;"><span id="ts-4-hard-winrate" style="font-size:18px; font-weight:bold;">0</span>%<br>勝率</div>
+                <div class="stat-box" style="font-size:11px;"><span id="ts-4-hard-streak" style="font-size:18px; font-weight:bold;">0</span><br>連勝</div>
+                <div class="stat-box" style="font-size:11px;"><span id="ts-4-hard-maxstreak" style="font-size:18px; font-weight:bold;">0</span><br>最大</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="stats-area-5">
+          <div id="stats-title-5" style="font-weight:bold; border-left:4px solid #03a9f4; padding-left:8px; text-align:left;">5文字モード</div>
+          <div class="stats-split-container">
+            <div class="stats-block">
+              <div class="stats-block-title">🟢 通常</div>
+              <div style="display:flex; justify-content:space-around; text-align:center;">
+                <div class="stat-box" style="font-size:11px;"><span id="ts-5-normal-played" style="font-size:18px; font-weight:bold;">0</span><br>プレイ</div>
+                <div class="stat-box" style="font-size:11px;"><span id="ts-5-normal-winrate" style="font-size:18px; font-weight:bold;">0</span>%<br>勝率</div>
+                <div class="stat-box" style="font-size:11px;"><span id="ts-5-normal-streak" style="font-size:18px; font-weight:bold;">0</span><br>連勝</div>
+                <div class="stat-box" style="font-size:11px;"><span id="ts-5-normal-maxstreak" style="font-size:18px; font-weight:bold;">0</span><br>最大</div>
+              </div>
+            </div>
+            <div class="stats-block">
+              <div class="stats-block-title">🔥 ハード</div>
+              <div style="display:flex; justify-content:space-around; text-align:center;">
+                <div class="stat-box" style="font-size:11px;"><span id="ts-5-hard-played" style="font-size:18px; font-weight:bold;">0</span><br>プレイ</div>
+                <div class="stat-box" style="font-size:11px;"><span id="ts-5-hard-winrate" style="font-size:18px; font-weight:bold;">0</span>%<br>勝率</div>
+                <div class="stat-box" style="font-size:11px;"><span id="ts-5-hard-streak" style="font-size:18px; font-weight:bold;">0</span><br>連勝</div>
+                <div class="stat-box" style="font-size:11px;"><span id="ts-5-hard-maxstreak" style="font-size:18px; font-weight:bold;">0</span><br>最大</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="stats-area-6">
+          <div style="font-weight:bold; border-left:4px solid #9c27b0; padding-left:8px; text-align:left;">6文字モード</div>
+          <div class="stats-split-container">
+            <div class="stats-block">
+              <div class="stats-block-title">🟢 通常</div>
+              <div style="display:flex; justify-content:space-around; text-align:center;">
+                <div class="stat-box" style="font-size:11px;"><span id="ts-6-normal-played" style="font-size:18px; font-weight:bold;">0</span><br>プレイ</div>
+                <div class="stat-box" style="font-size:11px;"><span id="ts-6-normal-winrate" style="font-size:18px; font-weight:bold;">0</span>%<br>勝率</div>
+                <div class="stat-box" style="font-size:11px;"><span id="ts-6-normal-streak" style="font-size:18px; font-weight:bold;">0</span><br>連勝</div>
+                <div class="stat-box" style="font-size:11px;"><span id="ts-6-normal-maxstreak" style="font-size:18px; font-weight:bold;">0</span><br>最大</div>
+              </div>
+            </div>
+            <div class="stats-block">
+              <div class="stats-block-title">🔥 ハード</div>
+              <div style="display:flex; justify-content:space-around; text-align:center;">
+                <div class="stat-box" style="font-size:11px;"><span id="ts-6-hard-played" style="font-size:18px; font-weight:bold;">0</span><br>プレイ</div>
+                <div class="stat-box" style="font-size:11px;"><span id="ts-6-hard-winrate" style="font-size:18px; font-weight:bold;">0</span>%<br>勝率</div>
+                <div class="stat-box" style="font-size:11px;"><span id="ts-6-hard-streak" style="font-size:18px; font-weight:bold;">0</span><br>連勝</div>
+                <div class="stat-box" style="font-size:11px;"><span id="ts-6-hard-maxstreak" style="font-size:18px; font-weight:bold;">0</span><br>最大</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="quad-help-modal" class="modal-overlay hidden">
+    <div class="modal-content">
+      <span id="close-quad-help-btn" class="modal-close">&times;</span>
+      <h2 style="text-align: center; color: #03a9f4;">遊び方（スペシャル）</h2>
+      <p>4つの盤面で同時に進行する<strong>超高難度モード</strong>です。</p>
+      <ul class="help-list">
+        <li>毎週月曜日に問題が更新されます。</li>
+        <li>入力した文字は、4つの盤面<strong>すべてに同時に</strong>反映されます。</li>
+        <li>回答回数は全盤面共通で<strong>13回</strong>です。</li>
+        <li>1手ごとに、各盤面の答えに対してそれぞれ色が判定されます。</li>
+        <li>4つすべての駅名を当てるとクリアになります。</li>
+        <li>盤面を選択することでその行を拡大できます（範囲選択可）。</li>
+        <li><b><span style="color: #cc0e0e;">ハードモードでは、実在する駅しか入力できません。</span></b></li>
+      </ul>
+      <hr class="modal-divider">
+      <!--<p style="font-size: 13px;">※クアッドモードの過去問に挑戦したい場合は、後日実装予定のアーカイブ機能をお待ちください。（本日の問題は日付によって完全に固定されています）</p>-->
+    </div>
+  </div>
+
+  <div id="quad-result-modal" class="modal-overlay hidden">
+    <div class="modal-content result-content" style="max-width: 400px;">
+      <span id="close-quad-modal-btn" class="modal-close">&times;</span>
+      <h2 id="quad-modal-title"></h2>
+      <div id="quad-modal-desc"></div>
+      
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 15px; font-size: 10px; line-height: 1.1; letter-spacing: 1px; justify-items: center; margin-bottom: 20px;">
+        <div id="q-grid-0"></div>
+        <div id="q-grid-1"></div>
+        <div id="q-grid-2"></div>
+        <div id="q-grid-3"></div>
+      </div>
+
+      <hr class="modal-divider">
+      <div id="stats-container" style="margin-bottom: 20px;">
+        <div class="stat-box"><span id="quad-stat-played">0</span><br>プレイ</div>
+        <div class="stat-box"><span id="quad-stat-winrate">0</span>%<br>勝率</div>
+        <div class="stat-box"><span id="quad-stat-streak">0</span><br>連続正解</div>
+        <div class="stat-box"><span id="quad-stat-maxstreak">0</span><br>最大連続</div>
+      </div>
+      
+      <div class="modal-buttons">
+        <button id="quad-share-btn" class="btn btn-share-x">Xでシェア</button>
+        <button id="quad-line-btn" class="btn btn-share-line">LINE</button>
+        <button id="quad-fb-btn" class="btn btn-share-fb">Facebook</button>
+        <button id="quad-copy-btn" class="btn btn-share-copy">コピー</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="side-menu-overlay" class="hidden"></div>
+  <div id="side-menu">
+    <div class="side-menu-header">
+      メニュー <span id="close-menu-btn" class="modal-close" style="position:static;">&times;</span>
+    </div>
+    <ul class="side-menu-list">
+      <li style="border-bottom:1px solid #eee;"><a href="#" id="menu-top-btn">🌐 総合TOPへ</a></li>
+      <li style="border-bottom:1px solid #eee;"><a href="#" id="menu-home-btn">🏠 タイトル画面に戻る</a></li>
+      <li style="border-bottom:1px solid #eee;"><a href="#" id="menu-stats-btn">📊 運行記録を見る</a></li>
+      <!--<li><a href="#" onclick="alert('鋭意開発中です！お楽しみに。'); return false;">🔰 練習モード（準備中）</a></li>-->
+      <li><a href="#" onclick="alert('鋭意開発中です！お楽しみに。'); return false;">🏆 実績（準備中）</a></li>
+      <li><a href="#" onclick="alert('鋭意開発中です！お楽しみに。'); return false;">🗓 過去問プレイ（準備中）</a></li>
+      <li><a href="#" id="export-data-btn" style="color:#03a9f4;">📤 引き継ぎコードを発行する</a></li>
+      <li><a href="#" id="import-data-btn" style="color:#4caf50;">📥 データを復活させる</a></li>
+      <li><a href="https://forms.gle/LB8WSxkK5bxauFCY7" target="_blank">✉️ お問い合わせ</a></li>
+      <li><a href="https://buymeacoffee.com/toremyu01" target="_blank" style="color:#ff813f;">☕ コーヒーをおごる</a></li>
+    </ul>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.5.0/lz-string.min.js"></script>
+  <script src="/common.js"></script>
+  <script src="app.js"></script>
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('mode') === 'admin' && window.location.hostname.startsWith('development.')) {
+      const adminScript = document.createElement('script');
+      adminScript.src = 'admin.js';
+      document.body.appendChild(adminScript);
+    }
+  </script>
 </body>
 </html>
