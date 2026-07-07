@@ -6,7 +6,7 @@
 <title>駅ロケ - 地理学習・論理的駅名推論シミュレーション</title>
 <meta name="keywords" content="地理学習,駅名,推理,日本地図,交通,鉄道,クイズ,脳トレ,駅ロケ,タイピング,パズル,駅パズル,地図,日本地理,Worldle,Wordle">
 <meta name="description" content="全国に実在する鉄道駅を距離・方角・属性から論理的に導き出す、地理学習・推理シミュレーション「駅ロケ」。日本地図や交通網の知識が身につきます。朝の脳トレにも最適。">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="loca_style.css">
 </head>
   
 <body>
@@ -159,7 +159,6 @@
 </main>
 </div>
 </div>
-<script src="app.js"></script>
 <div id="help-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background-color:rgba(0,0,0,0.6); justify-content:center; align-items:center; z-index:200;">
 <div class="modal-content" style="background:#fff; padding:20px; border-radius:8px; max-width:350px; max-height:80vh; overflow-y:auto; position:relative;">
 <span id="close-help-btn" style="position:absolute; top:10px; right:15px; cursor:pointer; font-size:24px;">&times;</span>
@@ -310,12 +309,13 @@ Inspired by Wordle<br>
       </div>
     </div>
 </div>
-
+  
+<script src="loca_app.js"></script>
 <script>
 const urlParams=new URLSearchParams(window.location.search);
 if(urlParams.get('mode')==='admin'&&window.location.hostname.startsWith('development.')){
 const adminScript=document.createElement('script');
-adminScript.src='admin.js';
+adminScript.src='loca_admin.js';
 document.body.appendChild(adminScript);
 }
 </script> 
