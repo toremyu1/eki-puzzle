@@ -1,0 +1,160 @@
+/* 全体の基本設定 */
+body {
+  font-family: 'Helvetica Neue', sans-serif;
+  background: #121212;
+  color: #ffffff;
+  text-align: center;
+  padding: 30px 20px;
+  margin: 0;
+}
+
+/* ロゴ周辺のレイアウト */
+.logo-container {
+  max-width: 500px;
+  margin: 0 auto 20px;
+  padding: 10px;
+}
+.logo-img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+.site-desc {
+  color: #aaaaaa;
+  font-size: 14px;
+  margin-bottom: 40px;
+}
+
+/* 各ゲームへのリンクカードのレイアウト */
+.container {
+  display: flex;
+  justify-content: center;
+  gap: 25px;
+  flex-wrap: wrap;
+  max-width: 800px;
+  margin: 0 auto;
+}
+.card {
+  background: #1e1e1e;
+  border: 2px solid #333333;
+  padding: 25px;
+  border-radius: 15px;
+  width: 240px;
+  text-decoration: none;
+  color: #ffffff;
+  transition: 0.3s;
+  box-sizing: border-box;
+}
+
+/* マウスを乗せたとき（ホバー時）の浮き上がりと発光エフェクト */
+.card:hover {
+  border-color: #00ffff;
+  transform: translateY(-5px);
+  box-shadow: 0 10px 20px rgba(0, 255, 255, 0.1);
+}
+
+.card-icon {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 15px;
+}
+.card h3 {
+  margin: 10px 0;
+  font-size: 20px;
+}
+.card p {
+  font-size: 12px;
+  color: #888888;
+  margin: 0;
+}
+
+/* --- ここからデータ管理・サポートセクションのデザイン --- */
+.data-management-section {
+  margin-top: 50px;
+  padding-top: 20px;
+  border-top: 1px dashed #333333;
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* 「設定」カード（ゲーム用カードとは異なり、横長で落ち着いたグレー系のデザインに） */
+.settings-trigger-card {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: #1e1e1e;
+  border: 2px solid #444444;
+  padding: 15px 35px;
+  border-radius: 12px;
+  text-decoration: none;
+  color: #ffffff;
+  font-weight: bold;
+  font-size: 15px;
+  transition: 0.3s;
+  cursor: pointer;
+}
+/* マウスホバー時は白〜薄いグレーに発光し、ゲームと差別化 */
+.settings-trigger-card:hover {
+  border-color: #aaaaaa;
+  background: #252525;
+  box-shadow: 0 5px 15px rgba(255, 255, 255, 0.05);
+}
+
+/* 展開されるコマンドボタンのコンテナ（初期状態は非表示・透明） */
+.management-actions-area {
+  display: none;
+  justify-content: center;
+  gap: 15px;
+  flex-wrap: wrap;
+  margin-top: 25px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+/* JavaScriptで「is-active」クラスが付与されたら表示する */
+.management-actions-area.is-active {
+  display: flex;
+  opacity: 1;
+}
+
+/* 各種管理ボタンの共通デザイン */
+.btn-manage {
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: bold;
+  padding: 12px 18px;
+  border-radius: 8px;
+  transition: background-color 0.2s, border-color 0.2s;
+}
+
+/* 一括バックアップボタン（水色） */
+.btn-export {
+  color: #03a9f4;
+  border: 1px solid #03a9f4;
+  background: rgba(3, 169, 244, 0.05);
+}
+.btn-export:hover {
+  background: rgba(3, 169, 244, 0.15);
+}
+
+/* 一括復元ボタン（緑色） */
+.btn-import {
+  color: #4caf50;
+  border: 1px solid #4caf50;
+  background: rgba(76, 175, 80, 0.05);
+}
+.btn-import:hover {
+  background: rgba(76, 175, 80, 0.15);
+}
+
+/* 非常用リセットボタン（赤色） */
+.btn-emergency {
+  color: #e53935;
+  border: 1px solid #e53935;
+  background: rgba(229, 57, 53, 0.05);
+}
+.btn-emergency:hover {
+  background: rgba(229, 57, 53, 0.15);
+}
