@@ -3042,21 +3042,73 @@ function simulateUnifiedAnswers(validPool, targetDayIndex, length) {
 }
 
 
-//==========================================
-//データのエクスポートとインポート（改ざん防止機能付き）
-//==========================================
-//共通関数を呼び出してデータを書き出す（駅ドル用）
+// ==========================================
+// データのエクスポートとインポート（自動圧縮＆改ざん防止機能付き）
+// ==========================================
+
+// 1. 改ざん防止用のハッシュ（署名）生成関数
+function generateEkiChecksum(str) {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash;
+  }
+  return hash.toString(36);
+}
+
+// 2. データを安全に文字列化・圧縮するハイブリッド関数
+async function encodeEkiSaveData(jsonStr) {
+  if ('CompressionStream' in window) {
+    try {
+      const stream = new Blob([jsonStr]).stream();
+      const compressedStream = stream.pipeThrough(new CompressionStream('gzip'));
+      const blob = await new Response(compressedStream).blob();
+      const buffer = await blob.arrayBuffer();
+      const bytes = new Uint8Array(buffer);
+      let binary = '';
+      for (let i = 0; i < bytes.byteLength; i += 1024) {
+        binary += String.fromCharCode.apply(null, bytes.subarray(i, i + 1024));
+      }
+      return "C_" + btoa(binary); // 圧縮成功時は「C_」
+    } catch(e) {
+      console.warn("圧縮に失敗しました。非圧縮モードに切り替えます。", e);
+    }
+  }
+  return "R_" + btoa(unescape(encodeURIComponent(jsonStr))); // 非対応時は「R_」
+}
+
+// 3. 引き継ぎコードを解読・解凍する関数
+async function decodeEkiSaveData(code) {
+  if (code.startsWith("C_")) {
+    const base64 = code.substring(2);
+    const binary = atob(base64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) {
+      bytes[i] = binary.charCodeAt(i);
+    }
+    const stream = new Blob([bytes]).stream();
+    const decompressedStream = stream.pipeThrough(new DecompressionStream('gzip'));
+    return await new Response(decompressedStream).text();
+  } else if (code.startsWith("R_")) {
+    const base64 = code.substring(2);
+    return decodeURIComponent(escape(atob(base64)));
+  } else {
+    throw new Error("未対応のコード形式です");
+  }
+}
+
+// 共通関数を呼び出してデータを書き出す（駅ドル用）
 async function exportUserData() {
-  // このゲームで保存したいキーと中身のリストを作成
   const dataMap = {
     stats: localStorage.getItem("ekiPuzzleStatsV2"),
     zukan: localStorage.getItem("ekiZukanData"),
     meta: localStorage.getItem("ekiZukanMeta"),
     achievements: localStorage.getItem("ekiAchievements"),
     settings: localStorage.getItem("ekiSettings"),
-    version: localStorage.getItem("ekiSystemVersion"),
-    log: localStorage.getItem("ekiPuzzleStateV1_Log"),
-    quadWeekly: localStorage.getItem("ekiQuadWeeklyState")
+    version: localStorage.getItem("ekiSystemVersion")
+    // log: localStorage.getItem("ekiPuzzleStateV1_Log"),       // 容量削減のため削るのを推奨
+    // quadWeekly: localStorage.getItem("ekiQuadWeeklyState")   // 容量削減のため削るのを推奨
   };
 
   try {
@@ -3071,26 +3123,34 @@ async function exportUserData() {
   }
 }
 
-// 共通関数を呼び出してデータを復元する（駅ドル用）
+// 5. データの読み込み（インポート）
 async function importUserData(code) {
   try {
-    // 共通関数へコードを渡し、ゲーム名「Ekidle」のデータとして安全に解凍・検証
-    const json = await parseSharedTransferCode(code, "Ekidle");
+    // 圧縮コードを解凍・解読
+    const decompressedStr = await decodeEkiSaveData(code);
+    const secureData = JSON.parse(decompressedStr);
+    
+    // 改ざん・欠損チェック
+    if (generateEkiChecksum(secureData.payload) !== secureData.sig) {
+      throw new Error("コードが破損、または改ざんされています。");
+    }
+    
+    const json = JSON.parse(secureData.payload);
 
-    // 検証を通過したら、データが存在するものだけLocalStorageに書き戻す
+    // データの復元
     if(json.stats) localStorage.setItem("ekiPuzzleStatsV2", json.stats);
     if(json.zukan) localStorage.setItem("ekiZukanData", json.zukan);
     if(json.meta) localStorage.setItem("ekiZukanMeta", json.meta);
     if(json.achievements) localStorage.setItem("ekiAchievements", json.achievements);
     if(json.settings) localStorage.setItem("ekiSettings", json.settings);
     if(json.version) localStorage.setItem("ekiSystemVersion", json.version); 
-    if(json.log) localStorage.setItem("ekiPuzzleStateV1_Log", json.log);
-    if(json.quadWeekly) localStorage.setItem("ekiQuadWeeklyState", json.quadWeekly);
+    //if(json.log) localStorage.setItem("ekiPuzzleStateV1_Log", json.log);
+    //if(json.quadWeekly) localStorage.setItem("ekiQuadWeeklyState", json.quadWeekly);
     
     alert("データを正常に復元しました！再読み込みを行います。");
     location.reload();
   } catch(e) { 
-    alert("無効な引き継ぎコードです。正しくコピーできているか確認してください。"); 
+    alert("無効な引き継ぎコードです。正しくコピーできているか、文字が欠けていないか確認してください。"); 
     console.error("インポートエラー:", e);
   }
 }
