@@ -46,6 +46,12 @@ def generate_answers():
     generated_hashes = {}
     generated_admin = {}
 
+    # ▼▼ 状態保存ファイル（loca_state.json）の読み込みと変数の準備 ▼▼
+    STATE_FILE = "loca_state.json"
+    app_state = {}
+    next_available_day = {}
+    start_day = 0
+
     # ==============================================================
     # 修正版：未来の「その日（target_d）」のJS環境を完全に再現するシミュレーション
     # ==============================================================
@@ -72,15 +78,6 @@ def generate_answers():
                 continue
                                 
             valid_stations.append(s)
-
-        generated_hashes = {}
-        generated_admin = {}
-
-        # ▼▼ 追加：状態保存ファイル（loca_state.json）の読み込みと変数の準備 ▼▼
-        STATE_FILE = "loca_state.json"
-        app_state = {}
-        next_available_day = {}
-        start_day = 0
 
         # 前回の計算データがあれば復元する
         if os.path.exists(STATE_FILE):
