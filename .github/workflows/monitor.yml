@@ -1,0 +1,65 @@
+name: Monitor and Trigger Update
+
+on:
+  schedule:
+    - cron: '9 * * * *' # 毎時9分に監視を実行
+  workflow_dispatch:
+
+jobs:
+  check-and-trigger:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check last run time and trigger
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # 監視対象のWorkflowファイル名（ご自身の環境に合わせて変更してください）
+          WORKFLOW_FILE="auto_update.yml"
+          
+          # 最後に「成功」した実行日時を取得
+          LAST_RUN=$(gh run list --workflow=$WORKFLOW_FILE --status success --limit 1 --json updatedAt --jq '.[0].updatedAt')
+          
+          if [ -z "$LAST_RUN" ]; then
+            echo "成功履歴が見つかりません。強制発火します。"
+            TRIGGER=true
+          else
+            # 現在時刻と最終実行時刻の差（時間）を計算
+            LAST_RUN_SEC=$(date -d "$LAST_RUN" +%s)
+            NOW_SEC=$(date +%s)
+            DIFF_HOURS=$(( (NOW_SEC - LAST_RUN_SEC) / 3600 ))
+            
+            echo "前回の成功から $DIFF_HOURS 時間経過しています。"
+            
+            if [ "$DIFF_HOURS" -ge 6 ]; then
+              echo "6時間以上経過しているため、強制発火します。"
+              TRIGGER=true
+            else
+              echo "6時間以内のため、何もしません。"
+              TRIGGER=false
+            fi
+          fi
+          
+          # トリガー条件を満たした場合、対象のWorkflowを実行
+          if [ "$TRIGGER" = true ]; then
+            gh workflow run $WORKFLOW_FILE
+            echo "TRIGGERED=true" >> $GITHUB_ENV
+          else
+            echo "TRIGGERED=false" >> $GITHUB_ENV
+          fi
+
+      - name: Send Email Notification
+        if: env.TRIGGERED == 'true'
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          secure: true
+          username: ${{ secrets.EMAIL_USERNAME }}
+          password: ${{ secrets.EMAIL_PASSWORD }}
+          subject: "[GitHub Actions] 駅データ更新を強制発火しました"
+          body: "直近6時間以上、駅データの自動更新が成功していなかったため、強制的に更新プログラムを開始しました。"
+          to: "your-email@example.com" # 送信先のメールアドレスに変更してください
+          from: "GitHub Actions Bot"
