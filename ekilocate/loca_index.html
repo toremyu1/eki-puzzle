@@ -309,13 +309,13 @@ Inspired by Wordle<br>
       </div>
     </div>
 </div>
-
+  
 <script src="loca_app.js"></script>
 <script>
 const urlParams=new URLSearchParams(window.location.search);
 if(urlParams.get('mode')==='admin'&&window.location.hostname.startsWith('development.')){
 const adminScript=document.createElement('script');
-adminScript.src='admin.js';
+adminScript.src='loca_admin.js';
 document.body.appendChild(adminScript);
 }
 </script> 
