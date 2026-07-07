@@ -21,7 +21,7 @@ def to_hiragana(text):
 
 def generate_answers():
     try:
-        with open('../stations.json', 'r', encoding='utf-8') as f:
+        with open('/db/stations.json', 'r', encoding='utf-8') as f:
             raw_stations = json.load(f)
     except Exception as e:
         print(f"駅データの取得に失敗しました: {e}")
