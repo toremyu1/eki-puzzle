@@ -103,7 +103,12 @@ def generate_answers():
         # ==============================================================
         # JSの自力計算（フォールバック）と1ミリも違わない歴史シミュレーション
         # ==============================================================
-        # ▼▼ 修正：0からではなく、start_day から目標日までループする ▼▼
+        
+        # ▼▼ ループの前に None で初期化しておく ▼▼
+        final_normal = None
+        final_hard = None
+        
+        # ▼▼ 0からではなく、start_day から目標日までループする ▼▼
         for d in range(start_day, target_day):
             pool_normal = []
             pool_hard = []
@@ -153,6 +158,11 @@ def generate_answers():
             if d == target_d:
                 final_normal = candidate_normal
                 final_hard = candidate_hard
+
+        # ▼▼ もし start_day が target_d を過ぎていて None のままならスキップ ▼▼
+        if final_normal is None:
+            # 「すでに過去の実行で計算済みの日」なので、処理を飛ばして次の日へ
+            continue
 
         # 3. 確定した結果を記録
         target_date = base_date + timedelta(days=target_d)
