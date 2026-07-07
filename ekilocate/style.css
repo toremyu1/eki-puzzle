@@ -5,6 +5,7 @@ body {
     font-family: "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif;
     background-color: #f5f7fa;
     color: #2c3e50;
+    /* フレックスボックスを使って要素を配置します */
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -26,8 +27,8 @@ header {
 h1 {
     font-size: 28px;
     margin: 0 0 10px 0;
-    color: #2c3e50;
     letter-spacing: 2px;
+    color: var(--theme-accent, #3498db); /* テーマカラーに連動させます */
 }
 
 .game-description {
@@ -66,20 +67,29 @@ h1 {
     border-color: #3498db;
 }
 
+/* 送信ボタン専用のデザイン（立体感を出して押しやすくします） */
 #submit-guess-btn {
-    padding: 0 24px;
+    padding: 10px 20px;
     font-size: 16px;
     font-weight: bold;
     background-color: #3498db;
     color: #ffffff;
     border: none;
-    border-radius: 8px;
+    border-radius: 4px;
     cursor: pointer;
-    transition: background-color 0.2s;
+    transition: background-color 0.2s, transform 0.1s;
+    border-bottom: 4px solid #2980b9 !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.15);
 }
+
 
 #submit-guess-btn:hover {
     background-color: #2980b9;
+}
+
+#submit-guess-btn:active {
+    transform: translateY(2px);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.15);
 }
 
 /* サジェストのドロップダウンリスト */
@@ -199,4 +209,667 @@ h1 {
     h1 {
         font-size: 24px;
     }
+}
+
+
+/* ==========================================
+   難易度選択画面のスタイル
+========================================== */
+
+/* 画面全体の余白と文字の配置を整えます */
+.difficulty-screen {
+    text-align: center;
+    padding: 40px 20px;
+}
+
+/* 難易度を選択するボタンのデザインです */
+/* 共通のベースデザイン（枠線や余白、文字サイズ、アニメーションなど） */
+.diff-btn {
+    display: block;
+    width: 240px;          /* 200pxから240pxに統一 */
+    margin: 15px auto;
+    padding: 14px;
+    font-size: 16px;
+    font-weight: bold;
+    color: #ffffff;        /* 文字色はすべて白で統一 */
+    border: none;
+    border-radius: 6px;    /* 角丸を綺麗に統一 */
+    cursor: pointer;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: transform 0.1s, filter 0.2s; /* ホバー時の滑らかな変化 */
+}
+
+/* ホバー（マウスを乗せた時）は、明るさを少し上げる（一括で設定できるので楽！） */
+.diff-btn:hover {
+    filter: brightness(1.1);
+}
+
+/* 難易度ごとの個別の色（HTMLから引っ越してきた部分） */
+.diff-btn.btn-normal {
+    background-color: #2ecc71; /* 緑 */
+    border-bottom: 3px solid #27ae60;
+}
+
+.diff-btn.btn-endless {
+    background-color: #f1c40f; /* 黄 */
+    border-bottom: 3px solid #d4ac0d;
+}
+
+.diff-btn.btn-hard {
+    background-color: #e74c3c; /* 赤 */
+    border-bottom: 3px solid #c0392b;
+}
+
+.diff-btn.btn-limited {
+    background-color: #9b59b6; /* 紫 */
+    border-bottom: 3px solid #8e44ad;
+}
+
+
+/* ==========================================
+   テーマカラーの切り替え設定（モーダル連動版）
+========================================== */
+:root { 
+    --theme-accent: #3498db; 
+    --modal-bg: #ffffff; 
+    --modal-text: #2c3e50; 
+}
+
+body.theme-dark { background-color: #121212; color: #ffffff; --theme-accent: #777777; --modal-bg: #222222; --modal-text: #ffffff; }
+body.theme-dark .results-container { background-color: #222; }
+body.theme-dark th { background-color: #333; color: #ddd; }
+
+body.theme-sakura { background-color: #fff0f5; color: #5d4037; --theme-accent: #f48fb1; --modal-bg: #ffe4e1; --modal-text: #5d4037; }
+body.theme-ocean { background-color: #e0f7fa; color: #004d40; --theme-accent: #00bcd4; --modal-bg: #b2ebf2; --modal-text: #004d40; }
+body.theme-blue { background-color: #e3f2fd; color: #0d47a1; --theme-accent: #1976d2; --modal-bg: #bbdefb; --modal-text: #0d47a1; }
+body.theme-green { background-color: #e8f5e9; color: #1b5e20; --theme-accent: #388e3c; --modal-bg: #c8e6c9; --modal-text: #1b5e20; }
+
+
+/* テーマカラーが黒の場合、タイトルを白文字に */
+body.theme-dark #game-title { 
+    color: #ffffff; 
+}
+
+
+
+/* ==========================================
+   ボタンのデザイン調整
+========================================== */
+/* すべてのボタンの黒い縁取り（アウトライン）を強制的に消去します */
+button, .btn {
+    outline: none !important;
+    border: none !important;
+}
+
+
+
+
+/* ==========================================
+   UIボタンの正方形化・立体化設定
+========================================== */
+.btn {
+    width: 40px;
+    height: 40px;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #e3e3e1;
+    border: none !important;
+    border-bottom: 3px solid #b5b5b3 !important; /* 立体感を出す下線 */
+    border-radius: 6px;
+    font-size: 16px;
+    box-sizing: border-box;
+    transition: all 0.1s ease;
+}
+
+
+/* ==========================================
+   モーダルウィンドウ（枠線とスクロールバー）
+========================================== */
+/* モーダルの背景をテーマ変数と連動させます */
+.modal-content {
+    background-color: var(--modal-bg, #ffffff) !important;
+    color: var(--modal-text, #2c3e50) !important;
+    background-image: linear-gradient(135deg, rgba(255, 255, 255, 0.12) 0%, rgba(0, 0, 0, 0.06) 100%) !important;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5), inset 0 0 12px rgba(255, 255, 255, 0.15);
+}
+
+/* 結果画面のシェアボタン群を縦に引き延ばすスタイル */
+.modal-content .btn {
+    width: auto !important;
+    height: auto !important;
+    padding: 12px 18px !important; /* 上下パディングを広げて縦長にします */
+    font-size: 13px;
+    border-bottom: 4px solid rgba(0,0,0,0.2) !important;
+}
+
+
+/* 駅ドル方式のカスタムスクロールバー（水色） */
+.modal-content::-webkit-scrollbar {
+    width: 8px;
+}
+.modal-content::-webkit-scrollbar-track {
+    background: transparent;
+    margin: 12px 0;
+}
+.modal-content::-webkit-scrollbar-thumb {
+    background-color: #3498db; /* ロゴと同じ水色 */
+    border-radius: 10px;
+}
+
+/* ==========================================
+   説明ウィンドウの枠線を水色に固定
+========================================== */
+#help-modal .modal-content {
+    border: 3px solid #3498db !important;
+}
+
+
+
+/* ==========================================
+   駅ドル風：押し込める立体ボタンデザイン
+========================================== */
+.top-icon-btn, .diff-btn, #submit-guess-btn {
+    border: none !important;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
+    box-sizing: border-box;
+    transition: transform 0.1s ease, border-bottom-width 0.1s ease;
+    outline: none !important;
+    color: #ffffff;
+}
+
+/* ボタンを押した瞬間にボーダーを0にして下に沈ませる */
+.top-icon-btn:active:not([disabled]), 
+.diff-btn:active:not([disabled]), 
+#submit-guess-btn:active:not([disabled]) {
+    transform: translateY(4px);
+    border-bottom-width: 0px !important;
+}
+
+/* 上部アイコンボタン */
+.top-icon-btn {
+    width: 42px;
+    height: 42px;
+    font-size: 18px;
+    background-color: #e3e3e1;
+    color: #1a1a1b;
+    border-bottom: 4px solid #b5b5b3 !important;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* 難易度選択・戻るボタン */
+.diff-btn {
+    display: block;
+    width: 240px;
+    margin: 15px auto;
+    padding: 15px;
+    font-size: 16px;
+    border-bottom: 4px solid rgba(0,0,0,0.2) !important;
+}
+
+
+
+/* ==========================================
+   正解時のセル緑色上書き
+========================================== */
+td.cell-station-name.cell-correct {
+    background-color: #6aaa64 !important;
+    color: #ffffff !important;
+}
+
+
+/* ==========================================
+   円形プログレスバー付きローディング画面
+========================================== */
+#loading-screen {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100vw; height: 100vh;
+    background-color: #f5f7fa;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+    transition: opacity 0.5s ease, visibility 0.5s;
+}
+
+/* 読み込み完了時にフェードアウトさせるクラスです */
+#loading-screen.hidden {
+    opacity: 0;
+    visibility: hidden;
+}
+
+.loading-circular-container {
+    text-align: center;
+}
+
+.circular-progress-wrap {
+    position: relative;
+    width: 130px;
+    height: 130px;
+    margin: 0 auto 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* 円形の進捗バー（JavaScriptから角度を動的に書き換えます） */
+#circular-progress-bar {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: conic-gradient(#3498db 0%, #e2e8f0 0%);
+    transition: background 0.1s linear;
+}
+
+/* バーの内側をくり抜いてドーナツ状に見せる疑似要素です */
+.circular-progress-wrap::after {
+    content: "";
+    position: absolute;
+    width: 114px;
+    height: 114px;
+    background-color: #f5f7fa;
+    border-radius: 50%;
+    z-index: 1;
+}
+
+.loading-icon-wrapper {
+    position: relative;
+    z-index: 2;
+    width: 68px;
+    height: 64px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* アイコンをゆっくり上下にバウンドさせるアニメーションです */
+#loading-pin-icon {
+    width: 100%;
+    height: 100%;
+    border-radius: 14px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    animation: pinBobbing 1.8s ease-in-out infinite;
+}
+
+@keyframes pinBobbing {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+}
+
+#loading-text {
+    font-size: 14px;
+    color: #7f8c8d;
+    font-weight: bold;
+    margin: 8px 0 3px;
+}
+
+#loading-percentage {
+    font-size: 16px;
+    color: #3498db;
+    font-weight: 900;
+    margin: 0;
+}
+
+/* ==========================================
+   距離の近さに応じたグラデーションカラー（味気なさ解消）
+========================================== */
+/* ① 200km以上離れている：遠距離（従来のシックなグレー） */
+.dist-far {
+    background-color: #475569 !important;
+}
+
+/* ② 50km〜200km圏内：中距離（接近の黄色） */
+.dist-close {
+    background-color: #f1c40f !important;
+    color: #2c3e50 !important; /* 文字の視認性を確保します */
+}
+
+/* ③ 10km〜50km圏内：近距離（大接近のオレンジ） */
+.dist-closer {
+    background-color: #e67e22 !important;
+    color: #ffffff !important;
+}
+
+/* ④ 10km以内：至近距離（あと一息の赤橙色 ＋ ドキドキする脈動エフェクト） */
+.dist-closest {
+    background-color: #e74c3c !important;
+    color: #ffffff !important;
+    animation: proximityGlow 1.5s infinite alternate;
+}
+
+@keyframes proximityGlow {
+    from { box-shadow: inset 0 0 4px rgba(255,255,255,0.2); }
+    to { box-shadow: inset 0 0 16px rgba(255,255,255,0.7); }
+}
+
+
+
+/* ==========================================
+   ボタンのホバー効果とタイトルのテーマ連動
+========================================== */
+/* モード選択のタイトルをテーマカラー（変数）と連動させます */
+#diff-title {
+    color: var(--theme-accent, #2c3e50);
+}
+
+/* 各種立体ボタンにマウスを乗せた時、少し明るく光るエフェクト */
+.top-icon-btn:hover, .diff-btn:hover:not([disabled]), #submit-guess-btn:hover {
+    filter: brightness(1.15);
+}
+
+
+/* 結果ウィンドウにも水色の縁を固定 */
+#result-modal .modal-content {
+    border: 3px solid #3498db !important;
+}
+
+
+/* ==========================================
+   シェアボタン群の立体化 ＆ 駅ドル完全再現
+========================================== */
+/* ① ボタンを囲む親要素（間隔と配置の修正） */
+.flat-share-cluster {
+    gap: 10px !important;              /* 【修正】ボタンの間隔を駅ドルと同じ広さに */
+    justify-content: center !important; /* 【修正】中央に寄せて配置する */
+}
+
+/* ② シェアボタン本体（幅・余白・文字の修正） */
+.flat-share-cluster .btn {
+    flex: none !important;              /* 【重要】均等に引き伸ばされるのを解除 */
+    width: auto !important;             /* 【修正】文字の長さに合わせた自然な横幅に */
+    
+    padding: 8px 12px !important;       /* 【修正】駅ドルと全く同じ余白比率（空白） */
+    font-size: 14px !important;         /* 【修正】駅ドルと同じ文字サイズ */
+    font-weight: bold !important;       /* 文字を太く */
+    
+    border-radius: 8px !important;      /* 角の丸み */
+    border-bottom: 4px solid rgba(0,0,0,0.2) !important; /* 立体感（厚み） */
+    box-shadow: none !important;
+    white-space: nowrap;                /* 文字の折り返し防止 */
+}
+
+/* ③ 押した時に下に沈む動き（駅ドルと統一） */
+.flat-share-cluster .btn:active {
+    border-bottom-width: 0px !important;
+    transform: translateY(4px) !important;
+}
+
+
+/* ====== [style.css] 追加・上書き部分 ====== */
+
+/* 行事日エフェクト（駅ドル互換）とモーダル色の連動 */
+body.event-aprilfool #game-title { transform:rotate(180deg); transition:transform 0.5s; }
+
+body.event-halloween { background-color: #2c1b18; color: #ff9800; --theme-accent: #ff9800; --modal-bg: #43251f; --modal-text: #ff9800; }
+body.event-valentine { background-color: #3e2723; color: #ffcdd2; --theme-accent: #ffcdd2; --modal-bg: #5d4037; --modal-text: #ffcdd2; }
+body.event-christmas { background-color: #0f3024; color: #e8f5e9; --theme-accent: #d32f2f; --modal-bg: #1b4d3e; --modal-text: #e8f5e9; }
+body.event-hinamatsuri { background-color: #fff0f5; color: #c2185b; --theme-accent: #f48fb1; --modal-bg: #f8bbd0; --modal-text: #c2185b; }
+body.event-kodomo { background-color: #f1f8e9; color: #33691e; --theme-accent: #aed581; --modal-bg: #dcedc8; --modal-text: #33691e; }
+body.event-tanabata { background-color: #0d1b2a; color: #fff9c4; --theme-accent: #415a77; --modal-bg: #1b263b; --modal-text: #e0e1dd; }
+body.event-newyear { background-color: #fffaf0; color: #b71c1c; --theme-accent: #e53935; --modal-bg: #ffcdd2; --modal-text: #b71c1c; }
+body.event-nye { background-color: #161219; color: #d1c7bd; --theme-accent: #36303d; --modal-bg: #25202b; --modal-text: #d1c7bd; }
+
+/* 背景が暗いテーマ・イベントの時は、サブタイトル文字も白に統一する */
+body.theme-dark #diff-title,
+body.event-halloween #diff-title,
+body.event-valentine #diff-title,
+body.event-christmas #diff-title,
+body.event-tanabata #diff-title,
+body.event-nye #diff-title {
+    color: #ffffff;
+}
+
+
+
+
+/* ====== [style.css] 末尾 ====== */
+/* ボタン押し込み時のガタつき完全防止 */
+.diff-btn:active, .btn:active {
+    position: relative !important;
+    top: 3px !important;
+    border-bottom-width: 0 !important;
+    margin-bottom: 3px !important; /* 消えたボーダーの3px分をここで補い、高さを維持します */
+    transform: none !important;
+    background-clip: border-box !important;
+}
+
+
+/* =================================== */
+/* エンドレスモード */
+/* =================================== */
+
+/* 回復時の「+n」フローティングアニメーション */
+@keyframes floatUpFade {
+  0% { opacity: 1; transform: translateY(0) scale(1); }
+  100% { opacity: 0; transform: translateY(-50px) scale(1.2); }
+}
+.anim-float {
+  animation: floatUpFade 1.2s ease-out forwards;
+}
+
+
+/* =================================== */
+/* 1手ごとのスコア加算アニメーション */
+/* =================================== */
+@keyframes floatScoreUp {
+    0% { opacity: 1; transform: translateY(0) scale(0.8); }
+    10% { transform: translateY(-5px) scale(1.1); }
+    100% { opacity: 0; transform: translateY(-35px) scale(1); }
+}
+
+.floating-score {
+    position: absolute;
+    right: 10px;
+    top: -25px;
+    color: #ff9800;
+    font-weight: 900;
+    font-size: 18px;
+    pointer-events: none;
+    animation: floatScoreUp 1.2s ease-out forwards;
+    z-index: 50;
+    text-shadow: 0 2px 4px rgba(255,255,255,0.9), 0 0 2px rgba(0,0,0,0.2);
+}
+
+/* ==========================================
+   行事日の絵文字落下アニメーション
+========================================== */
+@keyframes fallingEmojiAnim {
+    0% { transform: translateY(-50px) rotate(0deg); opacity: 1; }
+    100% { transform: translateY(100vh) rotate(360deg); opacity: 0; }
+}
+
+.falling-emoji {
+    position: fixed;
+    top: -50px;
+    z-index: 9999;
+    pointer-events: none; /* クリックやタップの邪魔にならないようにします */
+    user-select: none;
+}
+
+
+/* ==========================================
+   全ポップアップの枠線固定とテーマカラー連動
+========================================== */
+/* すべてのモーダルの枠線を水色（#3498db）で太さ3pxに固定する */
+#all-stats-modal .modal-content, 
+#endless-intro-modal .modal-content,
+#help-modal .modal-content,
+#result-modal .modal-content,
+#endless-result-modal .modal-content { 
+    background: var(--modal-bg, #ffffff) !important;
+    color: var(--modal-text, #2c3e50) !important;
+    border: 3px solid #3498db !important;
+}
+
+/* ポップアップ内の文字色をテーマに連動させる */
+#all-stats-modal h2,
+#endless-intro-modal h2,
+#help-modal h2,
+#endless-intro-modal div,
+#all-stats-modal .modal-content > div > div {
+    color: var(--modal-text, #2c3e50) !important;
+}
+
+/* 記録ポップアップ内の実績数字を、テーマカラー（通常は水色）に連動させる */
+#all-stats-modal [id^="st-n-"], 
+#all-stats-modal [id^="st-h-"], 
+#all-stats-modal [id^="st-e-"] {
+    color: var(--theme-accent, #3498db) !important;
+}
+
+/* 成績画面（サバイバル枠など）の背景を透明にしてテーマ色に馴染ませる */
+#all-stats-modal #stats-view-endless > div {
+    background: transparent !important;
+    border-color: var(--theme-accent, #3498db) !important;
+}
+
+
+/* ==========================================
+   ボタン押し込み時のガタつき完全防止
+========================================== */
+/* 古い競合コードを上書きし、「ボーダーの色を透明にするだけ」の完璧な立体ボタンにします */
+.btn:active:not([disabled]),
+.diff-btn:active:not([disabled]),
+.top-icon-btn:active:not([disabled]),
+#submit-guess-btn:active:not([disabled]),
+.flat-share-cluster .btn:active {
+    transform: translateY(4px) !important;       /* 下に4pxずらす */
+    border-bottom-color: transparent !important; /* ★太さは維持したまま、色だけ透明にする */
+    background-clip: padding-box !important;     /* 透明になった部分から背景色が漏れるのを防ぐ */
+    margin-bottom: 0 !important;
+    top: 0 !important;
+}
+
+/* ==========================================
+   記録モーダルのカクつき防止（高さを固定）
+========================================== */
+/* タブを切り替えてもウィンドウの大きさが変わらないように、最小の高さを確保します */
+#all-stats-modal .modal-content {
+    min-height: 450px;
+    display: flex;
+    flex-direction: column;
+}
+#stats-view-normal, #stats-view-endless {
+    flex-grow: 1; /* 余った空間を埋めて高さを均等にする */
+}
+
+
+/* プレイ記録モーダル内のラベル（プレイ、勝率%など）をテーマに連動 */
+#all-stats-modal #stats-view-normal div > div > div:last-child {
+    color: var(--modal-text, #2c3e50);
+    opacity: 0.65; /* 文字を少し透過させることで、どの背景色でも自然になじむ薄さになります */
+}
+
+
+/* モーダル内の数字（プレイ回数など）のベースデザイン */
+.stat-value {
+    font-size: 20px;
+    font-weight: bold;
+    color: var(--modal-text, #2c3e50); /* テーマカラーに自動連動します */
+}
+
+/* モーダル内のラベル（「プレイ」「勝率%」など）のベースデザイン */
+.stat-label {
+    font-size: 9px;
+    color: #7f8c8d; /* デフォルトのグレー色 */
+}
+
+/* * テーマがダークモードの時だけ、
+ * 数字とラベルの両方の文字色を強制的に白（#ffffff）にする 
+ */
+body.theme-dark .stat-value,
+body.theme-dark .stat-label {
+    color: #ffffff !important;
+}
+
+
+/* モーダルの戦績エリアを完璧に横幅4等分（均等）に並べる設定 */
+#all-stats-modal .stats-flex-panel,
+#result-modal .stats-panel {
+    display: flex !important;
+    justify-content: space-between !important;
+    gap: 4px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+#all-stats-modal .stats-flex-panel > div,
+#result-modal .stats-panel > div {
+    flex: 1 !important;
+    width: 25% !important;
+    text-align: center !important;
+}
+
+/* すべての数字（最多連勝含む）の色をテーマカラー（水色など）に完全統一 */
+#all-stats-modal .stat-value,
+#result-modal .stat-value {
+    font-size: 20px !important;
+    font-weight: bold !important;
+    color: var(--theme-accent, #3498db) !important;
+}
+
+/* 下のラベル（プレイ、勝率など）のベース色 */
+#all-stats-modal .stat-label,
+#result-modal .stat-label {
+    font-size: 9px !important;
+    color: #7f8c8d !important;
+}
+
+/* テーマカラーが黒（ダークモード）の時は、数字もラベルも最優先で真っ白にする命令 */
+body.theme-dark #all-stats-modal .stat-value,
+body.theme-dark #result-modal .stat-value,
+body.theme-dark #all-stats-modal .stat-label,
+body.theme-dark #result-modal .stat-label {
+    color: #ffffff !important;
+}
+
+
+/* エンドレスモード：通常時の各パーツの色とレイアウト設定 */
+.endless-bar { background-color: #f8fafc; }
+.endless-bar-text { color: #334155; }
+.endless-val-score { color: var(--theme-accent, #3498db); font-weight: bold; }
+.endless-val-combo { color: #e74c3c; font-weight: bold; }
+.endless-val-cleared { color: #6aaa64; font-weight: bold; }
+.endless-res-score { color: var(--theme-accent, #3498db); }
+.endless-res-panel { color: #334155; }
+
+/* 成績モーダル内のエンドレス個別ボックスの色 */
+.endless-stat-box.box-score { background: #fff3e0; }
+.endless-stat-label.label-score { color: #e65100; }
+.endless-stat-box.box-score .stat-value { color: #f57c00 !important; }
+
+.endless-stat-box.box-combo { background: #e3f2fd; }
+.endless-stat-label.label-combo { color: #1565c0; }
+.endless-stat-box.box-combo .stat-value { color: #1976d2 !important; }
+
+/* ==========================================
+   テーマカラーが黒（ダークモード）の時の完全白化命令
+   ========================================== */
+body.theme-dark .endless-bar { 
+    background-color: #222222 !important; 
+    border-color: #444444 !important; 
+}
+
+body.theme-dark .endless-stat-box {
+    background-color: #222222 !important;
+    border-color: #555555 !important;
+}
+
+body.theme-dark .endless-bar-text,
+body.theme-dark .endless-val-score,
+body.theme-dark .endless-val-combo,
+body.theme-dark .endless-val-cleared,
+body.theme-dark .endless-res-score,
+body.theme-dark .endless-res-panel,
+body.theme-dark .endless-stat-label,
+body.theme-dark .endless-stat-box .stat-value,
+body.theme-dark #endless-result-modal h2,
+body.theme-dark #endless-result-modal p {
+    color: #ffffff !important;
 }
