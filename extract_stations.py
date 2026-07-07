@@ -242,7 +242,7 @@ def get_todays_sub_pages():
         chunks[weekday] = ["あ"]
 
     # ★テスト用に「あ」のページだけを強制的に指定します
-    return ["と"], weekday
+    # return ["う-え"], weekday
 
     return chunks[weekday], weekday
 
@@ -274,7 +274,8 @@ def fetch_station_details(url):
         "latitude": None,          # 緯度
         "longitude": None,         # 経度
         "adjacent_stations": [],   # 隣駅リスト（辞書形式: name, link）
-        "transfer_stations": []    # 乗換駅リスト（辞書形式: name, link）
+        "transfer_stations": [],    # 乗換駅リスト（辞書形式: name, link）
+        "is_abolished_confirmed": False # ★追加：確実に廃止された証拠を掴んだかどうかのフラグ
     }
 
     try:
@@ -286,32 +287,91 @@ def fetch_station_details(url):
         # ↓↓↓ ここから追加 ↓↓↓
         # 廃止駅確認処理
         active_infoboxes = []
+        abolished_count = 0 # ★追加：廃止と書かれた表の数をカウント
+
+        # 【追加】今日の日付をYYYYMMDDの整数で取得（未来の廃止予定日を保護するため）
+        today_int = int(datetime.datetime.today().strftime('%Y%m%d'))
+        
         for box in infoboxes:
             is_abolished = False
 
+            # --- 判定用の変数を準備 ---
+            has_active_sign = False   # 現役の証拠（乗客データ等）
+            max_open_date = 0         # 一番新しい開業・再開業年月日
+            max_abolished_date = 0    # 一番新しい廃止年月日
+
             # 取得した表の行(tr)を1行ずつ確認する
             for tr in box.find_all('tr'):
-                th = tr.find('th') # 見出し（「開業年月日」や「廃止年月日」など）
-                td = tr.find('td') # 中身（「1980年」など）
+                th = tr.find('th') # 見出し
+                td = tr.find('td') # 中身
 
-                # 見出しと中身の両方が存在する場合のみ判定
                 if th and td:
-                    # 見出しに「廃止」が含まれ、かつ中身が空っぽではない場合
-                    # （※Wikipediaの仕様上、項目だけあって中身が空のケースを安全にスルーするため）
-                    if '廃止' in th.get_text(strip=True) and td.get_text(strip=True):
+                    th_text = th.get_text(strip=True)
+                    td_text = td.get_text(strip=True)
+                    
+                    # 日付（YYYYMMDD）を抽出する内部関数
+                    def extract_max_date(text, current_max):
+                        matches = re.finditer(r'(\d{4})年(?:.*?(\d{1,2})月)?(?:.*?(\d{1,2})日)?', text)
+                        for m in matches:
+                            y = int(m.group(1))
+                            mo = int(m.group(2)) if m.group(2) else 1
+                            d = int(m.group(3)) if m.group(3) else 1
+                            date_int = y * 10000 + mo * 100 + d
+                            if date_int > current_max:
+                                current_max = date_int
+                        return current_max
+
+                    # ① 廃止の記述があるかチェック
+                    if '廃止' in th_text and td_text:
                         is_abolished = True
-                        print("      [除外] 廃止情報が含まれる表を検知したため、抽出から除外しました。")
-                        break # 廃止表と確定した時点で、この表の確認を終了
+                        max_abolished_date = extract_max_date(td_text, max_abolished_date)
+                    
+                    # ② 開業・再開業の記述がある場合
+                    # 【追加】「再開業」「経営移管」などの復活キーワードも逃さず抽出
+                    if any(word in th_text for word in ['開業', '再開業', '経営移管', '再開', '営業再開']) and td_text:
+                        max_open_date = extract_max_date(td_text, max_open_date)
+                            
+                    # ③ 現役旅客駅の証拠（乗降人員があること）
+                    if ('乗車人員' in th_text or '乗降人員' in th_text) and td_text:
+                        has_active_sign = True
+
+            # --- 最終判定（究極のセーフティネット） ---
+            if is_abolished:
+                # パターンA: 新しい形で開業した（一番新しい開業日が、廃止日以降）
+                if max_open_date >= max_abolished_date and max_open_date > 0:
+                    is_abolished = False
+                    
+                # パターンB: 廃止予定日が「今日より未来」である（まだ生きている）
+                # 秋田港駅のような「数日後に廃止される予定の駅」をギリギリまで現役として保護します
+                elif max_abolished_date > today_int:
+                    is_abolished = False
+                    
+                # パターンC: 「廃止」の文字はあったが明確な日付がなく、現役の証拠がある
+                # （例: 「1984年貨物取扱廃止」だけでis_abolishedがTrueになってしまった現役旅客駅）
+                elif max_abolished_date == 0 and has_active_sign:
+                    is_abolished = False
+                    
+                else:
+                    abolished_count += 1
+                    print("      [除外] 過去の廃止情報が含まれる表を検知したため、抽出から除外しました。")
 
 
             # 廃止フラグが立っていない（現役の）表だけをリストに追加する
             if not is_abolished:
                 active_infoboxes.append(box)
 
+        # ★追加：もし「現役の表が1つも無い」かつ「廃止の表があった」なら、これは紛れもなく廃駅！
+        if not active_infoboxes and abolished_count > 0:
+            data["is_abolished_confirmed"] = True
 
         # これ以降の処理を、現役の表（active_infoboxes）だけで行うようにデータを上書きする
         infoboxes = active_infoboxes
-        # ↑↑↑ ここまで追加 ↑↑↑
+
+        if not infoboxes:
+            # 現役のinfoboxが1つも無い場合は、強制的にエラーデータを返して
+            # 後続の「廃駅」または「完全保護」ロジックに委ねる
+            data["min_km"] = None 
+            return data
 
         # ↓↓↓ ここから追加 ↓↓↓
         best_addr = ""
@@ -677,7 +737,7 @@ def fetch_station_details(url):
 
     # try-except の外に安全装置を置くことで、エラー発生時でも確実に変換させる
     if data["min_km"] == float('inf'):
-        data["min_km"] = 999999
+        data["min_km"] = None
 
     return data
 
@@ -934,10 +994,16 @@ def extract_and_count_stations():
                 continue
 
             # =========================================================================
-            # 【追加】完全データ保護ロジック（一括復元）
+            # 【修正】完全データ保護ロジック ＆ 廃駅の強制引導
             # =========================================================================
-            # 距離がエラー値であり、かつ住所も空っぽなら「明らかな通信エラー」と判定する
             is_fetch_failed = (v["min_km"] is None and not v["address"])
+
+            # ★追加：確実な廃駅シグナルを受信した場合、保護をキャンセルして引導を渡す！
+            if v.get("is_abolished_confirmed"):
+                is_fetch_failed = False
+                v["endDay"] = current_day_index
+                v["subPage"] = "廃止済"
+                print(f"  [廃駅確定] Wikipediaページ内で廃止の記述を確認したため、廃駅処理を行いました: {v['kanji']}")
 
             if is_fetch_failed:
                 # 取得失敗時は、新しい空っぽのデータ(v)を捨てて、過去のデータ(old_item)をそのまま残す
