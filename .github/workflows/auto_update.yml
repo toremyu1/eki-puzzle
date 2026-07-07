@@ -39,6 +39,7 @@ jobs:
           pip install requests beautifulsoup4
 
       - name: stations.jsonの更新
+        working-directory: ./db
         run: python extract_stations.py
 
       # 駅データが完成した直後に、そのデータを使って答えを生成する
