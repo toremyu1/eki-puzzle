@@ -3046,107 +3046,123 @@ function simulateUnifiedAnswers(validPool, targetDayIndex, length) {
 // データのエクスポートとインポート（自動圧縮＆改ざん防止機能付き）
 // ==========================================
 
-// 1. 改ざん防止用のハッシュ（署名）生成関数
-function generateChecksum(str) {
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    const char = str.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash = hash & hash;
-  }
-  return hash.toString(36);
-}
-
-// 2. データを安全に文字列化・圧縮するハイブリッド関数
-/*
-async function encodeEkiSaveData(jsonStr) {
-  if ('CompressionStream' in window) {
-    try {
-      const stream = new Blob([jsonStr]).stream();
-      const compressedStream = stream.pipeThrough(new CompressionStream('gzip'));
-      const blob = await new Response(compressedStream).blob();
-      const buffer = await blob.arrayBuffer();
-      const bytes = new Uint8Array(buffer);
-      let binary = '';
-      for (let i = 0; i < bytes.byteLength; i += 1024) {
-        binary += String.fromCharCode.apply(null, bytes.subarray(i, i + 1024));
-      }
-      return "C_" + btoa(binary); // 圧縮成功時は「C_」
-    } catch(e) {
-      console.warn("圧縮に失敗しました。非圧縮モードに切り替えます。", e);
-    }
-  }
-  return "R_" + btoa(unescape(encodeURIComponent(jsonStr))); // 非対応時は「R_」
-}
+// ==========================================================================
+// 駅ドル（Ekidle）側コード：データを極限までスリム化して共通関数に渡す
+// ==========================================================================
+/* 
+  配列の順番は絶対ルールにする: parsed.s[0] がプレイ回数、parsed.s[1] がクリア回数…というように、
+  エクスポートとインポートで配列の順番（インデックス）を完全に一致させる必要があります。
+  将来的に項目を追加したい場合は、必ず「配列の最後に追加する」ように設計すると後方互換性が保てます。
 */
-
-// 3. 引き継ぎコードを解読・解凍する関数
-/*
-async function decodeEkiSaveData(code) {
-  if (code.startsWith("C_")) {
-    const base64 = code.substring(2);
-    const binary = atob(base64);
-    const bytes = new Uint8Array(binary.length);
-    for (let i = 0; i < binary.length; i++) {
-      bytes[i] = binary.charCodeAt(i);
-    }
-    const stream = new Blob([bytes]).stream();
-    const decompressedStream = stream.pipeThrough(new DecompressionStream('gzip'));
-    return await new Response(decompressedStream).text();
-  } else if (code.startsWith("R_")) {
-    const base64 = code.substring(2);
-    return decodeURIComponent(escape(atob(base64)));
-  } else {
-    throw new Error("未対応のコード形式です");
-  }
-}
-*/
-
-// 共通関数を呼び出してデータを書き出す（駅ドル用）
+// データの書き出し（高圧縮エクスポート）
 async function exportUserData() {
-  const dataMap = {
-    stats: localStorage.getItem("ekiPuzzleStatsV2"),
-    zukan: localStorage.getItem("ekiZukanData"),
-    meta: localStorage.getItem("ekiZukanMeta"),
-    achievements: localStorage.getItem("ekiAchievements"),
-    settings: localStorage.getItem("ekiSettings"),
-    version: localStorage.getItem("ekiSystemVersion")
-    // log: localStorage.getItem("ekiPuzzleStateV1_Log"),       // 容量削減のため削るのを推奨
-    // quadWeekly: localStorage.getItem("ekiQuadWeeklyState")   // 容量削減のため削るのを推奨
-  };
-
   try {
-    // 共通関数へゲーム名「Ekidle」とデータを渡してコードを生成
-    const code = await generateSharedTransferCode("Ekidle", dataMap);
-    navigator.clipboard.writeText(code).then(() => {
-      alert("運行記録などのデータを引き継ぎコードとしてコピーしました！\n\nメモ帳などに貼り付けて大切に保管してください。");
+    // 1. LocalStorageから生データを取得し、オブジェクトにパース
+    const stats = JSON.parse(localStorage.getItem("ekiPuzzleStatsV2") || "{}");
+    const zukan = JSON.parse(localStorage.getItem("ekiZukanData") || "[]");
+    const meta = JSON.parse(localStorage.getItem("ekiZukanMeta") || "{}");
+    const achievements = JSON.parse(localStorage.getItem("ekiAchievements") || "{}");
+    const settings = JSON.parse(localStorage.getItem("ekiSettings") || "{}");
+    const version = localStorage.getItem("ekiSystemVersion") || "1.0.0";
+
+    // 2. モード別の戦績（4, 5, 6, yuru, quad）を固定の順番で配列化
+    const modes = ["4", "5", "6", "yuru", "quad"];
+    const smData = modes.map(m => {
+      const ms = (stats.modeStats && stats.modeStats[m]) || { played: 0, won: 0, currentStreak: 0, maxStreak: 0, guesses: {} };
+      const ft = (stats.fastestTimes && stats.fastestTimes[m]) || null;
+      return [ms.played, ms.won, ms.currentStreak, ms.maxStreak, ms.guesses, ft];
     });
+
+    // 3. 極限まで無駄を削ぎ落としたミニマムな配列データ（miniPayload）を作成
+    const miniPayload = {
+      s: [ stats.played || 0, stats.won || 0, stats.currentStreak || 0, stats.maxStreak || 0, stats.guesses || {}, stats.history || [], stats.calendar || {} ],
+      sm: smData,
+      z: zukan,
+      m: [ meta.totalUnlocked || 0, meta.consecutiveLogins || 0, meta.maxConsecutiveLogins || 0, meta.lastLoginDate || "", meta.firstPlayDate || "" ],
+      a: [ achievements.unlockedIds || [], achievements.progress || {} ],
+      c: [ settings.theme || "light", settings.volume || 50, settings.fontSize || "normal", settings.animationSkip || false, settings.yuruHint || true ],
+      v: version
+    };
+
+    // ★ 4. ここで【共通関数】を呼び出す！
+    // ゲーム名「Ekidle」と、スリム化したデータを渡すだけで、Gzip圧縮＆署名付きコードが返ってくる
+    const code = await generateSharedTransferCode("Ekidle", miniPayload);
+
+    // クリップボードへのコピー処理
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(code).then(() => {
+        alert("運行記録などのデータを引き継ぎコードとしてコピーしました！\n\nメモ帳などに貼り付けて大切に保管してください。");
+      }).catch(() => {
+        prompt("コピーに失敗したため、以下のコードを手動でコピーしてください:", code);
+      });
+    } else {
+      prompt("以下のコードをコピーして保管してください:", code);
+    }
   } catch (err) {
     alert("コードの生成に失敗しました。");
-    console.error(err);
+    console.error("エクスポートエラー:", err);
   }
 }
 
-// データの読み込み（インポート）
-async function importUserData(code) {
-  try {
-    // 共通関数で「解凍・改ざんチェック・対象ゲーム確認」までを一括処理
-    // 正しいコードなら、localStorageに入れるべきデータ群 (json) がそのまま返る
-    const json = await parseSharedTransferCode(code, "Ekidle");
+// データの読み込み（高圧縮インポート）
+async function importUserData() {
+  const code = prompt("引き継ぎコードを入力してください:");
+  if (!code) return;
 
-    // データの復元
-    if(json.stats) localStorage.setItem("ekiPuzzleStatsV2", json.stats);
-    if(json.zukan) localStorage.setItem("ekiZukanData", json.zukan);
-    if(json.meta) localStorage.setItem("ekiZukanMeta", json.meta);
-    if(json.achievements) localStorage.setItem("ekiAchievements", json.achievements);
-    if(json.settings) localStorage.setItem("ekiSettings", json.settings);
-    if(json.version) localStorage.setItem("ekiSystemVersion", json.version); 
+  try {
+    // ★ 1. ここで【共通関数】を呼び出す！
+    // 解凍・改ざんチェック・対象ゲーム（Ekidle）かどうかの確認まで全てやってくれる
+    // 戻り値(parsed)は、エクスポート時の miniPayload と同じ構造
+    const parsed = await parseSharedTransferCode(code, "Ekidle");
+
+    // --- 2. データ構造の完全復元（配列からオブジェクトへ戻す） ---
+    
+    // モード別戦績の復元
+    const modes = ["4", "5", "6", "yuru", "quad"];
+    const modeStats = {};
+    const fastestTimes = {};
+    
+    modes.forEach((m, idx) => {
+      const data = parsed.sm[idx] || [0, 0, 0, 0, {}, null];
+      modeStats[m] = { played: data[0], won: data[1], currentStreak: data[2], maxStreak: data[3], guesses: data[4] };
+      fastestTimes[m] = data[5];
+    });
+
+    // 全体戦績オブジェクトの再構築
+    const newStats = {
+      played: parsed.s[0], won: parsed.s[1], currentStreak: parsed.s[2], maxStreak: parsed.s[3],
+      guesses: parsed.s[4], modeStats: modeStats, history: parsed.s[5], calendar: parsed.s[6], fastestTimes: fastestTimes
+    };
+
+    // 図鑑メタデータの再構築
+    const newMeta = {
+      totalUnlocked: parsed.m[0], consecutiveLogins: parsed.m[1], maxConsecutiveLogins: parsed.m[2],
+      lastLoginDate: parsed.m[3], firstPlayDate: parsed.m[4]
+    };
+
+    // 実績データの再構築
+    const newAchievements = {
+      unlockedIds: parsed.a[0], progress: parsed.a[1]
+    };
+
+    // 設定データの再構築
+    const newSettings = {
+      theme: parsed.c[0], volume: parsed.c[1], fontSize: parsed.c[2], animationSkip: parsed.c[3], yuruHint: parsed.c[4]
+    };
+
+    // --- 3. 各LocalStorageへの書き込み ---
+    localStorage.setItem("ekiPuzzleStatsV2", JSON.stringify(newStats));
+    localStorage.setItem("ekiZukanData", JSON.stringify(parsed.z));
+    localStorage.setItem("ekiZukanMeta", JSON.stringify(newMeta));
+    localStorage.setItem("ekiAchievements", JSON.stringify(newAchievements));
+    localStorage.setItem("ekiSettings", JSON.stringify(newSettings));
+    localStorage.setItem("ekiSystemVersion", parsed.v); 
     
     alert("データを正常に復元しました！再読み込みを行います。");
     location.reload();
   } catch(e) { 
-    // parseSharedTransferCode 内の各種 throw Error をここで捕捉
-    alert("無効な引き継ぎコードです。正しくコピーできているか、文字が欠けていないか確認してください。"); 
+    // 共通関数が弾いたエラー（別ゲームのコード、改ざん等）をここでキャッチ
+    alert("無効な引き継ぎコード、または別のゲームのコードです。正しくコピーできているか確認してください。"); 
     console.error("インポートエラー:", e);
   }
 }
