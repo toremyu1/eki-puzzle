@@ -7,7 +7,6 @@ from datetime import datetime, timedelta, timezone
 SECRET_SALT = "EkiDoru_Secret_2026!"
 STATE_FILE = "state.json"
 
-quad4, quad5, quad6 = [], [], []
 
 
 def math_imul(a, b):
@@ -121,12 +120,14 @@ def generate_answers():
             pool = [s for s in pool if s['yomi'] != selected['yomi']]
             
             return selected
+        
 
         # 【重要】JS側と完全に一致させるための固定の順番
         gachi4 = draw_gacha(4)
         gachi5 = draw_gacha(5)
         gachi6 = draw_gacha(6)
         yuru5  = draw_gacha(5)
+        quad4, quad5, quad6 = [], [], []
         # 基準日(2024-01-01)は月曜日。d % 7 == 0 の時だけクアッドを引く
         if d % 7 == 0:
             quad4  = [draw_gacha(4) for _ in range(4)]
