@@ -3047,7 +3047,7 @@ function simulateUnifiedAnswers(validPool, targetDayIndex, length) {
 // ==========================================
 
 // 1. 改ざん防止用のハッシュ（署名）生成関数
-function generateEkiChecksum(str) {
+function generateChecksum(str) {
   let hash = 0;
   for (let i = 0; i < str.length; i++) {
     const char = str.charCodeAt(i);
@@ -3058,6 +3058,7 @@ function generateEkiChecksum(str) {
 }
 
 // 2. データを安全に文字列化・圧縮するハイブリッド関数
+/*
 async function encodeEkiSaveData(jsonStr) {
   if ('CompressionStream' in window) {
     try {
@@ -3077,8 +3078,10 @@ async function encodeEkiSaveData(jsonStr) {
   }
   return "R_" + btoa(unescape(encodeURIComponent(jsonStr))); // 非対応時は「R_」
 }
+*/
 
 // 3. 引き継ぎコードを解読・解凍する関数
+/*
 async function decodeEkiSaveData(code) {
   if (code.startsWith("C_")) {
     const base64 = code.substring(2);
@@ -3097,6 +3100,7 @@ async function decodeEkiSaveData(code) {
     throw new Error("未対応のコード形式です");
   }
 }
+*/
 
 // 共通関数を呼び出してデータを書き出す（駅ドル用）
 async function exportUserData() {
@@ -3123,19 +3127,12 @@ async function exportUserData() {
   }
 }
 
-// 5. データの読み込み（インポート）
+// データの読み込み（インポート）
 async function importUserData(code) {
   try {
-    // 圧縮コードを解凍・解読
-    const decompressedStr = await decodeEkiSaveData(code);
-    const secureData = JSON.parse(decompressedStr);
-    
-    // 改ざん・欠損チェック
-    if (generateEkiChecksum(secureData.payload) !== secureData.sig) {
-      throw new Error("コードが破損、または改ざんされています。");
-    }
-    
-    const json = JSON.parse(secureData.payload);
+    // 共通関数で「解凍・改ざんチェック・対象ゲーム確認」までを一括処理
+    // 正しいコードなら、localStorageに入れるべきデータ群 (json) がそのまま返る
+    const json = await parseSharedTransferCode(code, "Ekidle");
 
     // データの復元
     if(json.stats) localStorage.setItem("ekiPuzzleStatsV2", json.stats);
@@ -3144,12 +3141,11 @@ async function importUserData(code) {
     if(json.achievements) localStorage.setItem("ekiAchievements", json.achievements);
     if(json.settings) localStorage.setItem("ekiSettings", json.settings);
     if(json.version) localStorage.setItem("ekiSystemVersion", json.version); 
-    //if(json.log) localStorage.setItem("ekiPuzzleStateV1_Log", json.log);
-    //if(json.quadWeekly) localStorage.setItem("ekiQuadWeeklyState", json.quadWeekly);
     
     alert("データを正常に復元しました！再読み込みを行います。");
     location.reload();
   } catch(e) { 
+    // parseSharedTransferCode 内の各種 throw Error をここで捕捉
     alert("無効な引き継ぎコードです。正しくコピーできているか、文字が欠けていないか確認してください。"); 
     console.error("インポートエラー:", e);
   }
