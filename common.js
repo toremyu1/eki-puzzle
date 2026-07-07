@@ -478,7 +478,13 @@ async function generateSharedTransferCode(gameName, dataMap) {
     if (typeof CompressionStream !== "undefined") {
       const stream = new Blob([secureData]).stream().pipeThrough(new CompressionStream("gzip"));
       const buffer = await new Response(stream).arrayBuffer();
-      const binary = String.fromCharCode(...new Uint8Array(buffer));
+      const bytes = new Uint8Array(buffer);
+      
+      // 【修正】大容量データでのクラッシュ（コールスタック超過エラー）を防ぐための分割処理
+      let binary = '';
+      for (let i = 0; i < bytes.byteLength; i += 1024) {
+        binary += String.fromCharCode.apply(null, bytes.subarray(i, i + 1024));
+      }
       return "Z:" + btoa(binary); // 圧縮成功時は先頭に「Z:」を付与
     }
     throw new Error("CompressionStream not supported");
@@ -500,14 +506,17 @@ async function parseSharedTransferCode(code, expectedGameName) {
   if (code.startsWith("Z:")) {
     // 新方式：Gzip圧縮版の解凍処理
     const binary = atob(code.slice(2));
-    const bytes = Uint8Array.from(binary, c => c.charCodeAt(0));
+    const bytes = new Uint8Array(binary.length);
+    // 【修正】ここも同様に大容量データでも安全にデコードするための処理
+    for (let i = 0; i < binary.length; i++) {
+      bytes[i] = binary.charCodeAt(i);
+    }
     const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("gzip"));
     textData = await new Response(stream).text();
   } else if (code.startsWith("R:")) {
     // 新方式：非圧縮版の復元処理
     textData = decodeURIComponent(atob(code.slice(2)));
   } else {
-    // 【修正】リリース前のため、プレフィックスなしの古いコードは即座にエラーとして弾く
     throw new Error("無効なコード形式です。");
   }
 
@@ -520,5 +529,5 @@ async function parseSharedTransferCode(code, expectedGameName) {
   const json = JSON.parse(secureJson.payload);
   if (json.game !== expectedGameName) throw new Error("異なるゲームのデータです。");
   
-  return json;
+  return json; // ← 解凍された元の dataMap が返ります
 }
