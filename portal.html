@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>駅データパズルポータル | 駅パズル.com</title>
   <link rel="icon" type="image/svg+xml" href="/portal-icon-pure.svg">
-  <link rel="stylesheet" href="/portal.css">
+  <link rel="stylesheet" href="./portal.css">
 </head>
 <body>
   <div class="logo-container">
@@ -34,14 +34,19 @@
 
   <div class="data-management-section">
     <p class="data-management-title">⚙️ データ管理・サポート</p>
-    <div class="data-management-buttons">
+    
+    <a href="#" id="btn-settings-toggle" class="settings-trigger-card">
+      <span>⚙️ 設定メニューを開く / 閉じる</span>
+    </a>
+
+    <div id="management-actions" class="management-actions-area">
       <a href="#" id="btn-export-all" class="btn-manage btn-export">📤 全データ一括バックアップ</a>
       <a href="#" id="btn-import-all" class="btn-manage btn-import">📥 全データ一括復元</a>
       <a href="/ekidle/?emergency_reset=true" id="btn-emergency" class="btn-manage btn-emergency">🚨 非常用リセット</a>
     </div>
   </div>
 
-  <script src="/common.js"></script>
-  <script src="/portal.js"></script>
+  <script src="./common.js"></script>
+  <script src="./portal.js"></script>
 </body>
 </html>

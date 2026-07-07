@@ -77,16 +77,46 @@ body {
   margin-left: auto;
   margin-right: auto;
 }
-.data-management-title {
-  margin-bottom: 15px;
-  font-size: 16px;
-  color: #cccccc;
+
+/* 「設定」カード（ゲーム用カードとは異なり、横長で落ち着いたグレー系のデザインに） */
+.settings-trigger-card {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: #1e1e1e;
+  border: 2px solid #444444;
+  padding: 15px 35px;
+  border-radius: 12px;
+  text-decoration: none;
+  color: #ffffff;
+  font-weight: bold;
+  font-size: 15px;
+  transition: 0.3s;
+  cursor: pointer;
 }
-.data-management-buttons {
-  display: flex;
+/* マウスホバー時は白〜薄いグレーに発光し、ゲームと差別化 */
+.settings-trigger-card:hover {
+  border-color: #aaaaaa;
+  background: #252525;
+  box-shadow: 0 5px 15px rgba(255, 255, 255, 0.05);
+}
+
+/* 展開されるコマンドボタンのコンテナ（初期状態は非表示・透明） */
+.management-actions-area {
+  display: none;
   justify-content: center;
   gap: 15px;
   flex-wrap: wrap;
+  margin-top: 25px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+/* JavaScriptで「is-active」クラスが付与されたら表示する */
+.management-actions-area.is-active {
+  display: flex;
+  opacity: 1;
 }
 
 /* 各種管理ボタンの共通デザイン */
@@ -94,37 +124,37 @@ body {
   text-decoration: none;
   font-size: 13px;
   font-weight: bold;
-  padding: 12px 15px;
+  padding: 12px 18px;
   border-radius: 8px;
-  transition: background-color 0.2s;
+  transition: background-color 0.2s, border-color 0.2s;
 }
 
 /* 一括バックアップボタン（水色） */
 .btn-export {
   color: #03a9f4;
   border: 1px solid #03a9f4;
-  background: rgba(3, 169, 244, 0.1);
+  background: rgba(3, 169, 244, 0.05);
 }
 .btn-export:hover {
-  background: rgba(3, 169, 244, 0.2);
+  background: rgba(3, 169, 244, 0.15);
 }
 
 /* 一括復元ボタン（緑色） */
 .btn-import {
   color: #4caf50;
   border: 1px solid #4caf50;
-  background: rgba(76, 175, 80, 0.1);
+  background: rgba(76, 175, 80, 0.05);
 }
 .btn-import:hover {
-  background: rgba(76, 175, 80, 0.2);
+  background: rgba(76, 175, 80, 0.15);
 }
 
 /* 非常用リセットボタン（赤色） */
 .btn-emergency {
   color: #e53935;
   border: 1px solid #e53935;
-  background: rgba(229, 57, 53, 0.1);
+  background: rgba(229, 57, 53, 0.05);
 }
 .btn-emergency:hover {
-  background: rgba(229, 57, 53, 0.2);
+  background: rgba(229, 57, 53, 0.15);
 }

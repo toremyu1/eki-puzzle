@@ -90,4 +90,18 @@ window.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  // ▼ 設定メニューの開閉処理 ▼
+  // 「設定」カードと、展開されるコマンド群のコンテナを取得します
+  const btnSettingsToggle = document.getElementById("btn-settings-toggle");
+  const managementActions = document.getElementById("management-actions");
+
+  if (btnSettingsToggle && managementActions) {
+    btnSettingsToggle.addEventListener("click", (e) => {
+      e.preventDefault(); // リンク本来の挙動（画面遷移など）を防止します
+      
+      // クラス名「is-active」の有無を切り替えることで、CSS側で表示・非表示を制御します
+      managementActions.classList.toggle("is-active");
+    });
+  }
+
 });
