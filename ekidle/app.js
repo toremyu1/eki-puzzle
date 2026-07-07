@@ -1,112 +1,706 @@
+// 先頭行に追加することで、VS Codeがこのファイル全体をTypeScriptと同等に検査してくれます
+// @ts-check
+
 //1.共通変数の定義　
-const SITE_OPEN_DATE = "2025-06-25";　 // 【設定】サイトを公開した日（周年記念の基準日）
-let stations=[];　　　　　　　//すべての駅データの入れる箱
-let availableStations=[];　　//選択文字数に一致する駅を入れる箱
-let todayStation=null;　　　 //今日の正解駅
+const SITE_OPEN_DATE = "2025-07-25";　 // 【設定】サイトを公開した日（周年記念の基準日）
+const FALLBACK_URL = "/";  // 【設定】読み込みエラー時に戻るルートフォルダのURL（総合TOPの階層)
+const CONFIG_MAX_GUESSES_4 = 8;     // 4文字モードの回答回数
+const CONFIG_MAX_GUESSES_5 = 6;     // 5文字モードの回答回数
+const CONFIG_MAX_GUESSES_6 = 6;     // 6文字モードの回答回数
+const CONFIG_MAX_GUESSES_YURU = 10;  // ゆる鉄モードの回答回数
+const CONFIG_MAX_GUESSES_QUAD = 13; // クアッドモードの回答回数
+
+// types.d.ts で定義した「Station」型を使って、配列（[]）の構造を指定します。
+// これにより、stations の中には必ず Station 型のデータが入るようになります。
+/** @type {Station[]} */
+let stations = [];
+
+// こちらも同様に、Station 型のデータが入る配列として定義します。
+/** @type {Station[]} */
+let availableStations = [];
+
+// 今日の答えは最初 null（空っぽ）なので、「Station型 または null」として定義します。
+/** @type {Station | null} */
+let todayStation = null;
+
+
 let currentGuess="";　　　　 //プレイヤーが入力している途中の文字を記憶する箱
 let guessesSubmitted=0;　　　//プレイヤーの回答送信回数カウンター 
 let maxGuesses=8;　　　　　　//上限回答数(文字数により変動)
-let rowLength=4;　　　　　　 //入力パネルの文字数
+let rowLength=4;　　　　　　 //入力パネルの文字数(文字数により変動)
 let currentMode=4;　　　　　 //現在遊んでいるモードの文字数
+let isYuruMode = false;     //ゆる鉄モード判定用
 let keyColors={};　　　　　　//キーボードの各ボタンについている色を記憶する箱
 let gridHistory=[];         //プレイヤーが送信した過去の回答の色の結果を履歴として残す箱
 let debugOffset=0;　　　　　 //デバッグ時に日付を強制的にずらすための数値
 let msgTimeout=null;　　　　 //画面にポップアップを出した後、自動で消すためのタイマー
 let currentDayIndex=0;　　　 //基準日から数えて今日が何日目かを表す数字
+let currentWeekIndex=0;      // 基準日から数えて今週が何週目かを表す数字
 let isAprilFoolMode=false;　 //今がエイプリルフール限定モードを判定するためのフラグ
 let isPlayingRandom=false;   // ランダムモード中かどうかの判定フラグ
 let savedState={};　　　　　　//各文字のモードで今日のゲームの途中経過を保存する箱
 let todayStationCache={};    // 今日の答えをキャッシュに保存する箱
-let ekiSettings=JSON.parse(localStorage.getItem("ekiSettings")||'{"theme":"","sound":true,"fontSize":"normal","hardMode":false}');　　　//ユーザー設定を保存する箱
-let ekiLoginStreak=JSON.parse(localStorage.getItem("ekiLoginStreak")||'{"currentStreak":0,"maxStreak":0,"lastLoginDate":""}');　　//連続ログイン日数を保存する箱
-let ekiClearedDays=JSON.parse(localStorage.getItem("ekiClearedDays")||'{"4":[],"5":[],"6":[]}');　　　//クリアした日を保存する箱　
-let ekiAchievements=JSON.parse(localStorage.getItem("ekiAchievements")||'{"bestScores":{},"counters":{"legendStationClears":0,"noAbsentClears":0,"totalYomiLength":0,"noHintClears":0,"hintUsedClears":0,"totalSubmitCount":0},"winStreak":{"currentStreak":0,"maxStreak":0,"lastClearedDate":""},"hourlyClears":{},"unlockedSets":{"prefs":[],"companies":[],"lines":[],"colorCounts":{"4":{"correct":0,"present":0,"diacritic":0,"absent":0}},"clearedEvents":[],"clearedMonthDays":[],"clearedStationNames":[]}}');　　// 実績データの全体構造を定義
+let isQuadMode = false;              // 現在クアッドモードかどうか
+let isQuadExpanded = false;          // 一括展開モードがONになっているかを記憶するフラグ
+let quadStations = [];               // 4つの正解駅オブジェクトを格納する配列
+let quadSolved = [false, false, false, false]; // 各盤面がクリアされたかを管理するフラグ
+let quadKeyColors = {};              // キーボード用の4分割色ログ
+let quadGridHistory = [];            // 【追加】各手ごとの4盤面の色結果を記憶する箱
+let ekiSettings;    //設定データを保存する箱
+try {
+  ekiSettings = JSON.parse(localStorage.getItem("ekiSettings")) || {theme:"", sound:true, fontSize:"normal", hardMode:false};
+} catch(e) {
+  ekiSettings = {theme:"", sound:true, fontSize:"normal", hardMode:false}; // 破損時は初期化
+}
+// let ekiLoginStreak=JSON.parse(localStorage.getItem("ekiLoginStreak")||'{"currentStreak":0,"maxStreak":0,"lastLoginDate":""}');　　//連続ログイン日数を保存する箱（ekiZukanMetaに統合するため廃止）
+// let ekiClearedDays=JSON.parse(localStorage.getItem("ekiClearedDays")||'{"4":[],"5":[],"6":[]}');　　　//クリアした日を保存する箱　(ekiPuzzleStateV1_LogのisWinを調べれば復元できるため廃止)
+let ekiAchievements;  //実績データを保存する箱
+try {
+  // 保存されている実績データを読み込んでみる
+  ekiAchievements = JSON.parse(localStorage.getItem("ekiAchievements"));
+  if (!ekiAchievements || !ekiAchievements.bestScores) throw new Error("Data missing"); // 中身が空ならエラー扱いで作り直す
+} catch (e) {
+  // データがない、または壊れていた場合は初期構造を作る
+  ekiAchievements = {
+    bestScores: {},
+    counters: {legendStationClears:0, noAbsentClears:0, totalYomiLength:0, noHintClears:0, hintUsedClears:0, totalSubmitCount:0},
+    winStreak: {currentStreak:0, maxStreak:0, lastClearedDate:""},
+    hourlyClears: {},
+    unlockedSets: {
+      prefs:[], companies:[], lines:[],
+      colorCounts: {"4":{"correct":0,"present":0,"diacritic":0,"absent":0}},
+      clearedEvents:[], clearedMonthDays:[], clearedStationNames:[]
+    }
+  };
+}
 //各文字数モード毎の累計プレイ回数、勝率、連勝記録、最大連勝、何回目で当たったかを記録する箱
-let userStats={　　　　　　　
+let userStats={
 4:{played:0,won:0,currentStreak:0,maxStreak:0,dist:[0,0,0,0,0,0,0,0,0,0]},
 5:{played:0,won:0,currentStreak:0,maxStreak:0,dist:[0,0,0,0,0,0,0,0,0,0]},
 6:{played:0,won:0,currentStreak:0,maxStreak:0,dist:[0,0,0,0,0,0,0,0,0,0]}
 };
-//過去に解いた問題を記録しておく箱
-let dailyArchive={};
-// イベントポップアップの順番待ち列（優先順位・拡張対応版）
-let eventPopupQueue = [];
-let isPopupRunning = false;
+// 過去に解いた問題を記録しておく箱（後から復元可能なため廃止）
+// let dailyArchive={};
+
 
 // ==========================================
-// 共通ユーティリティ処理
+// グローバルで日本時間(JST)を取得する共通関数
 // ==========================================
-// 端末の時計や場所に依存せず、確実に「日本時間（JST）」のYYYY-MM-DD文字列を返す関数
-function getJSTDateString() {
+function getJSTDate() {
   const t = new Date();
   const jstMs = t.getTime() + (t.getTimezoneOffset() * 60000) + (9 * 3600000);
-  const jstObj = new Date(jstMs);
-  return jstObj.getFullYear() + "-" + String(jstObj.getMonth() + 1).padStart(2, '0') + "-" + String(jstObj.getDate()).padStart(2, '0');
+  return new Date(jstMs);
 }
 
-
-// priority(数値)が小さい順に表示されます。
-// 基準： 10(サイト周年), 20(エイプリル), 30(ユーザー周年), 99(将来のその他用)
-function registerEventPopup(priority, actionFunc) {
-  eventPopupQueue.push({ priority: priority, action: actionFunc });
-}
-
-function startEventPopups() {
-  if (isPopupRunning) return; // 既に動いていれば何もしない
-  isPopupRunning = true;
-  eventPopupQueue.sort((a, b) => a.priority - b.priority); // 優先度順に並び替え
-  showNextEventPopup();
-}
-
-function showNextEventPopup() {
-  if (eventPopupQueue.length > 0) {
-    const nextPopup = eventPopupQueue.shift();
-    nextPopup.action();
-  } else {
-    isPopupRunning = false; // 列が空になったら待機状態に戻す
-  }
+// 上で作った日本時間から「YYYY-MM-DD」の文字列を作る共通関数
+function getJSTDateString() {
+  const d = getJSTDate();
+  // 月と日が1桁の場合は 0 を足して 2026-06-05 のように揃えます
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
 }
 
 // ==========================================
-//連続ログイン日数処理
+// 1. システム初期化（心臓部）
 // ==========================================
+async function initGame() {
+  try {
+    // 共通関数を使って進捗バーを動かす
+    updateSharedLoading(10, "システムを起動中...");
 
-// 連続ログイン日数をチェックし、データを更新する関数
-function updateLoginStreak() {
-  let streakData = JSON.parse(localStorage.getItem("ekiLoginStreak") || '{"currentStreak":0,"maxStreak":0,"lastLoginDate":""}');
-  
-  // 共通関数を使って「今日（JST）」を取得
-  const todayStr = getJSTDateString();
-  
-  // 今日すでにログインして処理が終わっていれば終了
-  if (streakData.lastLoginDate === todayStr) {
-    return;
+    // URLパラメーターによるデータ初期化機能
+    if (new URLSearchParams(window.location.search).get("emergency_reset") === "true") {
+      if (confirm("これまでのプレイ実績や設定がすべて消去されます。本当に初期化しますか？")) {
+        localStorage.clear();
+        alert("データを初期化しました。");  
+      }
+      window.location.href = window.location.origin + window.location.pathname;
+      return;
+    }
+
+    // 過去のセーブデータの読み込み
+    loadStats();
+    // if(typeof loadArchive === "function") loadArchive();
+    
+    // 共通関数を使って連続ログイン日数を計算し、データを更新する
+    // let streakData = updateSharedLoginStreak("ekiLoginStreak");
+    // 【修正後】アーカイブ読み込みを消し、保存先を ekiZukanMeta に変更します
+    // 図鑑のメタデータ（ekiZukanMeta）にログイン機能を集約させます
+    let streakData = updateSharedLoginStreak("ekiZukanMeta");
+    
+    updateSharedLoading(30, "駅データをダウンロード中...");
+
+    // 共通関数を使って、強力なキャッシュ・エラー対策付きのデータ取得を行う
+    const rawData = await downloadSharedGameData("eki-backup-v1", FALLBACK_URL);
+    if (!rawData) return; // 取得失敗時は共通関数内でエラー画面が出るため処理を止める
+
+    // 共通関数を使って不要な駅（貨物駅など）を弾き、ひらがな化の独自処理を足す
+    stations = getCleanStations(rawData).map(s => ({...s, yomi: toHiragana(s.yomi)}));
+    if (stations.length === 0) return;
+
+    updateSharedLoading(60, "画面を準備中...");
+
+    // UIの紐付け関数を実行
+    setupCommonUI();
+    setupGameSpecificUI();
+
+    // 今日の正解駅を選び、盤面を構築する
+    updateSharedLoading(80, "ゲーム盤を構築中...");
+    await selectTodayStation(); 
+    restoreBoard(); 
+
+    updateSharedLoading(100, "出発進行！");
+    setTimeout(hideLoadingScreen, 600);
+
+  } catch (e) {
+    console.error("起動エラー:", e);
   }
-  
-  // 「昨日（JST）」の日付を正確に計算する
-  const t = new Date();
-  // 今の日本時間から、ちょうど24時間（86400000ミリ秒）前を計算
-  const jstYesterdayMs = t.getTime() + (t.getTimezoneOffset() * 60000) + (9 * 3600000) - 86400000;
-  const yObj = new Date(jstYesterdayMs);
-  const yesterdayStr = yObj.getFullYear() + "-" + String(yObj.getMonth() + 1).padStart(2, '0') + "-" + String(yObj.getDate()).padStart(2, '0');
-  
-  // 最後にログインした日が「昨日」であれば、連続ログイン日数を1日増やす
-  if (streakData.lastLoginDate === yesterdayStr) {
-    streakData.currentStreak++;
-  } else {
-    // 最後にログインした日が「一昨日以前」などの場合は1日にリセット
-    streakData.currentStreak = 1;
-  }
-  
-  // 最高記録の更新チェック
-  if (streakData.currentStreak > streakData.maxStreak) {
-    streakData.maxStreak = streakData.currentStreak;
-  }
-  
-  // 最終ログイン日を今日に更新して保存
-  streakData.lastLoginDate = todayStr;
-  localStorage.setItem("ekiLoginStreak", JSON.stringify(streakData));
 }
+
+
+// ==========================================
+// 共通UI制御処理
+// ==========================================
+function setupCommonUI() {
+  // 1. 共通関数の呼び出し（これだけでメニューやモーダルが動きます）
+  setupSharedSideMenu("menu-btn", "side-menu", "side-menu-overlay", "close-menu-btn");
+  // ▼▼▼ 修正：「help-btn」の固定紐付けを解除し、各モーダルは閉じるボタンのみ設定します ▼▼▼
+  setupSharedModal("", "help-modal", "close-help-btn");
+  setupSharedModal("", "result-modal", "close-modal-btn");    
+  setupSharedModal("", "quad-help-modal", "close-quad-help-btn");
+  setupSharedModal("", "quad-result-modal", "close-quad-modal-btn");
+
+  // 「？」ボタンが押された時、現在のモードに応じて表示するモーダルを切り替えます
+  document.getElementById("help-btn")?.addEventListener("click", () => {
+
+    // ゆる鉄モードの時は「実在する駅のみ」の注意書きを隠します
+    const realStationRule = document.getElementById("help-real-station-rule");
+    const yuruStationRule = document.getElementById("help-yuru-station-rule");
+    if (isYuruMode) {
+      realStationRule?.classList.add("hidden");
+      yuruStationRule?.classList.remove("hidden");
+    } else {
+      realStationRule?.classList.remove("hidden");
+      yuruStationRule?.classList.add("hidden");
+    }
+
+    if (isQuadMode) {
+      // クアッドモード中は専用の説明画面を開く
+      document.getElementById("quad-help-modal")?.classList.remove("hidden");
+    } else {
+      // 通常モード中は通常の説明画面を開く
+      document.getElementById("help-modal")?.classList.remove("hidden");
+    }
+  });
+  
+  // 2. タイトル画面とゲーム画面の遷移制御
+  // タイトル画面に戻る時の処理
+  const returnToTitleScreen = () => {
+    const titleScreen = document.getElementById("title-screen");
+    const gameScreen = document.getElementById("game-screen");
+    if (titleScreen && gameScreen) {
+      titleScreen.classList.remove("hidden");
+      titleScreen.style.display = ""; 
+      gameScreen.classList.add("hidden");
+      const modeSelector = document.querySelector(".mode-selector");
+      if (modeSelector) modeSelector.classList.add("hidden");
+      const hardmodeContainer = document.querySelector(".hardmode-container");
+      if (hardmodeContainer) hardmodeContainer.classList.add("hidden");
+      document.querySelector(".quad-hardmode-container")?.classList.add("hidden");
+      
+      // メニューを閉じる処理（共通UIに無いので手動で隠す）
+      document.getElementById("side-menu").style.right = "-250px";
+      setTimeout(() => document.getElementById("side-menu-overlay").classList.add("hidden"), 300);
+    }
+  };
+
+  // ゆる鉄モードの起動処理 
+  document.getElementById("btn-yuru-mode")?.addEventListener("click", async () => {
+    isQuadMode = false;
+    isYuruMode = true; // ★ゆる鉄モードをONにする
+    
+    document.getElementById("title-screen")?.classList.add("hidden");
+    document.getElementById("game-screen")?.classList.remove("hidden");
+    document.getElementById("game-board")?.classList.remove("hidden");
+    document.getElementById("quad-board-container")?.classList.add("hidden");
+    document.querySelector(".quad-hardmode-container")?.classList.add("hidden");
+    document.getElementById("expand-toggle-btn")?.classList.add("hidden");
+    
+    // ゆる鉄は5文字固定なので、文字数セレクターは隠す
+    document.querySelector(".mode-selector")?.classList.add("hidden");
+    document.querySelector(".hardmode-container")?.classList.remove("hidden");
+
+    currentMode = 5; maxGuesses = CONFIG_MAX_GUESSES_YURU; rowLength = 5;
+    const gameBoard = document.getElementById("game-board");
+    if(gameBoard) {
+      gameBoard.style.setProperty("--row-length", 5);
+      gameBoard.style.setProperty("--row-count", maxGuesses);
+    }
+    
+    await selectTodayStation(); 
+    restoreBoard();
+    if (typeof checkSpecialEvent === "function") checkSpecialEvent();
+  });
+
+
+  // 各種ボタンの紐付け
+  const btnNormalMode = document.getElementById("btn-normal-mode");
+  if (btnNormalMode) {
+    // 盤面の再構築（await）を待つために、async を追加する
+    btnNormalMode.addEventListener("click", async () => {
+      // 1. クアッドモードの状態を完全に解除する
+      isQuadMode = false;
+      isYuruMode = false; 
+
+      
+      // 2. 画面の表示・非表示を通常モード用に切り替える
+      document.getElementById("title-screen")?.classList.add("hidden");
+      document.getElementById("game-screen")?.classList.remove("hidden");
+      
+      // 通常盤面を表示し、クアッド盤面を隠す
+      document.getElementById("game-board")?.classList.remove("hidden");
+      document.getElementById("quad-board-container")?.classList.add("hidden");
+      document.getElementById("expand-toggle-btn")?.classList.add("hidden");
+      document.querySelector(".quad-hardmode-container")?.classList.add("hidden");
+      
+      // 文字数セレクターとハードモードスイッチを表示する
+      document.querySelector(".mode-selector")?.classList.remove("hidden");
+      document.querySelector(".hardmode-container")?.classList.remove("hidden");
+
+      
+      //現在の文字数に合わせて通常モードの変数を設定し直し、盤面を再構築する
+      //現在アクティブになっているボタンから文字数を読み取って復元します
+      const activeModeBtn = document.querySelector(".mode-btn.active");
+      if (activeModeBtn) {
+        currentMode = parseInt(activeModeBtn.id.replace("mode-", ""), 10);
+      } else {
+        currentMode = 4;
+      }
+
+      if (currentMode === 4) maxGuesses = CONFIG_MAX_GUESSES_4;
+      else if (currentMode === 5) maxGuesses = CONFIG_MAX_GUESSES_5;
+      else if (currentMode === 6) maxGuesses = CONFIG_MAX_GUESSES_6;
+      rowLength = currentMode;
+      
+      const gameBoard = document.getElementById("game-board");
+      if(gameBoard) {
+        // HTMLの枠の数を更新する
+        gameBoard.style.setProperty("--row-length", currentMode);
+        gameBoard.style.setProperty("--row-count", maxGuesses);
+      }
+      
+      // 駅の再抽選と盤面の初期化を確実に実行する
+      await selectTodayStation(); 
+      restoreBoard();
+
+      if (typeof checkSpecialEvent === "function") checkSpecialEvent();
+    });
+  }
+
+    //タイトル画面からクアッドモードを起動する処理
+    document.getElementById("btn-quad-mode")?.addEventListener("click", async () => {
+    document.getElementById("title-screen").classList.add("hidden");
+    document.getElementById("game-screen").classList.remove("hidden");
+    //クアッドモードでも4, 5, 6文字を選べるようにする
+    document.querySelector(".mode-selector")?.classList.remove("hidden");
+    //クアッド用の回答回数を確実にセットする
+    maxGuesses = CONFIG_MAX_GUESSES_QUAD;
+  
+    await startQuadMode();
+  
+    // 1日1回だけ自動でクアッド用の説明モーダルを開く処理
+    const todayStr = getJSTDateString(); //日本時間の今日の日付を取得
+    const hasSeenHelpToday = localStorage.getItem("ekiQuadHelpSeen") === todayStr;
+
+    if (!hasSeenHelpToday) {
+      const helpModal = document.getElementById("quad-help-modal");
+      if (helpModal) {
+        helpModal.classList.remove("hidden");
+        localStorage.setItem("ekiQuadHelpSeen", todayStr); //今日表示した日付を保存
+      }
+    }
+  });
+
+  const homeBtn = document.getElementById("home-btn");
+  if (homeBtn) {
+    homeBtn.addEventListener("click", () => {
+      const gameScreen = document.getElementById("game-screen");
+      if (gameScreen && !gameScreen.classList.contains("hidden")) returnToTitleScreen();
+      else if (typeof FALLBACK_URL !== "undefined") window.location.href = FALLBACK_URL;
+    });
+  }
+
+//テーマカラー変更ボタン
+  const themeBtn = document.getElementById("theme-btn");
+  if (themeBtn) {
+    // CSSに登録されているテーマのリスト（空文字はデフォルトの白テーマ）
+    const themeList = ["", "theme-dark", "theme-sakura", "theme-ocean", "theme-blue", "theme-green", "theme-orange", "theme-red", "theme-purple"];
+    
+    // 起動時に、保存されているテーマがあれば適用する
+    if (ekiSettings.theme) document.body.classList.add(ekiSettings.theme);
+
+    themeBtn.addEventListener("click", () => {
+      // 現在のbodyのクラスから、現在のテーマを特定する
+      let currentTheme = themeList.find(t => t !== "" && document.body.classList.contains(t)) || "";
+      // 次のテーマの順番を計算する（最後まで行ったら最初に戻る）
+      let nextIndex = (themeList.indexOf(currentTheme) + 1) % themeList.length;
+      let nextTheme = themeList[nextIndex];
+      
+      // 切り替え時のアニメーションのガタつきを防ぐ
+      document.body.classList.add('preload-transitions');
+      
+      // 古いテーマを消して、新しいテーマを適用する
+      themeList.forEach(t => { if (t !== "") document.body.classList.remove(t); });
+      if (nextTheme !== "") document.body.classList.add(nextTheme);
+      
+      // ブラウザに高さを再計算させてから、ガタつき防止を解除する
+      document.body.offsetHeight; 
+      document.body.classList.remove('preload-transitions');
+      
+      // ユーザー設定としてローカルストレージに保存する
+      ekiSettings.theme = nextTheme;
+      localStorage.setItem("ekiSettings", JSON.stringify(ekiSettings));
+    });
+  }
+
+  document.getElementById("menu-home-btn")?.addEventListener("click", (e) => { e.preventDefault(); returnToTitleScreen(); });
+  document.getElementById("menu-top-btn")?.addEventListener("click", (e) => { e.preventDefault(); if (typeof FALLBACK_URL !== "undefined") window.location.href = FALLBACK_URL; });
+
+  
+  // 運行記録ボタン
+  //タイトル画面の「運行記録を見る」ボタン
+  document.getElementById("btn-stats-title")?.addEventListener("click", () => {
+    const statsModal = document.getElementById("title-stats-modal");
+    if (statsModal) statsModal.classList.remove("hidden");
+    // ▼ この1行を追加（開いた瞬間に計算する）
+    if(typeof updateTitleStatsDisplay === "function") updateTitleStatsDisplay("normal");
+  });
+
+  //サイドメニューの「運行記録を見る」ボタン
+  document.getElementById("menu-stats-btn")?.addEventListener("click", (e) => {
+    e.preventDefault();
+    //サイドメニュー本体はアニメーションで右にスライドして隠す
+    document.getElementById("side-menu").style.right = "-250px";
+    //黒幕（オーバーレイ）を即座に消して二重被りを防ぐ
+    document.getElementById("side-menu-overlay").classList.add("hidden");
+    
+    const statsModal = document.getElementById("title-stats-modal");
+    if (statsModal) statsModal.classList.remove("hidden");
+    // 開いた瞬間に計算する
+    if(typeof updateTitleStatsDisplay === "function") updateTitleStatsDisplay("normal");
+  });
+
+  //運行記録モーダルの×ボタンを確実に動かす処理
+  document.getElementById("close-title-stats-btn")?.addEventListener("click", () => {
+    document.getElementById("title-stats-modal")?.classList.add("hidden");
+  });
+  
+  //タブ切り替え処理
+  document.getElementById("tab-yuru")?.addEventListener("click", () => { if(typeof updateTitleStatsDisplay === "function") updateTitleStatsDisplay("yuru"); });
+  document.getElementById("tab-normal")?.addEventListener("click", () => { if(typeof updateTitleStatsDisplay === "function") updateTitleStatsDisplay("normal"); });
+  document.getElementById("tab-quad")?.addEventListener("click", () => { if(typeof updateTitleStatsDisplay === "function") updateTitleStatsDisplay("quad"); });
+}
+
+//入力ボタンやモード切替など、駅ドル固有のUI
+function setupGameSpecificUI() {
+  //キーボード・入力ボタンの処理
+  document.getElementById("enter-btn")?.addEventListener("click", () => handleKeyPress("ENTER"));
+  document.getElementById("back-btn")?.addEventListener("click", () => handleKeyPress("BACK"));
+  document.getElementById("clear-btn")?.addEventListener("click", () => handleKeyPress("CLEAR"));
+  // クアッドモード専用の一括展開・縮小ボタンの処理
+  //展開ボタンのイベント処理
+  document.getElementById("expand-toggle-btn")?.addEventListener("click", () => {
+    if (!isQuadMode || guessesSubmitted === 0) return;
+    
+    let allPastRows = [];
+    for (let b = 0; b < 4; b++) {
+      const board = document.getElementById(`board-${b}`);
+      if (!board) continue;
+      // board-rowクラスを持つ過去の行だけを正確に集める
+      const rows = Array.from(board.children).filter(r => r.classList.contains("board-row"));
+      for (let i = 0; i < guessesSubmitted; i++) {
+        if (rows[i]) allPastRows.push(rows[i]);
+      }
+    }
+
+    if (allPastRows.length === 0) return;
+
+    const isExpanding = allPastRows.some(row => !row.classList.contains("force-expand"));
+    isQuadExpanded = isExpanding; //現在の展開状態をフラグに保存
+
+    allPastRows.forEach(row => {
+      if (isExpanding) {
+        row.classList.add("force-expand");
+      } else {
+        row.classList.remove("force-expand");
+      }
+    });
+
+    // クアッドモードのセーブデータに現在の展開状態を保存します
+    let stateKey = "quad" + currentMode;
+    if (savedState[stateKey]) {
+      savedState[stateKey].isExpanded = isQuadExpanded;
+      saveQuadGameState();  // ローカルストレージへ保存を実行します
+    }
+
+    updateTiles(); //新しい回答行にも状態を即座に反映させる
+  });
+  
+  //クアッド用のシェアボタン紐付け
+  document.getElementById("quad-share-btn")?.addEventListener("click", () => shareQuadResult("twitter"));
+  document.getElementById("quad-line-btn")?.addEventListener("click", () => shareQuadResult("line"));
+  document.getElementById("quad-fb-btn")?.addEventListener("click", () => shareQuadResult("facebook"));
+  document.getElementById("quad-copy-btn")?.addEventListener("click", () => shareQuadResult("copy"));
+  
+  //「グラフ」ボタンの処理
+  document.getElementById("stats-btn")?.addEventListener("click", () => {
+    //ここから修正
+    if (isQuadMode) {
+      const isAllCleared = quadSolved.every(s => s === true);
+      // クアッドが終了している場合のみ、クアッド専用モーダルを開く
+      if (isAllCleared || guessesSubmitted >= maxGuesses) {
+        if (typeof showQuadResultModal === "function") showQuadResultModal();
+      } else {
+        showMessage("ゲームクリア後に見ることができます");
+      }
+      return;
+    }
+
+    // 通常モードの処理
+    let st = savedState[isPlayingRandom ? "random" : currentMode];
+    if (st && st.isOver) showResultModal(st.isWin, true);
+    else showMessage("ゲームクリア後に見ることができます");
+    // ▲▲▲ ここまで修正 ▲▲▲
+  });
+
+ // モード切替ボタン（4文字・5文字・6文字）
+  [4, 5, 6].forEach(num => {
+    const modeBtn = document.getElementById(`mode-${num}`);
+    if (modeBtn) {
+      modeBtn.addEventListener("click", async () => {
+        isPlayingRandom = false; 
+        isAprilFoolMode = false; 
+
+        currentMode = num; rowLength = num; 
+        if (num === 4) maxGuesses = CONFIG_MAX_GUESSES_4;
+        else if (num === 5) maxGuesses = CONFIG_MAX_GUESSES_5;
+        else if (num === 6) maxGuesses = CONFIG_MAX_GUESSES_6;
+
+        document.querySelectorAll(".mode-btn").forEach(b => b.classList.remove("active"));
+        modeBtn.classList.add("active");
+
+        // ▼▼▼ 修正箇所：現在のモードに応じて再スタートの処理を分ける ▼▼▼
+        if (isQuadMode) {
+          // クアッドモードのまま文字数を変えて再スタート
+          maxGuesses = CONFIG_MAX_GUESSES_QUAD;
+          await startQuadMode();
+        } else {
+          // 通常モードとして再スタート
+          document.getElementById("quad-board-container")?.classList.add("hidden");
+          document.getElementById("game-board")?.classList.remove("hidden");
+
+          const hs = document.getElementById("hardmode-switch");
+          if (hs) hs.disabled = false;
+          
+          const gameBoard = document.getElementById("game-board");
+          if(gameBoard) {
+            gameBoard.style.setProperty("--row-length", num);
+            gameBoard.style.setProperty("--row-count", maxGuesses);
+          }
+          await selectTodayStation(); 
+          restoreBoard();
+        }
+        // ▲▲▲ 修正箇所ここまで ▲▲▲
+      });
+    }
+  });
+
+  // シェアボタンの処理（各プラットフォームに振り分け）
+  const btnIds = ["share-btn", "line-btn", "fb-btn", "copy-btn"];
+  const actions = ["twitter", "line", "facebook", "copy"];
+  btnIds.forEach((id, idx) => {
+    document.getElementById(id)?.addEventListener("click", () => shareResult(actions[idx]));
+  });
+
+  // データのインポート・エクスポート
+  document.getElementById("export-data-btn")?.addEventListener("click", (e) => { e.preventDefault(); exportUserData(); });
+  document.getElementById("import-data-btn")?.addEventListener("click", (e) => {
+    e.preventDefault(); 
+    const code = prompt("引き継ぎコードを入力：");
+    if (code) importUserData(code);
+  });
+  
+  //ハードモードボタンの処理（通常モード）
+  const hardSwitch = document.getElementById("hardmode-switch");
+  if (hardSwitch) {
+    hardSwitch.addEventListener("click", (e) => {
+      let stateKey = isPlayingRandom ? "random" : (isYuruMode ? "yuru" : currentMode);
+      let currentSt = savedState[stateKey];
+      
+      // ゲームが既に終了（クリアor失敗）している場合
+      if (currentSt && currentSt.isOver) {
+        e.preventDefault();
+        // チェック状態を元に戻す
+        hardSwitch.checked = !hardSwitch.checked;
+        showMessage("ゲーム終了後は変更できません");
+        return;
+      }
+
+      let isMidGame = currentSt && currentSt.guesses && currentSt.guesses.length > 0 && !currentSt.isOver;
+      // プレイ途中のハードモードへ切り替えを禁止する
+      if (isMidGame && hardSwitch.checked) {
+        e.preventDefault();
+        hardSwitch.checked = false;
+        showMessage("プレイ開始後はハードモードに変更できません");
+      } else {
+        ekiSettings.hardMode = hardSwitch.checked;
+        localStorage.setItem("ekiSettings", JSON.stringify(ekiSettings));
+        // ノーマルモードはプレイ途中の変更も許可する
+        if (isMidGame && !hardSwitch.checked) {
+          currentSt.isHardMode = false;
+          if (!isPlayingRandom) saveGameState();    //ノーマルモードとして記録する
+        }
+        
+        //if (typeof updateHelpContent === "function") updateHelpContent();
+      }
+    });
+  }
+
+  //ハードモードボタンの処理（クアッドモード、実在駅縛り）
+  const quadHardSwitch = document.getElementById("quad-hardmode-switch");
+  if (quadHardSwitch) {
+    // ※ change ではなく click イベントに変更します
+    quadHardSwitch.addEventListener("click", (e) => {
+      let stateKey = "quad" + currentMode;
+      let st = savedState[stateKey];
+      if (!st) return;
+
+      // ゲームが既に終了している場合
+      if (st.isOver) {
+        e.preventDefault();
+        quadHardSwitch.checked = !quadHardSwitch.checked;
+        showMessage("ゲーム終了後は変更できません");
+        return;
+      }
+
+      // プレイ途中（1手以上送信済み）かどうか
+      let isMidGame = st.guesses && st.guesses.length > 0;
+
+      if (isMidGame) {
+        // プレイ途中にONにしようとした場合
+        if (quadHardSwitch.checked) {
+          e.preventDefault();
+          quadHardSwitch.checked = false;
+          showMessage("プレイ開始後はハードモードをオンにできません");
+        } else {
+          // プレイ途中にOFFにする場合
+          if (confirm("一度ハードモードを解除すると、今週は二度とオンに戻せません。本当によろしいですか？")) {
+            st.isHardMode = false;
+            saveQuadGameState();
+            quadHardSwitch.disabled = true; // 二度と操作できないようにグレーアウト
+          } else {
+            // キャンセルした場合はチェックを戻す
+            e.preventDefault();
+            quadHardSwitch.checked = true;
+          }
+        }
+      } else {
+        // プレイ開始前（未回答）なら自由に切り替え可能
+        st.isHardMode = quadHardSwitch.checked;
+        saveQuadGameState();
+      }
+    });
+  }
+}
+
+
+//各文字数（4, 5, 6文字）のデータを一度に集計・表示する運行記録モーダル更新関数
+function updateTitleStatsDisplay(modeType) {
+  //タブボタン要素の取得
+  const tabYuru = document.getElementById("tab-yuru");
+  const tabNormal = document.getElementById("tab-normal");
+  const tabQuad = document.getElementById("tab-quad"); 
+
+  // 全タブのスタイルを一旦リセットし、枠線のみの標準状態に戻す
+  [tabYuru, tabNormal, tabQuad].forEach(t => { if(t) t.className = "btn btn-small btn-outline"; });
+
+  // 選択されたタブに対して、縁と影だけを着色する専用のクラスを付与する
+  if (modeType === "normal") {
+    if (tabNormal) tabNormal.className = "btn btn-small btn-outline active-tab-normal"; 
+  } else if (modeType === "yuru") {
+    if (tabYuru) tabYuru.className = "btn btn-small btn-outline active-tab-yuru";   
+  } else if (modeType === "quad") {
+    if (tabQuad) tabQuad.className = "btn btn-small btn-outline active-tab-quad";  
+  }
+
+  //ゆる鉄モードの時は、4文字と6文字の枠を隠して5文字だけを表示します
+  const area4 = document.getElementById("stats-area-4");
+  const area6 = document.getElementById("stats-area-6");
+  if (area4) area4.style.display = (modeType === "yuru") ? "none" : "block";
+  if (area6) area6.style.display = (modeType === "yuru") ? "none" : "block";
+
+  //5文字枠のタイトルを変更します
+  const title5 = document.getElementById("stats-title-5");
+  if (title5) {
+    title5.innerHTML = (modeType === "yuru") ? "デイリーモード (5文字)" : "5文字モード";
+  }
+
+  //4, 5, 6文字それぞれのデータをループで取得し、それぞれの表示枠へ一斉に流し込みます
+  [4, 5, 6].forEach(num => {
+    // ゆる鉄モードの時は、5文字以外の計算をスキップします
+    if (modeType === "yuru" && num !== 5) return;
+
+    let targetMode = num.toString();
+    if (modeType === "yuru") {
+      targetMode = "yuru"; // ゆる鉄モードの成績データを読み込むキー
+    } else if (modeType === "quad") {
+      targetMode = "quad" + num;
+    }
+
+    let normalKey = baseKey;
+    let hardKey = baseKey + "_hard";
+
+    // 通常モードのデータ取得と勝率計算
+    let stNormal = userStats[normalKey] || { played: 0, won: 0, currentStreak: 0, maxStreak: 0 };
+    let winRateNormal = stNormal.played > 0 ? Math.round((stNormal.won / stNormal.played) * 100) : 0;
+
+    // ハードモードのデータ取得と勝率計算
+    let stHard = userStats[hardKey] || { played: 0, won: 0, currentStreak: 0, maxStreak: 0 };
+    let winRateHard = stHard.played > 0 ? Math.round((stHard.won / stHard.played) * 100) : 0;
+
+    // 対応する文字数のHTML要素に数値を代入（通常）
+    const elNormalPlayed = document.getElementById(`ts-${num}-normal-played`);
+    if (elNormalPlayed) {
+      elNormalPlayed.textContent = stNormal.played;
+      document.getElementById(`ts-${num}-normal-winrate`).textContent = winRateNormal;
+      document.getElementById(`ts-${num}-normal-streak`).textContent = stNormal.currentStreak;
+      document.getElementById(`ts-${num}-normal-maxstreak`).textContent = stNormal.maxStreak;
+    }
+
+    // 対応する文字数のHTML要素に数値を代入（ハード）
+    const elHardPlayed = document.getElementById(`ts-${num}-hard-played`);
+    if (elHardPlayed) {
+      elHardPlayed.textContent = stHard.played;
+      document.getElementById(`ts-${num}-hard-winrate`).textContent = winRateHard;
+      document.getElementById(`ts-${num}-hard-streak`).textContent = stHard.currentStreak;
+      document.getElementById(`ts-${num}-hard-maxstreak`).textContent = stHard.maxStreak;
+    }
+  });
+}
+
+    
+// ==========================================
+// 連続ログイン日数処理（ekiZukanMetaに統合するため廃止）
+// ==========================================
+// unction updateLoginStreak() {
+  // 共通関数に保存先の名前（ekiLoginStreak）を渡すだけで全て自動でやってくれます
+//   let updatedData = updateSharedLoginStreak("ekiLoginStreak");
+// }
+
+    
+
 
 
 // ==========================================
@@ -141,7 +735,6 @@ const dakuonGroups=[
 //引数でもらった文字に濁点・半濁点・小文字がある場合、清音に戻して返す
 function getBaseChar(c){return baseMap[c]||c;}
 //カタカナのフリガナをすべてひらがなに変換する
-function toHiragana(str){ return str.replace(/[ァ-ン]/g,m=>String.fromCharCode(m.charCodeAt(0)-0x60)); }
 
 
 // ==========================================
@@ -174,230 +767,6 @@ function hideLoadingScreen() {
 }
 
 
-// ==========================================
-// ゲーム初期化処理
-// ==========================================
-
-//画面読み込み時に最初に実行され、データ準備やボタン登録などを行う
-async function initGame(){
-try{
-  // 【ここを追加：① 最初のシステム起動】
-  updateLoadingProgress(10, "システムを起動中...");
-  // 現在のデータ構造のバージョンを記録（将来のバグ防止用）
-  if (!localStorage.getItem("ekiSystemVersion")) localStorage.setItem("ekiSystemVersion", "1.0");
-  // URLの末尾に「?emergency_reset=true」がついている場合の処理
-  if (new URLSearchParams(window.location.search).get("emergency_reset") === "true") {
-    if (confirm("これまでのプレイ実績や設定がすべて消去されます。本当に初期化しますか？")) {
-      localStorage.clear();
-      alert("データを初期化しました。");  
-    }
-    window.location.href = window.location.origin + window.location.pathname;
-    return;
-  }
-  loadStats();
-  updateLoginStreak();
-
-  // 【ここを追加：② データのダウンロード開始】
-  updateLoadingProgress(30, "駅データをダウンロード中...");
-
-  // 【究極版】データ取得失敗時の安全装置（Cache APIを使った非同期の大容量バックアップ）
-  let raw = [];
-  try {
-    // 常に最新を取りに行く
-    const res = await fetch('/stations.json', { cache: "no-store" });
-    if (!res.ok) throw new Error("ネットワークエラー");
-    
-    // 【重要】レスポンスの中身（2MB）は1回しか読めないため、バックアップ用にコピー（clone）を作る
-    const resToCache = res.clone();
-    raw = await res.json();
-    
-    // Cache APIを使って、ブラウザの専用金庫に非同期で安全に保存する（フリーズしない・容量制限に引っかからない）
-    if ('caches' in window) {
-      const cache = await caches.open('eki-backup-v1');
-      cache.put('stations.json', resToCache).catch(e => console.warn("キャッシュ保存スキップ:", e));
-    }
-  } catch (err) {
-    console.warn("最新データの取得に失敗。Cache APIのバックアップを使用します。", err);
-    
-    let isRecovered = false;
-    // 通信エラー時は、Cache APIの金庫から過去のデータを引っ張り出す
-    if ('caches' in window) {
-      const cache = await caches.open('eki-backup-v1');
-      const cachedRes = await cache.match('stations.json');
-      if (cachedRes) {
-        raw = await cachedRes.json();
-        isRecovered = true;
-
-        // 【追加】画面上部に「バックアップ起動中」の警告バナーを動的に表示する
-        if (!document.getElementById("offline-warning-banner")) {
-          document.body.insertAdjacentHTML("afterbegin", `
-            <div id="offline-warning-banner" style="background-color: #fff3e0; color: #e65100; font-size: 11px; font-weight: bold; text-align: center; padding: 6px; border-bottom: 1px solid #ffcc80; width: 100%; box-sizing: border-box;">
-              ⚠️ バックアップデータで運行中。通常の出題と答えが異なる場合があります。
-            </div>
-          `);
-        }
-      }
-    }
-    
-    // バックアップすら無い（完全な初回プレイで通信エラー）場合の致命的エラー画面
-    if (!isRecovered) {
-      document.body.innerHTML = `
-        <div style="text-align:center; padding:50px; font-family:sans-serif;">
-          <h3 style="color:#e53935;">駅データの読み込みに失敗しました</h3>
-          <p style="font-size:14px; color:#555;">通信環境の良いところで、もう一度お試しください。</p>
-          <button onclick="location.reload()" style="margin-top:20px; padding:10px 20px; font-size:16px; font-weight:bold; background:#3498db; color:#fff; border:none; border-radius:5px;">再読み込み</button>
-        </div>`;
-      return; // 処理を止める
-    }
-  }
-
-  //貨物専用駅を除外し、駅名の読みを全てひらがなに整えて保存
-  stations=raw.filter(s=>!(s.companies&&s.companies.length===1&&s.companies[0]==="日本貨物鉄道")).map(s=>({...s,yomi:toHiragana(s.yomi)}));
-  if(stations.length===0)return;
-
-  // 【ここを追加：③ 画面UIの構築準備】
-  updateLoadingProgress(60, "今日の答えを準備中...");
-  
-  //画面下部の「回答」「1字消す」「全削除」ボタンの動作
-  document.getElementById("enter-btn").addEventListener("click",()=>handleKeyPress("ENTER"));
-  document.getElementById("back-btn").addEventListener("click",()=>handleKeyPress("BACK"));
-  document.getElementById("clear-btn").addEventListener("click",()=>handleKeyPress("CLEAR"));
-  //メニューの三本線が押されたときにサイドメニューを出す
-  document.getElementById("menu-btn").addEventListener("click",()=>{
-  document.getElementById("side-menu-overlay").style.display="block";
-  setTimeout(()=>document.getElementById("side-menu").style.right="0",10);
-  });
-//メニューの外側や閉じるボタンが押されたらメニューを右側に隠す
-const closeSideMenu=()=>{
-document.getElementById("side-menu").style.right="-250px";
-setTimeout(()=>document.getElementById("side-menu-overlay").style.display="none",300);
-};
-document.getElementById("close-menu-btn").addEventListener("click",closeSideMenu);
-document.getElementById("side-menu-overlay").addEventListener("click",closeSideMenu);
-//「？」ボタンが押されたら遊び方の説明画面を開き、×ボタンで閉じる
-document.getElementById("help-btn").addEventListener("click",()=>{
-document.getElementById("help-modal").style.display="flex";
-});
-document.getElementById("close-help-btn").addEventListener("click",()=>{
-document.getElementById("help-modal").style.display="none";
-});
-//「グラフ」ボタンが押されたとき、ゲームが終わっていれば結果ウィンドウを表示
-document.getElementById("stats-btn").addEventListener("click",()=>{
-if(savedState[currentMode].isOver) showResultModal(savedState[currentMode].isWin, true);
-else showMessage("ゲームクリア後に見ることができます");
-});
-//「4文字」「5文字」「6文字」の切り替えボタンが押されたときの処理
-[4,5,6].forEach(num=>{
-document.getElementById(`mode-${num}`).addEventListener("click", async ()=>{
-  isPlayingRandom = false; 
-  isAprilFoolMode = false; // 【追加】エイプリルフールフラグを解除する
-  
-  // 【追加】ハードモードスイッチの操作不可（グレーアウト）状態を解除する
-  const hs = document.getElementById("hardmode-switch");
-  if(hs) hs.disabled = false;
-  
-  document.querySelectorAll(".mode-btn").forEach(b=>b.classList.remove("active"));
-  document.getElementById(`mode-${num}`).classList.add("active");
-  currentMode=num; rowLength=num; maxGuesses=(num===4)?8:6;
-  document.getElementById("game-board").style.setProperty("--row-length",num);
-  await selectTodayStation(); restoreBoard();
-  });
-});
-//結果ウィンドウにある各種SNSへのシェアボタンやコピーボタンの動作
-document.getElementById("share-btn").addEventListener("click",()=>shareResult("twitter"));
-document.getElementById("line-btn").addEventListener("click",()=>shareResult("line"));
-document.getElementById("fb-btn").addEventListener("click",()=>shareResult("facebook"));
-document.getElementById("copy-btn").addEventListener("click",()=>shareResult("copy"));
-// 結果画面の「×（閉じる）」ボタンが押されたときの処理
-document.getElementById("close-modal-btn").addEventListener("click",()=>{
-    // 結果画面を非表示にする
-    document.getElementById("result-modal").style.display="none";
-});
-// 【メモ】データのバックアップ（コード発行）ボタンを押したときの動き
-document.getElementById("export-data-btn").addEventListener("click", (e) => {
-    // リンクのデフォルト動作（画面の一番上へジャンプしてしまう挙動）を無効化
-    e.preventDefault(); 
-    // データ出力用の関数を呼び出し、クリップボードにコピーさせる
-    exportUserData();
-});
-// 【メモ】データの復活（コード入力）ボタンを押したときの動き
-document.getElementById("import-data-btn").addEventListener("click", (e) => {
-    // リンクのデフォルト動作を無効化
-    e.preventDefault(); 
-    // プレイヤーに引き継ぎコードの入力を促すダイアログを表示
-    const code = prompt("控えておいた「引き継ぎコード」をここに貼り付けてください：");
-    // もしキャンセルされず、何かしらのコードが入力されていれば
-    if (code) {
-        // データ復元用の関数にコードを渡して実行する
-        importUserData(code);
-    }
-});
-//「パレット」ボタンが押されたときに画面全体のテーマカラーを順番に変更する
-const themes=["","theme-dark","theme-sakura","theme-ocean","theme-green","theme-orange","theme-red","theme-blue","theme-purple"];
-let themeIdx=0;
-if(ekiSettings.theme){
-themeIdx=themes.indexOf(ekiSettings.theme);
-if(themeIdx>-1&&ekiSettings.theme!=="")document.body.classList.add(ekiSettings.theme);
-}
-document.getElementById("theme-btn").addEventListener("click",()=>{
-  // ボタンを押す前に、エイプリルフールモードだったかどうかを記憶しておく
-  const isAF = document.body.classList.contains("event-aprilfool");
-  document.body.className=document.body.className.replace(/event-\w+/g,"");
-  if(themes[themeIdx]!=="")document.body.classList.remove(themes[themeIdx]);
-  themeIdx=(themeIdx+1)%themes.length;
-  if(themes[themeIdx]!=="")document.body.classList.add(themes[themeIdx]);
-  ekiSettings.theme=themes[themeIdx];
-  localStorage.setItem("ekiSettings",JSON.stringify(ekiSettings));
-  // もし元がエイプリルフールだったなら、クラスを消された直後に強制的に再付与
-  if (isAF) document.body.classList.add("event-aprilfool");
-  });
-  // ハードモード切り替えスイッチの制御ロジック
-  const hardSwitch = document.getElementById("hardmode-switch");
-  if (ekiSettings.hardMode) {
-    hardSwitch.checked = true;
-  }
-updateHelpContent(); // 起動時に説明文を現在の設定に合わせる
-
-  hardSwitch.addEventListener("change", (e) => {
-    let st = savedState[isPlayingRandom ? "random" : currentMode];
-
-    // 【追加】すでにゲームクリア・ゲームオーバーになっている場合は変更をブロック
-    if (st && st.isOver) {
-      e.target.checked = !e.target.checked; // スイッチの見た目を強制的に戻す
-      showMessage("ゲーム終了後は変更できません");
-      return;
-  }
-
-  // プレイ途中（1手以上入力済み）に「通常→ハード」へ変更しようとした場合はブロック
-  if (e.target.checked && st && st.guesses && st.guesses.length > 0) {
-    e.target.checked = false; // スイッチを強制的にオフに戻す
-    showMessage("プレイ開始後はハードモードに変更できません");
-    return;
-  }
-
-  // ハード→通常への変更はいつでも許可し、プレイ中のデータにも反映させる
-  ekiSettings.hardMode = e.target.checked;
-  if (!e.target.checked && st && st.guesses && st.guesses.length > 0) {
-     st.isHardMode = false;
-     if(!isPlayingRandom) saveGameState();
-  }
-
-  localStorage.setItem("ekiSettings", JSON.stringify(ekiSettings));
-  updateHelpContent();
-  });
-  
-  // 【ここを追加：④ 最終準備】
-  updateLoadingProgress(80, "ゲーム盤を構築中...");
-  
-  //最後に、今日の正解駅を選び、ゲーム盤を作り、行事日かどうかを調べる
-  await selectTodayStation(); restoreBoard(); checkSpecialEvent();
-
-  // 【ここを追加：⑤ 完了・画面を閉じる】
-  updateLoadingProgress(100, "出発進行！");
-  setTimeout(hideLoadingScreen, 600); // 100%を見せるために0.6秒待ってから消す
-  
-}catch(e){ console.error("データエラー:",e); }
-}
 
 
 // ==========================================
@@ -407,11 +776,21 @@ updateHelpContent(); // 起動時に説明文を現在の設定に合わせる
 //保存されている過去の戦績データを読み込む
 function loadStats(){
   const saved=localStorage.getItem("ekiPuzzleStatsV2");
-  if(saved) userStats=JSON.parse(saved);
+  if(saved) {
+    try {
+      userStats=JSON.parse(saved);
+    } catch(e) {
+      console.error("戦績データが破損しているため初期設定に戻します:", e);
+      userStats={
+        4:{played:0,won:0,currentStreak:0,maxStreak:0,dist:[0,0,0,0,0,0,0,0,0,0]},
+        5:{played:0,won:0,currentStreak:0,maxStreak:0,dist:[0,0,0,0,0,0,0,0,0,0]},
+        6:{played:0,won:0,currentStreak:0,maxStreak:0,dist:[0,0,0,0,0,0,0,0,0,0]}
+      };
+    }
+  }
   
   // 今日の日付文字列を作成（例: "2026-6-5"）
-  const d = new Date();
-  const todayStr = d.getFullYear() + "-" + (d.getMonth()+1) + "-" + d.getDate();
+  const todayStr = getJSTDateString();
 
   // ランダム専用の枠がない、または「前回ランダムを遊んだ日」が今日ではない場合、成績を0にリセットする
   if(!userStats["random"] || userStats["random"].lastDate !== todayStr){
@@ -419,58 +798,68 @@ function loadStats(){
     localStorage.setItem("ekiPuzzleStatsV2",JSON.stringify(userStats));
   }
 }
+
 //今回のゲーム結果をこれまでのデータに加算して新しく保存する
 function saveStats(isWin,actualGuesses){
-  // ランダムモード中は「random」の枠に集計する
-  let currentState = savedState[isPlayingRandom ? "random" : currentMode];
-  let targetMode = isPlayingRandom ? "random" : currentMode;
-  let st=userStats[targetMode];
-  if(!st) st={played:0,won:0,currentStreak:0,maxStreak:0,dist:[0,0,0,0,0,0,0,0,0,0]};
-  if(!st.dist) st.dist=[0,0,0,0,0,0,0,0,0,0];
+  let stateKey = isPlayingRandom ? "random" : (isYuruMode ? "yuru" : currentMode);
+  let currentState = savedState[stateKey];
+  
+  // 保存先のキーを決定する（ハードモードなら "4_hard" などの専用の箱にする）
+  let targetMode = stateKey;
+  if (!isPlayingRandom && currentState && currentState.isHardMode) {
+    targetMode = stateKey + "_hard"; // currentModeではなく、ベースとなるstateKeyに "_hard" を付け足す
+  }
+
+  let st = userStats[targetMode];
+  if(!st) st = {played:0,won:0,currentStreak:0,maxStreak:0,dist:[0,0,0,0,0,0,0,0,0,0]};
+  if(!st.dist) st.dist = [0,0,0,0,0,0,0,0,0,0];
   
   st.played++;
   if(isWin){
-    st.won++; st.currentStreak++;
-    if(st.currentStreak>st.maxStreak)st.maxStreak=st.currentStreak;
-    st.dist[actualGuesses]=(st.dist[actualGuesses]||0)+1;
-    // 【ここから追加】
-    // プレイ状態を取得し、最後までハードモードを維持していたか判定する
-    let currentState = savedState[isPlayingRandom ? "random" : currentMode];
-    
-    if (currentState && currentState.isHardMode) {
-      
-      // ハードモードでのクリア回数（hardWon）をカウントアップする
-      // データが存在しない場合は0からスタートさせる
-      st.hardWon = (st.hardWon || 0) + 1;
-      
-    }
-    // 【ここまで追加】
-  }else{ st.currentStreak=0; }
+    st.won++; 
+    st.currentStreak++;
+    if(st.currentStreak > st.maxStreak) st.maxStreak = st.currentStreak;
+    st.dist[actualGuesses] = (st.dist[actualGuesses] || 0) + 1;
+  }else{ 
+    st.currentStreak = 0; 
+  }
   
-  userStats[targetMode]=st;
-  localStorage.setItem("ekiPuzzleStatsV2",JSON.stringify(userStats));
+  userStats[targetMode] = st;
+  localStorage.setItem("ekiPuzzleStatsV2", JSON.stringify(userStats));
 }
+
 //過去に遊んだアーカイブ情報を読み込む
-function loadArchive(){
-const saved=localStorage.getItem("ekiPuzzleArchiveV1");
-if(saved) dailyArchive=JSON.parse(saved);
-}
+// function loadArchive(){
+// const saved=localStorage.getItem("ekiPuzzleArchiveV1");
+// if(saved) dailyArchive=JSON.parse(saved);
+// }
 //今日の問題をアーカイブへ保存する
-function saveToArchive(){
-if(!dailyArchive[currentDayIndex]) dailyArchive[currentDayIndex]={};
-dailyArchive[currentDayIndex][currentMode]={kanji:todayStation.kanji, yomi:todayStation.yomi};
-localStorage.setItem("ekiPuzzleArchiveV1",JSON.stringify(dailyArchive));
-}
+// function saveToArchive(){
+// if(!dailyArchive[currentDayIndex]) dailyArchive[currentDayIndex]={};
+// dailyArchive[currentDayIndex][currentMode]={kanji:todayStation.kanji, yomi:todayStation.yomi};
+// localStorage.setItem("ekiPuzzleArchiveV1",JSON.stringify(dailyArchive));
+// }
 // ゲームの進行状況を日付ごとに保存・読み込みする処理です
 function loadGameState(dayIdx){
   const savedLog=localStorage.getItem("ekiPuzzleStateV1_Log");
-  let logData=savedLog?JSON.parse(savedLog):{};
-  //let todayStr=new Date().toISOString().split('T')[0];
-  // 【修正後】端末のローカル時計で「YYYY-MM-DD」を作成する
+  let logData={};
+  try {
+    logData=savedLog?JSON.parse(savedLog):{};
+  } catch(e) {
+    console.error("履歴ログデータが破損しています:", e);
+    logData={};
+  }
+  
+  let meta;
+  try {
+    meta=JSON.parse(localStorage.getItem("ekiZukanMeta")||'{"totalLogins":0,"lastLoginDate":"","firstPlayDate":""}');
+  } catch(e) {
+    console.error("図鑑メタデータが破損しているため初期化します:", e);
+    meta={"totalLogins":0,"lastLoginDate":"","firstPlayDate":""};
+  }
+
   let todayStr = getJSTDateString();
-  
-  let meta=JSON.parse(localStorage.getItem("ekiZukanMeta")||'{"totalLogins":0,"lastLoginDate":"","firstPlayDate":""}');
-  
+
   if(!meta.firstPlayDate) meta.firstPlayDate=todayStr;
   
   if(meta.lastLoginDate!==todayStr){
@@ -478,27 +867,40 @@ function loadGameState(dayIdx){
     meta.lastLoginDate=todayStr;
     localStorage.setItem("ekiZukanMeta",JSON.stringify(meta));
   }
-  
+
+  //let todayStr=new Date().toISOString().split('T')[0];
+
   // 過去のセーブデータが存在する場合
   if(logData[dayIdx]){
     savedState=logData[dayIdx];
     // 【安全装置】ハードモード用のセーブ枠が不足していればその場で自動追加する
-    ["4_hard", "5_hard", "6_hard"].forEach(k => {
-      if(!savedState[k]) savedState[k] = {guesses:[],guessTimes:[],startTime:null,endTime:null,usedHint:false,isWin:false,isOver:false};
+    ["4_hard", "5_hard", "6_hard", "yuru", "quad4", "quad5", "quad6"].forEach(k => {
+      if(!savedState[k]) {
+        // クアッド用の枠の場合は、4つの盤面クリア状態などを記憶する変数を入れる
+        if(k.startsWith("quad")) {
+          savedState[k] = {guesses:[], guessTimes:[], quadSolved:[false,false,false,false], quadGridHistory:[], isOver:false};
+        } else {
+          savedState[k] = {guesses:[],guessTimes:[],startTime:null,endTime:null,usedHint:false,isWin:false,isOver:false};
+        }
+      }
     });
     return;
   }
   
-  // 新しく本日のデータ枠を作成（通常モードとハードモードの枠を完全に分離して用意）
+  // 新しく本日のデータ枠を作成（クアッドモードの枠も追加）
   savedState={ 
     date:String(dayIdx), 
     isDaily:true,
     4:{guesses:[],guessTimes:[],startTime:null,endTime:null,usedHint:false,isWin:false,isOver:false}, 
     5:{guesses:[],guessTimes:[],startTime:null,endTime:null,usedHint:false,isWin:false,isOver:false}, 
     6:{guesses:[],guessTimes:[],startTime:null,endTime:null,usedHint:false,isWin:false,isOver:false},
+    "yuru":{guesses:[],guessTimes:[],startTime:null,endTime:null,usedHint:false,isWin:false,isOver:false}, 
     "4_hard":{guesses:[],guessTimes:[],startTime:null,endTime:null,usedHint:false,isWin:false,isOver:false}, 
     "5_hard":{guesses:[],guessTimes:[],startTime:null,endTime:null,usedHint:false,isWin:false,isOver:false}, 
-    "6_hard":{guesses:[],guessTimes:[],startTime:null,endTime:null,usedHint:false,isWin:false,isOver:false} 
+    "6_hard":{guesses:[],guessTimes:[],startTime:null,endTime:null,usedHint:false,isWin:false,isOver:false},
+    "quad4":{guesses:[],guessTimes:[],quadSolved:[false,false,false,false],quadGridHistory:[],isOver:false},
+    "quad5":{guesses:[],guessTimes:[],quadSolved:[false,false,false,false],quadGridHistory:[],isOver:false},
+    "quad6":{guesses:[],guessTimes:[],quadSolved:[false,false,false,false],quadGridHistory:[],isOver:false}
   };
   logData[dayIdx]=savedState;
   localStorage.setItem("ekiPuzzleStateV1_Log",JSON.stringify(logData));
@@ -507,18 +909,41 @@ function loadGameState(dayIdx){
 // ==========================================
 // 状態保存用の共通関数（確実なセーブ）
 // ==========================================
+//通常モード
 function saveGameState() {
   // ランダムモードのプレイ状況は再読み込みで復元する必要がないため保存しない
   if (isPlayingRandom) return;
   
-  // 従来のセーブデータ（念のため更新）
-  localStorage.setItem("ekiPuzzleStateV1", JSON.stringify(savedState));
-  
   // 新方式の履歴ログ用（こちらがページ再読み込み時の復元に絶対必要）
   const savedLog = localStorage.getItem("ekiPuzzleStateV1_Log");
-  let logData = savedLog ? JSON.parse(savedLog) : {};
+  let logData = {};
+  try {
+    logData = savedLog ? JSON.parse(savedLog) : {};
+  } catch(e) {
+    console.error("保存先の履歴ログが読み込めないため新規作成します:", e);
+    logData = {};
+  }
   logData[currentDayIndex] = savedState;
   localStorage.setItem("ekiPuzzleStateV1_Log", JSON.stringify(logData));
+}
+
+//クアッドモードの進行状況を「今週の枠」へ保存する専用関数
+function saveQuadGameState() {
+  let stateKey = "quad" + currentMode;
+  let quadWeeklyLog = {};
+  try {
+    quadWeeklyLog = JSON.parse(localStorage.getItem("ekiQuadWeeklyState") || "{}");
+  } catch(e) {
+    console.error("クアッドセーブデータが破損しています:", e);
+    quadWeeklyLog = {};
+  }
+  
+  // 今週の枠が存在しない場合の安全装置
+  if (!quadWeeklyLog[currentWeekIndex]) quadWeeklyLog[currentWeekIndex] = {};
+  
+  // 現在の進行状況を上書き保存
+  quadWeeklyLog[currentWeekIndex][stateKey] = savedState[stateKey];
+  localStorage.setItem("ekiQuadWeeklyState", JSON.stringify(quadWeeklyLog));
 }
 
 // ==========================================
@@ -529,19 +954,18 @@ function saveGameState() {
 async function selectTodayStation() {
   const SECRET_SALT = "EkiDoru_Secret_2026!";
 
-  // 1. 日本時間（JST）ベースの日付とインデックスの計算
-  const t = new Date();
-  const jstMs = t.getTime() + (t.getTimezoneOffset() * 60000) + (9 * 3600000);
-  const jstObj = new Date(jstMs); // 後続の計算で使い回すため、この行は残します
+  const jstObj = getJSTDate(); //今日の日付を共通関数から取得
   const yearStr = jstObj.getFullYear(); // 今年の西暦を取得
   
-  // 先ほど作成した共通関数をここで安全に適用します
+  // 共通関数をここで安全に適用します
   let todayStr = getJSTDateString();
 
   // 基準日（2024年1月1日）から数えて今日が何日目かを計算
   const todayUTC = Date.UTC(jstObj.getFullYear(), jstObj.getMonth(), jstObj.getDate());
   const baseUTC = Date.UTC(2024, 0, 1);
   currentDayIndex = Math.round((todayUTC - baseUTC) / 86400000) + debugOffset;
+  // 基準日から数えた今日が何週目かを計算
+  currentWeekIndex = Math.floor(currentDayIndex / 7);
 
   // デバッグ機能で日付がずらされている場合の処理
   if (debugOffset !== 0) {
@@ -561,11 +985,12 @@ async function selectTodayStation() {
   // （JSON逆引き時の「同名ゴースト駅の誤認」を防ぐため、全ルートで共通使用する）
   const strictModeStations = stations.filter(s => 
     s.yomi.length === currentMode && 
-    s.pref !== "" && 
+    s.pref && s.pref !== "" && 
     s.companies && s.companies.length > 0 &&
     !(s.companies.length === 1 && s.companies[0] === "日本貨物鉄道") &&
-    s.address !== "" &&
-    s.min_km !== null
+    s.address && s.address !== "" &&
+    s.min_km != null &&
+    s.is_abolished_confirmed !== true
   );
 
   if (strictModeStations.length === 0) {
@@ -580,7 +1005,9 @@ async function selectTodayStation() {
     if (!res.ok) throw new Error("答えファイルの取得に失敗");
     const answersData = await res.json();
 
-    const targetHash = answersData[todayStr]?.[currentMode];
+    // ▼▼▼ 修正後（ゆる鉄モードは別のキーから取得して被りを防ぎます） ▼▼▼
+    const dictKey = isYuruMode ? "yurutetsu" : currentMode.toString();
+    const targetHash = answersData[todayStr]?.[dictKey];
     if (!targetHash) throw new Error("本日の答えデータがファイル内にありません");
 
     const calcSha256 = async (str) => {
@@ -605,40 +1032,16 @@ async function selectTodayStation() {
 
   // 5. 【フォールバックルート】通信エラー時はJS側でシミュレーション計算
   } catch (err) {
-    console.warn("⚠️ サーバーの答えファイル読み込み失敗。従来のロジックで自動計算します:", err);
+    console.warn("⚠️ サーバーの答えファイル読み込み失敗。自力でシミュレーション計算します:", err);
 
-    let uniqueYomiCount = new Set(strictModeStations.map(s => s.yomi)).size;
-    let lookback = Math.min(1000, Math.floor(uniqueYomiCount * 0.7));
-    let nextAvailableDay = {}; 
-
-    for(let d = 0; d <= currentDayIndex; d++){
-      let activeStations = strictModeStations.filter(s => 
-        s.startDay !== undefined && s.startDay <= d && (s.endDay === undefined || s.endDay > d || s.endDay === 999999)
-      );
-
-      if (activeStations.length === 0) activeStations = strictModeStations;
-
-      let pool = activeStations.filter(s => !nextAvailableDay[s.yomi] || nextAvailableDay[s.yomi] <= d);
-      if(pool.length === 0) pool = activeStations; 
-
-      let seed = d * 12345 + currentMode * 6789;
-      let hash = Math.imul(seed ^ (seed >>> 15), 2246822507);
-      hash = Math.imul(hash ^ (hash >>> 13), 3266489909);
-      hash = (hash ^ (hash >>> 16)) >>> 0;
-
-      let candidate = pool[hash % pool.length];
-      nextAvailableDay[candidate.yomi] = d + lookback + 1;
-
-      if(d === currentDayIndex) todayStation = candidate;
-    } 
+    // 統合版
+    // 全文字数（4,5,6文字）の駅が入ったリストを渡して、統合シミュレーションを1回だけ呼び出す    
+    // 自分が何のモードかに応じて、受け取った答えから自分の分だけをセットする
+    let answers = simulateUnifiedAnswers(stations, currentDayIndex);
+    todayStation = isYuruMode ? answers["yurutetsu"] : answers[currentMode.toString()];
   }
-
-  // 6. 計算結果をキャッシュに保存して完了
-  todayStationCache[currentMode] = {
-    station: todayStation,
-    dayIndex: currentDayIndex
-  };  
 }
+
 
 
 // ==========================================
@@ -709,29 +1112,52 @@ return btn;
 
 //モード変更時、パネルをまっさらにして前回の状態を綺麗に復元する
 function restoreBoard(){
-currentGuess=""; guessesSubmitted=0; gridHistory=[]; keyColors={};
-availableStations=stations.filter(s=>s.yomi.length===currentMode);
-drawBoard(); buildKeyboard();
-const box=document.getElementById("message-box");
-if(box) box.classList.add("hidden");
-const modal=document.getElementById("result-modal");
-if(modal) modal.style.display="none";
-let stateKey = isPlayingRandom ? "random" : currentMode;
-let st=savedState[stateKey];
-// セーブデータが存在する場合のみ、過去の回答を盤面に1手ずつ再現して復元します
-if (st && st.guesses) {
-  st.guesses.forEach(g=>{ currentGuess=g; submitGuess(true); });
-}
-currentGuess="";
+  currentGuess=""; guessesSubmitted=0; gridHistory=[]; keyColors={};
+  availableStations=stations.filter(s=>s.yomi.length===currentMode);
+  drawBoard(); buildKeyboard();
+  const box=document.getElementById("message-box");
+  if(box) box.classList.add("hidden");
+  // モード切り替え時、結果画面にhiddenクラスをつけて確実に隠す
+    const modal = document.getElementById("result-modal");
+    if (modal) {
+      modal.classList.add("hidden");
+    }
+  let stateKey = isPlayingRandom ? "random" : (isYuruMode ? "yuru" : currentMode);
+  let st=savedState[stateKey];
+  // セーブデータが存在する場合のみ、過去の回答を盤面に1手ずつ再現して復元します
+  if (st && st.guesses) {
+    st.guesses.forEach(g=>{ currentGuess=g; submitGuess(true); });
+  }
+  currentGuess="";
   // 盤面復元時、既にプレイ中であればそのゲームのハードモード状態にスイッチを合わせる
   let currentSt = savedState[isPlayingRandom ? "random" : currentMode];
+  // 【修正後】以下のコードにまるごと差し替えてください
   if (currentSt && currentSt.guesses && currentSt.guesses.length > 0) {
+    // プレイ途中の場合（セーブデータ側の設定を優先）
     ekiSettings.hardMode = !!currentSt.isHardMode; 
     const hardSwitch = document.getElementById("hardmode-switch");
-    if(hardSwitch) hardSwitch.checked = ekiSettings.hardMode;
+    if(hardSwitch) {
+      hardSwitch.checked = ekiSettings.hardMode;
+      hardSwitch.disabled = false;
+    }
     localStorage.setItem("ekiSettings", JSON.stringify(ekiSettings));
-    updateHelpContent();
+  } else {
+    // まっさらな新しいゲームの場合（現在の設定をチェックボックスに反映）
+    const hardSwitch = document.getElementById("hardmode-switch");
+    if(hardSwitch) {
+      hardSwitch.checked = ekiSettings.hardMode;
+      hardSwitch.disabled = false;
+    }
   }
+  
+  // ★必ず最後に説明モーダルの表示を同期させる
+  /*
+  if (typeof updateHelpContent === "function") updateHelpContent(); else {
+    // まだ回答していない（新しいゲーム）なら、操作可能にする
+    const hardSwitch = document.getElementById("hardmode-switch");
+    if(hardSwitch) hardSwitch.disabled = false;
+  }
+    */
 }
 
 
@@ -741,41 +1167,92 @@ currentGuess="";
 // キーボードの文字や、特殊ボタン（回答・消去）が押されたときの振り分けを行う
 // プレイヤーの入力を処理する
 function handleKeyPress(char){
-  // 箱が統合されたため、単純に文字数モードのキーを参照するように修正
-  let stateKey = isPlayingRandom ? "random" : currentMode;
-  let st = savedState[stateKey];
-  if(!st || st.isOver || guessesSubmitted>=maxGuesses) return;
-  
-  if(!st.startTime && char!=="BACK" && char!=="CLEAR" && char!=="ENTER"){
-    st.startTime=Date.now();
-    if(!isPlayingRandom) {
-      saveGameState();
+  // 1. クアッドモードと通常モードで、入力ロックとタイマー処理を完全に分離する
+  if (isQuadMode) {
+    const isAllCleared = quadSolved.every(s => s === true);
+    if (isAllCleared || guessesSubmitted >= maxGuesses) return;
+  } else {
+    let stateKey = isPlayingRandom ? "random" : (isYuruMode ? "yuru" : currentMode);
+    let st = savedState[stateKey];
+    if(!st || st.isOver || guessesSubmitted >= maxGuesses) return;
+    
+    // 最初の文字を入力した時のタイマー開始処理（通常モードのみ）
+    if(!st.startTime && char !== "BACK" && char !== "CLEAR" && char !== "ENTER"){
+      st.startTime = Date.now();
+      if(!isPlayingRandom) {
+        saveGameState();
+      }
     }
   }
-  
-  if(char==="BACK"){
-    if(currentGuess.length>0){ currentGuess=currentGuess.slice(0,-1); updateTiles(); }
-  }else if(char==="CLEAR"){
-    currentGuess=""; updateTiles();
-  }else if(char==="ENTER"){
-    if(currentGuess.length===rowLength) {
-      // 【修正】重い判定処理を10ミリ秒だけ遅らせて、ブラウザのフリーズ（処理落ち）を防ぐ
+
+  // 2. 実際の文字入力・消去の処理
+  if(char === "BACK"){
+    if(currentGuess.length > 0){ currentGuess = currentGuess.slice(0, -1); updateTiles(); }
+  } else if(char === "CLEAR"){
+    currentGuess = ""; updateTiles();
+  } else if(char === "ENTER"){
+    if(currentGuess.length === rowLength) {
       setTimeout(() => {
-        submitGuess(false);
+        // 3. 【追加】エンターキーを押した時の送信処理も、モードによって確実に振り分ける
+        if (isQuadMode) {
+          if (typeof submitQuadGuess === "function") submitQuadGuess();
+        } else {
+          submitGuess(false);
+        }
       }, 10);
     } else {
       showMessage(`${rowLength}文字入力してください`);
     }
-  }else{
-    if(currentGuess.length<rowLength){ currentGuess+=char; updateTiles(); }
+  } else {
+    if(currentGuess.length < rowLength){ currentGuess += char; updateTiles(); }
   }
 }
 
-//タイルに入力中文字を表示する
-function updateTiles(){
-  for(let j=0;j<rowLength;j++){
-    const tile=document.getElementById(`row-${guessesSubmitted}-tile-${j}`);
-    tile.textContent=currentGuess[j]||"";
+// タイルに入力中文字を表示し、クアッドの場合は縮小アニメーションも適用する
+function updateTiles() {
+  // クアッドモード用の処理
+  // 【修正後】updateTiles関数内のクアッドモード処理部分
+  if (isQuadMode) {
+    for (let b = 0; b < 4; b++) {
+      if (quadSolved[b]) continue; 
+      const board = document.getElementById(`board-${b}`);
+      if (!board) continue;
+      
+      // カウンター等を除外して「駅名の行」だけを正確に取得
+      const rows = Array.from(board.children).filter(r => r.classList.contains("board-row"));
+      
+      // 【修正3】各行の縮小・展開状態をリアルタイムに同期させる処理
+      rows.forEach((r, idx) => {
+        if (idx === guessesSubmitted) {
+          // 現在入力中のアクティブな行は、一括展開のON/OFFに関わらず常に拡大（ライトアップ）状態をキープ
+          r.classList.remove("inactive-row");
+          r.classList.add("force-expand");
+        } else if (idx < guessesSubmitted) {
+          // 過去の回答行の処理
+          r.classList.add("inactive-row");
+          //if (isQuadExpanded) {
+          //  r.classList.add("force-expand"); // 一括展開ONなら過去の行もすべて広げる
+          //} else {
+          //  r.classList.remove("force-expand"); // 一括展開OFFなら過去の行はペチャンコに縮める
+          //}
+        }
+      });
+
+      // 入力中の文字をタイルに反映
+      const currentRow = rows[guessesSubmitted];
+      if (currentRow) {
+        for (let j = 0; j < rowLength; j++) {
+          currentRow.children[j].textContent = currentGuess[j] || "";
+        }
+      }
+    }
+    return;
+  }
+
+  // 通常モード用の処理
+  for(let j = 0; j < rowLength; j++){
+    const tile = document.getElementById(`row-${guessesSubmitted}-tile-${j}`);
+    if(tile) tile.textContent = currentGuess[j] || "";
   }
 }
 
@@ -821,7 +1298,13 @@ return results;
 //駅の読みがなと状態（1=遭遇、2=的中）を受け取ってパソコンに記録する
 function updateZukan(yomi, status){
   const savedZukan=localStorage.getItem("ekiZukanData");
-  let zukan=savedZukan?JSON.parse(savedZukan):{};
+  let zukan={};
+  try {
+    zukan=savedZukan?JSON.parse(savedZukan):{};
+  } catch(e) {
+    console.error("図鑑データが破損しているため初期化します:", e);
+    zukan={};
+  }
   // let todayStr=new Date().toISOString().split('T')[0];
   // 【修正後】端末のローカル時計で「YYYY-MM-DD」を作成する
   let todayStr = getJSTDateString();
@@ -844,14 +1327,25 @@ function submitGuess(isRestore=false){
   // 【修正前】const isValid=stations.filter(s=>s.yomi.length===currentMode).some(s=>s.yomi===currentGuess);
   // 【修正後】無駄なリスト作りをやめ、見つかった瞬間に検索を終えるスマートな書き方に変更します
   // 【修正】廃止から40日間の「入力猶予期間（グレースピリオド）」を設ける
-  const isValid = stations.some(s => 
-    s.yomi === currentGuess && 
-    s.yomi.length === currentMode && 
-    (s.startDay === undefined || s.startDay <= currentDayIndex) && 
-    // 【ここがポイント】今日から32日引いた日よりも「後」に廃止された駅なら入力を許す（=過去32日以内に廃止された駅は入力を受け付ける）
-    (s.endDay === undefined || s.endDay > (currentDayIndex - 32) || s.endDay === 999999)
-  );
-  if(!isValid){ if(!isRestore)showMessage("実在しない駅名です"); return; }
+  // ▼▼▼ 修正後 ▼▼▼
+  let isValid = false;
+  if (isYuruMode) {
+    // ゆる鉄モード：5文字であれば無条件で入力を許可（辞書チェックなし）
+    isValid = (currentGuess.length === currentMode);
+  } else {
+    // ガチ鉄・チャレンジモード：従来通り実在駅のチェックを行う
+    isValid = stations.some(s => 
+      s.yomi === currentGuess && 
+      s.yomi.length === currentMode && 
+      (s.startDay === undefined || s.startDay <= currentDayIndex) && 
+      (s.endDay === undefined || s.endDay > (currentDayIndex - 32) || s.endDay === 999999)
+    );
+  }
+  
+  if (!isValid) { 
+    if (!isRestore) showMessage(isYuruMode ? "5文字で入力してください" : "実在しない駅名です"); 
+    return; 
+  }
   
   // ランダムモード（周年モード）でもハードモードの縛りを適用する。
   // ただし、エイプリルフールモード時は強制的に縛りを無効化する。
@@ -863,7 +1357,7 @@ function submitGuess(isRestore=false){
     }
   }
   
-  let stateKey = isPlayingRandom ? "random" : currentMode;
+  let stateKey = isPlayingRandom ? "random" : (isYuruMode ? "yuru" : currentMode);
   let st = savedState[stateKey];
   if(!st) {
     st = {guesses: [], guessTimes: [], startTime: null, endTime: null, usedHint: false, isWin: false, isOver: false};
@@ -889,13 +1383,15 @@ function submitGuess(isRestore=false){
     // 通常モードのみ履歴保存や図鑑更新を行う
     if(!isPlayingRandom){
       saveGameState(); 
+
+      // ekiZukanDataに統合するため廃止
+      // let allGuessed=JSON.parse(localStorage.getItem("ekiAllGuesses")||"[]");
+      // if(!allGuessed.includes(currentGuess)){
+      //   allGuessed.push(currentGuess);
+      //   localStorage.setItem("ekiAllGuesses",JSON.stringify(allGuessed));
+      // }
       
-      let allGuessed=JSON.parse(localStorage.getItem("ekiAllGuesses")||"[]");
-      if(!allGuessed.includes(currentGuess)){
-        allGuessed.push(currentGuess);
-        localStorage.setItem("ekiAllGuesses",JSON.stringify(allGuessed));
-      }
-      // 【安全性強化】図鑑機能が実装されている場合のみ呼び出し、エラーを防ぐ
+      // 図鑑機能が実装されている場合のみ呼び出し、エラーを防ぐ
       if(typeof updateZukan === "function") updateZukan(currentGuess, 2);
     }
   }
@@ -1011,16 +1507,24 @@ function validateHardMode(guess) {
   // まだ1手も送信していない（履歴がない）場合はチェック不要
   if (gridHistory.length === 0) return true;
   
-  // 前回の回答文字列と、それぞれのマスの色情報を取得
-  const key = isPlayingRandom ? "random" : currentMode;
+  // 前回の回答文字列と、それぞれのマスの色情報を取得（デイリーモードの判定を挟む）
+  const key = isPlayingRandom ? "random" : (isYuruMode ? "yuru" : currentMode);
   const lastGuess = savedState[key].guesses[gridHistory.length - 1];
   const lastColors = gridHistory[gridHistory.length - 1];
+
+  let guessArr = guess.split("");
+  let guessBases = guess.split("").map(getBaseChar);
   
   // 1. 緑色（位置も文字も一致）の縛りチェック
   for (let i = 0; i < rowLength; i++) {
-    if (lastColors[i] === "correct" && guess[i] !== lastGuess[i]) {
-      showMessage(`${i + 1}文字目は「${lastGuess[i]}」にしてください`);
-      return false;
+    if (lastColors[i] === "correct") {
+      if (guess[i] !== lastGuess[i]) {
+        showMessage(`${i + 1}文字目は「${lastGuess[i]}」にしてください`);
+        return false;
+      }
+      // 緑色の条件を満たした文字は、黄色・紫色の判定で使い回されないよう「消費済み」にする
+      guessArr[i] = null;
+      guessBases[i] = null;
     }
   }
   
@@ -1029,14 +1533,15 @@ function validateHardMode(guess) {
   for (let i = 0; i < rowLength; i++) {
     if (lastColors[i] === "present") requiredChars.push(lastGuess[i]);
   }
-  let guessArr = guess.split("");
   for (let rc of requiredChars) {
     let idx = guessArr.indexOf(rc);
     if (idx === -1) {
       showMessage(`「${rc}」を必ず含めてください`);
       return false;
     }
-    guessArr.splice(idx, 1); // 複数回の重複要求を正しく判定するため、見つかった文字を消費する
+    // 黄色の条件を満たした文字も、紫色の判定で二重取りされないよう「消費済み」にする
+    guessArr[idx] = null;
+    guessBases[idx] = null;
   }
   
   // 3. 紫色（濁点違い・小文字違いの同じ文字グループが含まれる）の縛りチェック
@@ -1044,20 +1549,21 @@ function validateHardMode(guess) {
   for (let i = 0; i < rowLength; i++) {
     if (lastColors[i] === "diacritic") requiredBases.push(getBaseChar(lastGuess[i]));
   }
-  let guessBases = guess.split("").map(getBaseChar);
   for (let rb of requiredBases) {
     let idx = guessBases.indexOf(rb);
     if (idx === -1) {
       showMessage(`「${rb}」グループの文字（濁音など）を含めてください`);
       return false;
     }
-    guessBases.splice(idx, 1);
+    // 消費
+    guessBases[idx] = null;
   }
   
   return true; // すべての縛りをクリアしていれば送信許可
 }
 
 // 説明欄の表示内容を現在のモードに合わせて切り替える関数
+/*
 function updateHelpContent() {
   const normalContent = document.getElementById("help-normal-content");
   const hardContent = document.getElementById("help-hard-content");
@@ -1069,6 +1575,7 @@ function updateHelpContent() {
     if(hardContent) hardContent.classList.add("hidden");
   }
 }
+  */
 
 
 // ==========================================
@@ -1085,16 +1592,28 @@ box.style.boxShadow=shadow;
 box.classList.remove("hidden");
 clearTimeout(msgTimeout); msgTimeout=setTimeout(()=>box.classList.add("hidden"),2000);
 }
+
 //ゲーム終了時に、正解の駅名、Wikipediaへのリンク、旅行サイトへの広告、過去の戦績グラフをまとめて表示する大きな画面を作る
 function showResultModal(isWin,isRestore){
   // 難易度ごとに戦績グラフや勝率を別々に集計・表示するための切り替え
-  let currentState = savedState[isPlayingRandom ? "random" : currentMode];
-  let targetMode = isPlayingRandom ? "random" : currentMode;
+  let stateKey = isPlayingRandom ? "random" : (isYuruMode ? "yuru" : currentMode);
+  let currentState = savedState[stateKey];
+  
+  // ここでも、ハードモードなら専用の箱からデータを読み込むようにする
+  let targetMode = stateKey;
+  if (!isPlayingRandom && currentState && currentState.isHardMode) {
+    targetMode = currentMode + "_hard";
+  }
+  
   let st = userStats[targetMode];
   if(!st) st = {played:0,won:0,currentStreak:0,maxStreak:0,dist:[0,0,0,0,0,0,0,0,0,0]};
   if(!st.dist) st.dist=[0,0,0,0,0,0,0,0,0,0];
+
   document.getElementById("modal-title").textContent=isWin?"正解！おめでとう！":"残念！ゲームオーバー";
-  document.getElementById("modal-desc").textContent=`${todayStation.kanji} (${todayStation.yomi})`;
+  document.getElementById("modal-desc").innerHTML = `
+    <span style="font-size:18px; font-weight:bold;">${todayStation.kanji}</span><br>
+    <span style="font-size:14px; color:#7f8c8d;">(${todayStation.yomi})</span><br>
+  `;
 
   // 【修正】お取り寄せ・ふるさと納税用に、常に市区町村単位の正確な地域名を作成
   let safePref = todayStation.pref || "富山県";
@@ -1103,7 +1622,7 @@ function showResultModal(isWin,isRestore){
   let muniMuni = searchMuni // + searchWard; // 例：「島根県江津市」
 
   // トラベル用の都会・田舎のキーワード分岐（宿泊施設の件数0を回避するためトラベル側のみ維持）
-  let isRural = todayStation.muni_type === "町" || todayStation.muni_type === "村" || todayStation.population < 2000;
+  let isRural = todayStation.population < 0; // todayStation.muni_type === "町" || todayStation.muni_type === "村" || ※廃止済み条件分岐
   let areaKeyword = isRural ? safePref : muniMuni;
   let searchKw = typeof isAprilFoolMode!=="undefined"&&isAprilFoolMode ? safePref : areaKeyword;
   
@@ -1112,105 +1631,47 @@ function showResultModal(isWin,isRestore){
     ? `＼ 聖地のある「${safePref}」へ巡礼して指の疲れを癒やす ／` 
     : `＼ この駅のある「${isRural ? safePref : safePref + muniMuni}」へ聖地巡礼に行こう！ ／`;
 
-  // 1段目：宿・ホテル予約（既存のトラベルURL）
-  let encodedStation=encodeURIComponent(encodeURIComponent(encodeURIComponent(searchKw)));
-  let yahooUrl=`https://px.a8.net/svt/ejp?a8mat=4B5NW1+DE94S2+4ZCO+BW8O2&a8ejpredirect=https%3A%2F%2Ftravel.yahoo.co.jp%2FikCo.ashx%3Fcosid%3Dy_a8net%26surl%3Dhttps%253A%252F%252Ftravel.yahoo.co.jp%252Fsearch%253Fadc%253D1%2526discsort%253D1%2526kwd%253D${encodedStation}%2526lc%253D1%2526ppc%253D2%2526rc%253D1%2526si%253D6`;
-  let yahooImp='<img border="0" width="1" height="1" src="https://www10.a8.net/0.gif?a8mat=4B5NW1+DE94S2+4ZCO+BW8O2" alt="" style="display:none;">';
-  let rakutenKeyword=encodeURIComponent(encodeURIComponent(searchKw));
-  let rakutenUrl=`https://af.moshimo.com/af/c/click?a_id=5616621&p_id=55&pc_id=55&pl_id=624&url=https%3A%2F%2Fkw.travel.rakuten.co.jp%2Fkeyword%2FSearch.do%3Fcharset%3Dutf-8%26f_max%3D30%26l-id%3DtopC_search_keyword%26f_query%3D${rakutenKeyword}`;
-  let rakutenImp='<img src="//i.moshimo.com/af/i/impression?a_id=5616621&p_id=55&pc_id=55&pl_id=624" width="1" height="1" style="border:none;" alt="" loading="lazy">';
+  // 勝率計算と画面への代入処理
+  // 1. プレイ回数から勝率（％）を計算します（0回の場合は0％にします）
+  let winRate = st.played > 0 ? Math.round((st.won / st.played) * 100) : 0;
 
-  // 2段目：通常のお取り寄せ（楽天側もご提示いただいた半角プラス区切りへ修正）
-let yahooShoppingDest = `https://shopping.yahoo.co.jp/search/${encodeURIComponent(muniMuni)}+${encodeURIComponent("特産品")}/0/?area=13&first=1&ss_first=1&sretry=0&tab_ex=commerce`;
-let yahooShoppingUrl = `https://af.moshimo.com/af/c/click?a_id=5626583&p_id=1225&pc_id=1925&pl_id=18502&url=${encodeURIComponent(yahooShoppingDest)}`;
-let yahooShoppingImp = '<img src="//i.moshimo.com/af/i/impression?a_id=5626583&p_id=1225&pc_id=1925&pl_id=18502" width="1" height="1" style="border:none;" alt="" loading="lazy">';
+  // 2. 結果画面（モーダル）のそれぞれの数字が表示される場所に、最新の記録を代入します
+  document.getElementById("stat-played").textContent = st.played;      // プレイ回数
+  document.getElementById("stat-winrate").textContent = winRate;        // 勝率
+  document.getElementById("stat-streak").textContent = st.currentStreak;  // 現在の連勝数
+  document.getElementById("stat-maxstreak").textContent = st.maxStreak;  // 最大の連勝数
 
-let rakutenMarketDest = `https://search.rakuten.co.jp/search/mall/${encodeURIComponent(muniMuni)}+${encodeURIComponent("特産品")}/`;
-let rakutenMarketUrl = `https://af.moshimo.com/af/c/click?a_id=5616620&p_id=54&pc_id=54&pl_id=616&url=${encodeURIComponent(rakutenMarketDest)}`;
-let rakutenMarketImp = '<img src="//i.moshimo.com/af/i/impression?a_id=5616620&p_id=54&pc_id=54&pl_id=616" width="1" height="1" style="border:none;" alt="" loading="lazy">';
+  //※いったん停止 共通関数を呼んでアフィリエイト広告を生成
+  //const isAF = typeof isAprilFoolMode !== "undefined" && isAprilFoolMode;
+  //document.getElementById("wiki-link-container").innerHTML = generateSharedAffiliateHTML(todayStation, isAF);
 
-// 3段目：ふるさと納税（こちらも同様に半角プラス区切りへ統一）
-let yahooFurusatoDest = `https://shopping.yahoo.co.jp/search/${encodeURIComponent(muniMuni)}+${encodeURIComponent("ふるさと納税")}/0/?first=1&ss_first=1&sretry=0&tab_ex=commerce`;
-let yahooFurusatoUrl = `https://af.moshimo.com/af/c/click?a_id=5626583&p_id=1225&pc_id=1925&pl_id=18502&url=${encodeURIComponent(yahooFurusatoDest)}`;
-let yahooFurusatoImp = '<img src="//i.moshimo.com/af/i/impression?a_id=5626583&p_id=1225&pc_id=1925&pl_id=18502" width="1" height="1" style="border:none;" alt="" loading="lazy">';
+  //※代わりにWikipediaリンクだけをシンプルに表示する
+  document.getElementById("wiki-link-container").innerHTML = `
+    <div style="margin-bottom:12px; text-align:center;">
+      <a href="${todayStation.url}" target="_blank" style="display:inline-block; padding:8px 12px; background-color:#e0e0e0; color:#333; text-decoration:none; border-radius:4px; font-weight:bold; font-size:12px;">Wikipediaで見る</a>
+    </div>
+  `;
 
-let rakutenFurusatoDest = `https://search.rakuten.co.jp/search/mall/${encodeURIComponent(muniMuni)}+${encodeURIComponent("ふるさと納税")}/`;
-let rakutenFurusatoUrl = `https://af.moshimo.com/af/c/click?a_id=5616620&p_id=54&pc_id=54&pl_id=616&url=${encodeURIComponent(rakutenFurusatoDest)}`;
-let rakutenFurusatoImp = '<img src="//i.moshimo.com/af/i/impression?a_id=5616620&p_id=54&pc_id=54&pl_id=616" width="1" height="1" style="border:none;" alt="" loading="lazy">';
+  // 共通関数を呼んで棒グラフを生成
+  const currentClearTurn = isWin ? gridHistory.length : -1;
+  document.getElementById("guess-distribution").innerHTML = generateSharedStatsGraphHTML(st.dist, currentClearTurn, maxGuesses);
 
-// 結果画面のHTML書き換え
-document.getElementById("wiki-link-container").innerHTML=`
-<div style="margin-bottom:12px;">
-<a href="${todayStation.url}" target="_blank" style="display:inline-block; padding:8px 12px; background-color:#e0e0e0; color:#333; text-decoration:none; border-radius:4px; font-weight:bold; font-size:12px;">Wikipediaで見る</a>
-</div>
-<div style="background-color:#fff3e0; border:1px solid #ffcc80; border-radius:6px; padding:10px; margin-bottom:5px; position:relative;">
-<div style="text-align:center; margin-bottom:8px;">
-<span style="display:inline-block; border:1px solid #aaa; border-radius:4px; padding:1px 6px; font-size:10px; color:#aaa; font-weight:bold;">PR</span>
-</div>
-<div style="font-size:11px; font-weight:bold; color:#e65100; margin-bottom:8px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${prText}</div>
-<div style="display:flex; justify-content:center; gap:8px; align-items:center; flex-wrap:wrap;">
-<a href="${yahooUrl}" target="_blank" style="display:flex; justify-content:center; align-items:center; padding:8px 0; background-color:#ffffff; border:1px solid #ff0033; color:#333; text-decoration:none; border-radius:4px; font-weight:bold; font-size:11px; width:45%;">
-<img src="/aff_images/yahoo_japan_icon_64.svg" alt="Y!" style="height:14px; margin-right:4px; border:none;">トラベル
-</a>
-<a href="${rakutenUrl}" target="_blank" style="display:flex; justify-content:center; align-items:center; padding:0; background-color:#00B900; border:1px solid #00B900; border-radius:4px; width:45%; height:32px; overflow:hidden;">
-<img src="/aff_images/R_Travel_v2.04.svg" alt="楽天トラベル" style="height:100%; border:none;">
-</a>
-<div style="width:100%; border-top:1px dashed #ffcc80; margin:6px 0;"></div>
-<div style="width:100%; font-size:11px; font-weight:bold; color:#e65100; margin-bottom:4px; text-align:left; padding-left:5%;">🎁 この土地の名産品をお取り寄せ（通常購入）</div>
-<a href="${yahooShoppingUrl}" target="_blank" style="display:flex; justify-content:center; align-items:center; padding:8px 0; background-color:#ffffff; border:1px solid #ff0033; color:#333; text-decoration:none; border-radius:4px; font-weight:bold; font-size:11px; width:45%;">
-<img src="/aff_images/yahoo_japan_icon_64.svg" alt="Y!" style="height:14px; margin-right:4px; border:none;">ショッピング
-</a>
-<a href="${rakutenMarketUrl}" target="_blank" style="display:flex; justify-content:center; align-items:center; padding:8px 0; background-color:#bf0000; color:#ffffff; border:none; border-radius:4px; font-weight:bold; font-size:11px; width:45%;">
-楽天市場で探す
-</a>
-<div style="width:100%; border-top:1px dashed #ffcc80; margin:6px 0;"></div>
-<div style="width:100%; font-size:11px; font-weight:bold; color:#e65100; margin-bottom:4px; text-align:left; padding-left:5%;">🗾 地域を応援して名産品を貰う（ふるさと納税）</div>
-<a href="${yahooFurusatoUrl}" rel="nofollow" referrerpolicy="no-referrer-when-downgrade" target="_blank" style="display:flex; justify-content:center; align-items:center; padding:8px 0; background-color:#ffffff; border:1px solid #ff0033; color:#333; text-decoration:none; border-radius:4px; font-weight:bold; font-size:11px; width:45%;">
-<img src="/aff_images/yahoo_japan_icon_64.svg" alt="Y!" style="height:14px; margin-right:4px; border:none;">ふるさと納税
-</a>
-<a href="${rakutenFurusatoUrl}" target="_blank" style="display:flex; justify-content:center; align-items:center; padding:8px 0; background-color:#7a0000; color:#ffffff; border:none; border-radius:4px; font-weight:bold; font-size:11px; width:45%;">
-楽天ふるさと納税
-</a>
-</div>
-</div>
-${rakutenImp}
-${yahooImp}
-${rakutenMarketImp}
-${yahooShoppingImp}
-${yahooFurusatoImp}
-${rakutenFurusatoImp}
-`;
-document.getElementById("stat-played").textContent=st.played;
-let winRate=st.played>0?Math.round((st.won/st.played)*100):0;
-document.getElementById("stat-winrate").textContent=winRate;
-document.getElementById("stat-streak").textContent=st.currentStreak;
-document.getElementById("stat-maxstreak").textContent=st.maxStreak;
-//何手目で正解できたかの分布データを横向きの棒グラフ（HTMLとCSS）として組み立てて表示する
-let distHTML="<div style='font-weight:bold;margin:15px 0 5px;border-bottom:1px solid #ccc;padding-bottom:5px;'>回答回数の分布</div>";
-let maxDist=Math.max(...st.dist);
-const barColors=["#6aaa64","#42a5f5","#26c6da","#ffca28","#ffa726","#ff7043","#ec407a","#ab47bc"];
-for(let i=1;i<=maxGuesses;i++){
-let count=st.dist[i]||0;
-let w=maxDist>0?Math.max(8,Math.round((count/maxDist)*100)):8;
-let bg=barColors[i-1]||"#6aaa64";
-distHTML+=`<div style="display:flex;align-items:center;margin-bottom:4px;">
-<div style="width:15px;font-weight:bold;text-align:right;margin-right:5px;font-size:12px;">${i}</div>
-<div style="flex:1;background-color:#f0f2f5;border-radius:2px;">
-<div style="background-color:${bg};height:18px;width:${w}%;color:white;text-align:right;padding-right:5px;font-size:11px;line-height:18px;border-radius:2px;box-sizing:border-box;">${count}</div>
-</div>
-</div>`;
-}
-document.getElementById("guess-distribution").innerHTML=distHTML;
-//タイルの色の結果を四角い絵文字（🟩🟨🟪⬛）の並びに変換し、結果画面の中央に配置する
-const grid=document.getElementById("modal-grid");
-let gridHTML=gridHistory.map((row,i)=>{
-let r=row.map(c=>colorToEmoji[c]).join("");
-return r;
-}).join("<br>");
-grid.innerHTML=gridHTML;
+  // --- (後半の絵文字作成などの処理はそのまま残す) ---
+  // document.getElementById("guess-distribution").innerHTML=distHTML;
+  //タイルの色の結果を四角い絵文字（🟩🟨🟪⬛）の並びに変換し、結果画面の中央に配置する
+  const grid=document.getElementById("modal-grid");
+  let gridHTML=gridHistory.map((row,i)=>{
+  let r=row.map(c=>colorToEmoji[c]).join("");
+  return r;
+  }).join("<br>");
+  grid.innerHTML=gridHTML;
   // ランダムモード中は、日々の勝率や戦績グラフなどの要素を非表示にしてスッキリさせる
-    document.getElementById("result-modal").style.display="flex"; // ←元からあるコード
+  // 結果画面のhiddenクラスを消して、画面中央に表示させます
+  const resModal = document.getElementById("result-modal");
+  resModal.style.display = ""; // 古い透明化の呪縛を強制解除
+  resModal.classList.remove("hidden");
 }
+
 // 結果画面でシェアボタンが押されたとき、文字と絵文字のパズル結果を組み立てて各SNSの投稿画面を開く
 function shareResult(type){
   let lastColors=gridHistory.length>0?gridHistory[gridHistory.length-1]:[];
@@ -1218,39 +1679,44 @@ function shareResult(type){
   let scoreStr=isWin?`${gridHistory.length}/${maxGuesses}`:`X/${maxGuesses}`;
   let currentUrl=window.location.href.split('?')[0];
 
-  // ハードモードONのときはタイトルを「駅ドルHard」に変更する
-  let currentState = savedState[isPlayingRandom ? "random" : currentMode];
-  let isHard = !!currentState.isHardMode;
-  let gameTitle = ekiSettings.hardMode ? "駅ドルHard" : "駅ドル";
-  let text=`${gameTitle} ${currentMode}文字モード ${scoreStr}\n\n`;
+  // ハードモードの状態を取得
+  let isHard = ekiSettings.hardMode;
+  
+  // モードとハードモードの組み合わせに応じて、タイトルを柔軟に切り替えます
+  let gameTitle = "駅ドル チャレンジモード";
+  if (isYuruMode) {
+    gameTitle = isHard ? "駅ドル デイリーモード Hard" : "駅ドル デイリーモード";
+  } else if (isHard) {
+    gameTitle = "駅ドル チャレンジモード Hard";
+  }
+  
+  let text=`${gameTitle} ${isYuruMode ? 5 : currentMode}文字 ${scoreStr}\n\n`;
 
   text+=gridHistory.map((row,i)=>{
     let r=row.map(c=>colorToEmoji[c]).join("");
     return (isWin&&i===gridHistory.length-1)?r+"💮":r;
   }).join("\n");
 
-  // ハードモードONのときは専用のハッシュタグ（#駅ドルHard と #駅ドルHard[文字数]）を追加する
   let hashtagStr = `#駅ドル\n`;
-  if (ekiSettings.hardMode) {
-    hashtagStr += `#駅ドルHard\n`;
-  }
-  hashtagStr += `#駅ドル${currentMode}\n`;
-  if (ekiSettings.hardMode) {
-    hashtagStr += `#駅ドルHard${currentMode}\n`;
+  if (isYuruMode) {
+    hashtagStr += `#駅ドルDaily\n`;
+    if (isHard) {
+      hashtagStr += `#駅ドルDaily_Hard\n`; // デイリーモード専用のハードタグ
+    }
+  } else {
+    hashtagStr += `#駅ドルChallenge\n`;
+    hashtagStr += `#駅ドルChallenge${currentMode}\n`;
+    if (isHard) {
+      hashtagStr += `#駅ドルChallenge_Hard\n`;
+    }
   }
 
-  text+=`\n\n${hashtagStr}${currentUrl}`;
+  text += `\n\n${hashtagStr}`;
 
-  if(type==="twitter"){
-    let url=`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`; window.open(url,"_blank");
-  }else if(type==="line"){
-    let url=`https://line.me/R/msg/text/?${encodeURIComponent(text)}`; window.open(url,"_blank");
-  }else if(type==="facebook"){
-    let url=`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(currentUrl)}`; window.open(url,"_blank");
-  }else if(type==="copy"){
-    navigator.clipboard.writeText(text).then(()=>showMessage("クリップボードにコピーしました"));
-  }
+  // 実際のシェア送信処理を共通関数に任せる
+  executeSharedShare(type, text, currentUrl);
 }
+
 // すべての画面準備が整った（DOM構築完了）タイミングで一番最初の初期化関数（initGame）を起動させます
 window.addEventListener("DOMContentLoaded",initGame);
 
@@ -1299,9 +1765,22 @@ window.triggerEventEffect=(ev)=>{
   if(ev==="aprilfool"){
     let mLen=stations.reduce((max,s)=>Math.max(max,s.yomi.length),0);
     let longestPool=stations.filter(s=>s.yomi.length===mLen);
-    let afSaved=localStorage.getItem("ekiAF_"+currentDayIndex);
+    
+    // 【修正後】以下のコードにまるごと差し替えてください
+    let afSaved = localStorage.getItem("ekiAF_" + currentDayIndex);
     let longestSt;
-    if(afSaved){ longestSt=JSON.parse(afSaved); }else{ longestSt=longestPool[Math.floor(Math.random()*longestPool.length)]; localStorage.setItem("ekiAF_"+currentDayIndex,JSON.stringify(longestSt)); }
+    if (afSaved) { 
+      longestSt = JSON.parse(afSaved); 
+    } else { 
+      // 【追加】今日以外の古い「ekiAF_〇〇」データを綺麗にお掃除する
+      Object.keys(localStorage).forEach(k => {
+        if (k.startsWith("ekiAF_")) localStorage.removeItem(k);
+      });
+      // 新しい駅を選んで保存
+      longestSt = longestPool[Math.floor(Math.random() * longestPool.length)]; 
+      localStorage.setItem("ekiAF_" + currentDayIndex, JSON.stringify(longestSt)); 
+    }
+    
     const modeArea=document.querySelector(".mode-btn").parentNode;
     if(modeArea&&!document.getElementById("mode-"+mLen)){
       const bMax=document.createElement("button");
@@ -1309,7 +1788,7 @@ window.triggerEventEffect=(ev)=>{
       bMax.style.backgroundColor="#e91e63";bMax.style.color="#fff";bMax.style.border="none";
       
       bMax.addEventListener("click",()=>{
-        // 【追加】エイプリルフールモードではハードモードスイッチを強制OFFにし、操作不可（グレーアウト）にする
+        // エイプリルフールモードではハードモードスイッチを強制OFFにし、操作不可（グレーアウト）にする
         const hs = document.getElementById("hardmode-switch");
         if(hs) {
           hs.checked = false;
@@ -1317,7 +1796,7 @@ window.triggerEventEffect=(ev)=>{
         }
         ekiSettings.hardMode = false;
         
-      if(typeof updateHelpContent === "function") updateHelpContent();
+      //if(typeof updateHelpContent === "function") updateHelpContent();
 
     document.querySelectorAll(".mode-btn").forEach(b=>b.classList.remove("active"));
     bMax.classList.add("active"); 
@@ -1410,7 +1889,13 @@ if (m === openDate.getMonth() + 1 && day === openDate.getDate() && d.getFullYear
   sessionStorage.setItem("debug_site_anni_year", nYear);
 }
 // ユーザー個人の周年記念判定
-const meta = JSON.parse(localStorage.getItem("ekiZukanMeta") || '{}');
+let meta = {};
+try {
+  meta = JSON.parse(localStorage.getItem("ekiZukanMeta") || '{}');
+} catch(e) {
+  console.error("周年判定用のメタデータが破損しています:", e);
+  meta = {};
+}
 if (meta.firstPlayDate) {
   const firstDate = new Date(meta.firstPlayDate);
   if (firstDate.getMonth() + 1 === m && firstDate.getDate() === day && firstDate.getFullYear() < d.getFullYear()) {
@@ -1433,7 +1918,7 @@ if (meta.firstPlayDate) {
         isPlayingRandom = true; 
         isAprilFoolMode = false; // 【追加】念のためエイプリルフールフラグを解除する
         
-        // 【追加】ハードモードスイッチの操作不可（グレーアウト）状態を解除する
+        // ハードモードスイッチの操作不可（グレーアウト）状態を解除する
         const hs = document.getElementById("hardmode-switch");
         if(hs) hs.disabled = false;
 
@@ -1498,8 +1983,15 @@ startEventPopups();
 // プレイヤーが正解（クリア）した瞬間に、すべての実績データを一斉に計算して更新する関数
 function incrementClearAchievements(actualGuesses, clearTimeMs) {
   // 保存されている実績データを読み込み、無ければ初期構造を作ります
-  let ach = JSON.parse(localStorage.getItem("ekiAchievements") || '{"bestScores":{},"counters":{"legendStationClears":0,"noAbsentClears":0,"totalYomiLength":0,"noHintClears":0,"hintUsedClears":0,"totalSubmitCount":0},"winStreak":{"currentStreak":0,"maxStreak":0,"lastClearedDate":""},"hourlyClears":{},"unlockedSets":{"prefs":[],"companies":[],"lines":[],"clearedEvents":[],"clearedMonthDays":[],"clearedStationNames":[]}}');
-  
+  const defaultAch = '{"bestScores":{},"counters":{"legendStationClears":0,"noAbsentClears":0,"totalYomiLength":0,"noHintClears":0,"hintUsedClears":0,"totalSubmitCount":0},"winStreak":{"currentStreak":0,"maxStreak":0,"lastClearedDate":""},"hourlyClears":{},"unlockedSets":{"prefs":[],"companies":[],"lines":[],"clearedEvents":[],"clearedMonthDays":[],"clearedStationNames":[]}}';
+  let ach;
+  try {
+    ach = JSON.parse(localStorage.getItem("ekiAchievements") || defaultAch);
+  } catch(e) {
+    console.error("実績データが破損しているため初期化します:", e);
+    ach = JSON.parse(defaultAch);
+  }
+
   // --- 1. 将来のモード（3文字、7文字など）に自動対応する処理 ---
   if (!ach.bestScores[currentMode]) {
     ach.bestScores[currentMode] = { "minGuesses": 8, "bestTimeMs": 9999999 };
@@ -1633,123 +2125,1044 @@ function incrementClearAchievements(actualGuesses, clearTimeMs) {
   // 最後に、新しく計算し終わった実績データをLocalStorageに一括で上書き保存します
   localStorage.setItem("ekiAchievements", JSON.stringify(ach));
   
-  // --- 8. クリア済みインデックスの記録（文字数モード別） ---
-  let clearedData = JSON.parse(localStorage.getItem("ekiClearedDays") || '{"4":[],"5":[],"6":[],"4_hard":[],"5_hard":[],"6_hard":[]}');
+  // --- 8. クリア済みインデックスの記録（文字数モード別） ---（後から復元できるため廃止）
+  // let clearedData = JSON.parse(localStorage.getItem("ekiClearedDays") || '{"4":[],"5":[],"6":[],"4_hard":[],"5_hard":[],"6_hard":[]}');
   
   // 通常モードの記録（ハードでクリアした場合も、大元の「クリア済み」として記録しておく）
-  if (!clearedData[currentMode]) clearedData[currentMode] = [];
-  if (!clearedData[currentMode].includes(currentDayIndex)) {
-    clearedData[currentMode].push(currentDayIndex);
-    clearedData[currentMode].sort((a, b) => a - b);
-  }
+  // if (!clearedData[currentMode]) clearedData[currentMode] = [];
+  // if (!clearedData[currentMode].includes(currentDayIndex)) {
+  //   clearedData[currentMode].push(currentDayIndex);
+  //   clearedData[currentMode].sort((a, b) => a - b);
+  // }
 
   // ハードモードの記録（ハードモード維持でクリアした場合のみ、別途 _hard 枠にも記録）
-  if (currentState && currentState.isHardMode) {
-    let hardKey = currentMode + "_hard";
-    if (!clearedData[hardKey]) clearedData[hardKey] = [];
-    if (!clearedData[hardKey].includes(currentDayIndex)) {
-      clearedData[hardKey].push(currentDayIndex);
-      clearedData[hardKey].sort((a, b) => a - b);
+  // if (currentState && currentState.isHardMode) {
+  //   let hardKey = currentMode + "_hard";
+  //   if (!clearedData[hardKey]) clearedData[hardKey] = [];
+  //   if (!clearedData[hardKey].includes(currentDayIndex)) {
+  //     clearedData[hardKey].push(currentDayIndex);
+  //     clearedData[hardKey].sort((a, b) => a - b);
+  // }
+  // }
+  
+  // localStorage.setItem("ekiClearedDays", JSON.stringify(clearedData));
+}
+
+// テーマカラー切り替え時のラグ解消
+//function toggleDarkMode() {
+  // 1. アニメーション無効化クラスを付ける
+//  document.body.classList.add('preload-transitions');
+  
+  // 2. ダークモードのクラスを切り替える
+//  document.body.classList.toggle('theme-dark');
+  
+  // 3. 【追加】ここでブラウザに現在の高さを読み取らせることで、
+  // 強制的に「アニメーションなしの状態」を一度計算（確定）させます。
+//  document.body.offsetHeight; 
+  
+  // 4. その後、無効化クラスを外す（setTimeoutは不要になります）
+//  document.body.classList.remove('preload-transitions');
+//}
+
+
+
+// クアッドモードを開始する処理
+async function startQuadMode() {
+  isQuadMode = true;
+  isPlayingRandom = false;
+  quadSolved = [false, false, false, false];
+  quadKeyColors = {};
+  quadGridHistory = []; 
+  currentGuess = "";
+  guessesSubmitted = 0;
+
+  // クアッド用の盤面コンテナを表示する
+  const quadContainer = document.getElementById("quad-board-container");
+  if (quadContainer) quadContainer.classList.remove("hidden");
+  document.getElementById("expand-toggle-btn")?.classList.remove("hidden");
+
+  // 通常用の盤面コンテナを非表示にする
+  const normalBoard = document.getElementById("game-board");
+  if (normalBoard) normalBoard.classList.add("hidden");
+
+  //ハードモードのスイッチ領域を非表示にする（通常モードとクアッドモードで切替）
+  const hardContainer = document.querySelector(".hardmode-container");
+  if (hardContainer) hardContainer.classList.add("hidden");
+  const quadHardContainer = document.querySelector(".quad-hardmode-container");
+  if (quadHardContainer) quadHardContainer.classList.remove("hidden");
+
+  // 現在の文字数に合わせて、入力判定用の「駅リスト」を正しく更新する
+  availableStations = stations.filter(s => s.yomi.length === currentMode).map(s => s.yomi);
+  
+  // クアッド盤面のCSS変数（列数）を更新し、見た目の枠数を合わせる
+  document.getElementById("quad-board-container")?.style.setProperty("--row-length", currentMode);
+
+  await selectQuadStations(currentMode);
+  
+  buildQuadBoards();
+  resetKeyboardStyles();
+
+  // クアッドモードのセーブデータ復元処理
+  let stateKey = "quad" + currentMode;
+  // クアッド専用の週次セーブデータをローカルストレージから読み込む
+  let quadWeeklyLog = {};
+  try {
+    quadWeeklyLog = JSON.parse(localStorage.getItem("ekiQuadWeeklyState") || "{}");
+  } catch(e) {
+    console.error("クアッド週次データが破損しています:", e);
+    quadWeeklyLog = {};
+  }
+  
+  // 今週のデータ枠がなければ新しく作成する
+  if (!quadWeeklyLog[currentWeekIndex]) {
+    quadWeeklyLog[currentWeekIndex] = {};
+  }
+  
+  let st = quadWeeklyLog[currentWeekIndex][stateKey];
+  if (!st) {
+    // 初回プレイ時。isHardModeを最初からtrue（オン）にしておく
+    st = { guesses: [], guessTimes: [], quadSolved: [false,false,false,false], quadGridHistory: [], isOver: false, isHardMode: true };
+    quadWeeklyLog[currentWeekIndex][stateKey] = st;
+    localStorage.setItem("ekiQuadWeeklyState", JSON.stringify(quadWeeklyLog));
+  }
+  
+  // 読み込んだデータを現在のグローバル変数にセットする
+  savedState[stateKey] = st;
+
+  // 盤面の展開状態をセット
+  isQuadExpanded = st.isExpanded || false;
+
+  // ハードモードスイッチを復元
+  const quadHardSwitch = document.getElementById("quad-hardmode-switch");
+  if (quadHardSwitch) {
+    quadHardSwitch.checked = !!st.isHardMode;
+    // 1手以上回答済み かつ ハードモードがオフなら、二度とオンにできないよう操作不可にする
+    if (st.guesses && st.guesses.length > 0 && !st.isHardMode) {
+      quadHardSwitch.disabled = true;
+    } else {
+      quadHardSwitch.disabled = false;
     }
   }
   
-  localStorage.setItem("ekiClearedDays", JSON.stringify(clearedData));
-}
-
-
-// ==========================================
-// データのエクスポートとインポート（改ざん防止機能付き）
-// ==========================================
-
-// データから固有の「合言葉（チェックサム）」を生成する関数
-// 文字列の文字コードを計算して、短い英数字の組み合わせを作ります
-function generateChecksum(str) {
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    const char = str.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash = hash & hash; // 32ビットの整数に変換
+  // セーブデータが存在する場合は、順番に送信して画面を再現する
+  if (st && st.guesses && st.guesses.length > 0) {
+    st.guesses.forEach(g => {
+      currentGuess = g;
+      submitQuadGuess(true); // 復元モードで過去の単語を流し込む
+    });
   }
-  return hash.toString(36); // 短い英数字の文字列にして返す
+  currentGuess = "";
+
+  // ★修正：外側のカウンター要素を巻き込まないよう、正確に「board-row」だけを取得してライトアップします
+  for (let b = 0; b < 4; b++) {
+    const board = document.getElementById(`board-${b}`);
+    if (board) {
+      const rows = Array.from(board.getElementsByClassName("board-row"));
+      
+      // 各行（r）が現在何手目（idx）かを判定し、状態を適用する
+      rows.forEach((r, idx) => {
+        
+        // まだクリアされていない盤面の、現在入力する行だけを確実に拡大する
+        if (idx === guessesSubmitted && !quadSolved[b]) {
+          r.classList.remove("inactive-row");
+          r.classList.add("force-expand"); 
+          
+        } else {
+          r.classList.add("inactive-row");
+          
+          // 過去の行（idx < guessesSubmitted）で、かつ展開設定（isQuadExpanded）がONなら拡大状態を維持する
+          if (idx < guessesSubmitted && isQuadExpanded) {
+            r.classList.add("force-expand");
+          } else {
+            // それ以外（未来の行や、展開設定がOFFの場合）は閉じる
+            r.classList.remove("force-expand");
+          }
+        }
+      });
+    }
+  }
+
+  if (typeof updateQuadRemainingCounts === "function") {
+    updateQuadRemainingCounts();
+  }
 }
 
-// データを1つのテキストにまとめて書き出す（エクスポート）
-function exportUserData() {
-  // ローカルストレージから必要な全データを集める
-  const data = {
-    game: "Ekidle",  // 駅ドルの証明タグ
-    stats: localStorage.getItem("ekiPuzzleStatsV2"),
-    archive: localStorage.getItem("ekiPuzzleArchiveV1"),
-    zukan: localStorage.getItem("ekiZukanData"),
-    meta: localStorage.getItem("ekiZukanMeta"),
-    achievements: localStorage.getItem("ekiAchievements"),
-    guesses: localStorage.getItem("ekiAllGuesses"),
-    cleared: localStorage.getItem("ekiClearedDays"),
-    settings: localStorage.getItem("ekiSettings"),
-    streak: localStorage.getItem("ekiLoginStreak"),
-    version: localStorage.getItem("ekiSystemVersion"),
-    log: localStorage.getItem("ekiPuzzleStateV1_Log")
-  };
+// 4つの駅を決定する処理（ファイル参照 ＋ 失敗時はシミュレーション）
+async function selectQuadStations(modeLength) {
+  const SECRET_SALT = "EkiDoru_Secret_2026!";
   
-  // データをJSON文字列に変換する
-  const payloadString = JSON.stringify(data);
-  // データの中身から、改ざん確認用の合言葉（チェックサム）を作成する
-  const checksum = generateChecksum(payloadString);
+  // 現在の日付（今日）
+  const currentJstObj = getJSTDate();
+  // 曜日を取得 (0:日, 1:月, ... 6:土)
+  const dayOfWeek = currentJstObj.getDay() || 7;
+
+  // 今週の「月曜日」の日付を計算する
+  const mondayJstObj = new Date(currentJstObj.getTime());
+  mondayJstObj.setDate(mondayJstObj.getDate() - (dayOfWeek - 1));
+
+  const mondayY = mondayJstObj.getFullYear();
+  const mondayM = String(mondayJstObj.getMonth() + 1).padStart(2, '0');
+  const mondayD = String(mondayJstObj.getDate()).padStart(2, '0');
   
-  // データ本体と合言葉をセットにしてから、Base64（暗号風）に変換する
-  const secureData = JSON.stringify({ payload: payloadString, sig: checksum });
-  const code = btoa(encodeURIComponent(secureData));
-  
-  // 出来上がった文字列をクリップボードにコピーする
-  navigator.clipboard.writeText(code).then(() => {
-    alert("引き継ぎコードをクリップボードにコピーしました！\n\n※大切なデータですので、ブラウザの不具合に備えて、念のためメモ帳アプリやメールなどに貼り付けて別で控えておくことを強くおすすめします。");
+  // クアッドの問題を引くための「月曜日」の文字列を作成
+  const mondayStr = `${mondayY}-${mondayM}-${mondayD}`;
+  const yearStr = mondayY.toString();
+
+  // クアッド用候補駅（通常の出題条件 ＋ 通常モードの今日の答えとは被らないようにする）
+  let validPool = stations.filter(s => 
+      s.yomi.length === modeLength && 
+      s.pref && s.companies && s.companies.length > 0 &&
+      !(s.companies.length === 1 && s.companies[0] === "日本貨物鉄道") &&
+      s.is_abolished_confirmed !== true &&
+      (!todayStation || s.yomi !== todayStation.yomi)
+  );
+
+  try {
+    const answersData = await fetchSharedAnswerDict(yearStr);
+    //todayStrではなく、mondayStrを使って月曜日の答えを取得する
+    const targetHashes = answersData[mondayStr]?.[`quad${modeLength}`];
+    
+    if (!targetHashes || targetHashes.length !== 4) {
+        throw new Error("本週のクアッド答えデータがありません");
+    }
+
+    const calcSha256 = async (str) => {
+      const buf = new TextEncoder().encode(str);
+      const hashBuf = await crypto.subtle.digest('SHA-256', buf);
+      return Array.from(new Uint8Array(hashBuf)).map(b => b.toString(16).padStart(2, '0')).join('');
+    };
+
+    const hashPromises = validPool.map(async (s) => {
+      return { station: s, hash: await calcSha256(SECRET_SALT + s.yomi) };
+    });
+    const hashedStations = await Promise.all(hashPromises);
+
+    quadStations = [];
+    for (let h of targetHashes) {
+        const found = hashedStations.find(item => item.hash === h);
+        if (found) quadStations.push(found.station);
+        else throw new Error("ハッシュが一致する駅が見つかりません");
+    }
+    return;
+    
+  } catch (err) {
+    console.warn("クアッドのファイル読み込み失敗。シミュレーションで決定します:", err);
+    
+    //月曜日の dayIndex を正確に計算する
+    const mondayUTC = Date.UTC(mondayY, mondayJstObj.getMonth(), mondayJstObj.getDate());
+    const baseUTC = Date.UTC(2024, 0, 1);
+    const mondayDayIndex = Math.round((mondayUTC - baseUTC) / 86400000) + debugOffset;
+
+    // 統合関数を呼び出し、クアッド用の4つの答えをセットする
+    let answers = simulateUnifiedAnswers(stations, mondayDayIndex);
+    
+    //通常モードの変数(todayStation)ではなく、クアッド用の変数(quadStations)に代入する
+    quadStations = answers[`quad${modeLength}`];
+  }
+}
+
+
+
+// 行の独立トグル化およびShiftキーでの範囲一括拡大機能
+function buildQuadBoards() {
+  for (let b = 0; b < 4; b++) {
+    const board = document.getElementById(`board-${b}`);
+    board.className = "quad-board"; // クリア状態をリセット
+    board.innerHTML = "";
+    board.style.setProperty("--row-length", currentMode);
+
+    // 残り駅数をリアルタイム表示する要素を左上に配置
+    const counter = document.createElement("div");
+    counter.className = "quad-remain-counter";
+    counter.id = `quad-remain-${b}`;
+    counter.textContent = "残り -- 駅";
+    // counter.style.display = "none"; // ★追加：1手目を打つまでは非表示
+    board.appendChild(counter);
+    //追加ここまで
+
+    // この盤面（ボード）内で最後にクリックされた行の番号を記憶する変数
+    let lastClickedIdx = null;
+
+    // 【修正3】全回答行をループで生成する処理
+    for (let i = 0; i < maxGuesses; i++) {
+      const row = document.createElement("div");
+      row.className = "board-row";
+      
+      // 1行目固定ではなく、現在入力待ちのアクティブな行（guessesSubmitted）を最初から拡大します
+      if (i === guessesSubmitted) {
+        row.classList.add("force-expand"); // 現在入力中の行は常に拡大
+      } else {
+        row.classList.add("inactive-row");
+        // もし前回「一括展開」されていた場合は、過去の行も最初から拡大状態にします
+        if (i < guessesSubmitted && isQuadExpanded) {
+          row.classList.add("force-expand");
+        }
+      }
+      
+      for (let j = 0; j < currentMode; j++) {
+        const tile = document.createElement("div");
+        tile.className = "tile";
+        row.appendChild(tile);
+      }
+      board.appendChild(row);
+      
+      
+      // 行をタップ（クリック）したときの処理
+      row.addEventListener("click", function(e) {
+        // 縮小されていない行（現在入力中のアクティブな行など）は処理しない
+        if (!this.classList.contains("inactive-row")) return;
+
+        const currentIdx = i;
+
+        // 【機能1】Shiftキーが押されており、かつ前回クリックした行が同じ盤面内にある場合（範囲選択）
+        if (e.shiftKey && lastClickedIdx !== null) {
+          const start = Math.min(lastClickedIdx, currentIdx);
+          const end = Math.max(lastClickedIdx, currentIdx);
+          
+          // 今回クリックした行が「これから開く」のか「これから閉じる」のかを判定
+          const isExpanding = !this.classList.contains("force-expand");
+          
+          // board内の「board-row」クラスを持つ要素（行）だけを正確にリスト化する
+          const rows = board.getElementsByClassName("board-row");
+          
+          // 前回クリックした位置から、今回クリックした位置までの行をすべて同じ状態に合わせる
+          for (let k = start; k <= end; k++) {
+            const targetRow = rows[k];
+            if (targetRow && targetRow.classList.contains("inactive-row")) {
+              if (isExpanding) {
+                targetRow.classList.add("force-expand");
+              } else {
+                targetRow.classList.remove("force-expand");
+              }
+            }
+          }
+        } else {
+          // 【機能2】通常のクリック（単体での開閉切り替え）
+          if (this.classList.contains("force-expand")) {
+            this.classList.remove("force-expand");
+          } else {
+            this.classList.add("force-expand");
+          }
+        }
+
+        // 最後にクリックされた行の番号を今回の位置に更新
+        lastClickedIdx = currentIdx;
+      });
+    }
+  }
+}
+
+// キーボードのスタイルとインライン背景を初期化し、使われない文字の枠を非表示にする
+function resetKeyboardStyles() {
+  // 現在の文字数の駅で使われているすべての文字を抽出してセットに突入させる
+  const validChars = new Set();
+  // ⭕️ 修正後：通常モードと同じく、すべての駅の文字を対象にする
+  stations.forEach(s => {
+    for (let char of s.yomi) validChars.add(char);
+  });
+
+  document.querySelectorAll(".key").forEach(key => {
+    const char = key.textContent;
+    
+    // システムボタン（ENTER, BACK, CLEARなど）や実在する文字のキー
+    if (char === "ENTER" || char === "BACK" || char === "CLEAR" || char === "確定" || char === "1字消す" || char === "全消去" || validChars.has(char)) {
+      key.className = "key";
+    } else {
+      // どの駅名にも使われない文字のキーは非表示にする
+      key.className = "key dummy";
+    }
+    key.style.background = ""; 
   });
 }
 
-// テキストからデータを復元する（インポート）
-function importUserData(code) {
+// 【修正後：関数全体を置き換え】
+// 引数に isRestore=false を追加し、復元中かどうかを判別できるようにします
+function submitQuadGuess(isRestore = false) {
+
+  // クアッド用のセーブデータ枠を取得する
+  let stateKey = "quad" + currentMode;
+  let st = savedState[stateKey];
+  if (!st) {
+    st = {guesses: [], guessTimes: [], quadSolved: [false,false,false,false], quadGridHistory: [], isOver: false};
+    savedState[stateKey] = st;
+  }
+
+  // 復元中でない（プレイヤーの実際の入力）場合のみ、文字数と駅名のチェックを行う
+  if (!isRestore) {
+    // 【共通】文字数チェック
+    if (currentGuess.length !== currentMode) {
+      showMessage("文字数が足りません");
+      return;
+    }
+
+    // ハードモード(実在駅縛り)がONの時のみ辞書チェックを行う 
+    if (st.isHardMode) {
+      const guessExists = stations.some(s => s.yomi === currentGuess);
+      if (!guessExists) {
+        showMessage("実在しない駅名です");
+        return;
+      }
+    }
+  }
+
+  // 各盤面の色結果を集約するための多次元配列
+  let allBoardResults = [];
+  // ▼▼▼ 追加：今回の判定前に、どの盤面が既にクリア済みだったかを記憶しておく ▼▼▼
+  const prevQuadSolved = [...quadSolved];
+
+  // 4つの盤面をループ処理して1つずつ色を判定していく
+  for (let b = 0; b < 4; b++) {
+    const board = document.getElementById(`board-${b}`);
+    // 【修正後】クラス名から正確に何手目の行かを引っ張るように変更します
+    const row = board.getElementsByClassName("board-row")[guessesSubmitted];
+    const targetStation = quadStations[b];
+
+    // すでにその盤面がクリア済みの場合は、灰色文字のスキップ表示にする
+    if (quadSolved[b]) {
+      const skipColors = Array(currentMode).fill("absent");
+      allBoardResults.push(skipColors);
+      
+      for (let j = 0; j < currentMode; j++) {
+        const tile = row.children[j];
+        tile.textContent = currentGuess[j];
+        tile.classList.add("absent");
+        tile.style.opacity = "0.3"; // クリア済みスキップ枠は薄く見せる
+      }
+      continue;
+    }
+
+    // 内部の判定ロジックを呼び出して色の配列を取得
+    const rowColors = checkRowColors(currentGuess, targetStation.yomi);
+    allBoardResults.push(rowColors);
+
+    // 盤面のタイルに文字と色を反映
+    for (let j = 0; j < currentMode; j++) {
+      const tile = row.children[j];
+      tile.textContent = currentGuess[j];
+      tile.classList.add(rowColors[j]);
+    }
+
+    // もし全ての文字が「correct（緑）」なら、この盤面はクリア！
+    const isCorrectAll = rowColors.every(c => c === "correct");
+    if (isCorrectAll) {
+      quadSolved[b] = true;
+      board.classList.add("cleared"); // 盤面全体をグレーアウト
+      // 復元時であってもクリア済みなら「CLEARED!」の文字を出します
+      if (!prevQuadSolved[b] && typeof showClearedAnimation === "function") {
+        showClearedAnimation(board);
+      }
+    }
+  }
+
+  // 4色ブレンドキーボードの表示更新
+  updateQuadKeyboardLogic(currentGuess, allBoardResults);
+  
+  // 履歴に今回の4盤面分の色結果（🟩🟨など）を保存する
+  quadGridHistory.push(allBoardResults);
+
+  // ▼▼▼ 【重要】保存処理（復元中でない場合のみ） ▼▼▼
+  if (!isRestore) {
+    st.guesses.push(currentGuess);
+    st.guessTimes.push(Date.now());
+    st.quadSolved = [...quadSolved];
+    st.quadGridHistory = [...quadGridHistory];
+  }
+
+  // 手数を1つ進め、入力欄を空にする
+  guessesSubmitted++;
+  if (!isRestore) currentGuess = "";
+
+  // 勝敗の判定
+  const isAllCleared = quadSolved.every(s => s === true);
+  if (isAllCleared || guessesSubmitted >= maxGuesses) {
+    
+    // ▼▼▼ ゲーム終了状態の保存 ▼▼▼
+    if (!isRestore) {
+      st.isOver = true;
+      saveQuadGameState();
+      
+      // 運行記録の保存（変数名が st で被るため stUser に変更しています）
+      let targetMode = "quad" + currentMode; 
+      if (!userStats[targetMode]) {
+        userStats[targetMode] = { played: 0, won: 0, currentStreak: 0, maxStreak: 0, guesses: [] };
+      }
+      let stUser = userStats[targetMode];
+      
+      stUser.played++;
+      if (isAllCleared) {
+        stUser.won++;
+        stUser.currentStreak++;
+        if (stUser.currentStreak > stUser.maxStreak) stUser.maxStreak = stUser.currentStreak;
+        // 最終的に全クリアした手数を記録する
+        stUser.guesses[guessesSubmitted] = (stUser.guesses[guessesSubmitted] || 0) + 1;
+      } else {
+        stUser.currentStreak = 0;
+      }
+      localStorage.setItem("ekiPuzzleStatsV2", JSON.stringify(userStats));
+     
+      // アラートではなく、1.5秒待ってから専用の結果モーダルを美しく表示する
+      setTimeout(showQuadResultModal, 1500);
+    }
+  } else {
+    // 途中経過を保存
+    if (!isRestore) saveQuadGameState();
+    
+    // ▼▼▼ 修正：復元中（再読み込み時）は、タイルに余計な文字が残らないよう更新をスキップします ▼▼▼
+    if (!isRestore && typeof updateTiles === "function") {
+      updateTiles();
+    }
+
+    // ▼▼▼ 【重要】ここで残り駅数を再計算して画面を更新します ▼▼▼
+    if (!isRestore && typeof updateQuadRemainingCounts === "function") {
+      updateQuadRemainingCounts();
+    }
+  }
+}
+
+// 盤面クリア時のジャンプアニメーション生成関数 
+// 指定された盤面（boardElement）の上に、CLEARED!の文字を配置します
+function showClearedAnimation(boardElement) {
+  const container = document.createElement("div");
+  container.className = "cleared-animation-container";
+  
+  const text = "CLEARED!";
+  // 1文字ずつspanタグで囲み、アニメーションの開始時間を0.05秒ずつズラすことでウェーブ状にジャンプさせる
+  for (let i = 0; i < text.length; i++) {
+    const span = document.createElement("span");
+    span.textContent = text[i];
+    span.style.animationDelay = `${i * 0.05}s`;
+    container.appendChild(span);
+  }
+  
+  boardElement.appendChild(container);
+}
+
+
+// クアッド専用の結果モーダルを表示する処理
+function showQuadResultModal() {
+  const isAllCleared = quadSolved.every(s => s === true);
+  document.getElementById("quad-modal-title").textContent = isAllCleared ? "Special Completed！" : "残念！ゲームオーバー";
+  
+  // 1. 4つの正解駅を立体的なカード風デザインにアップグレード
+  let descHtml = `<div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; font-size:14px; margin-bottom:15px; text-align:center;">`;
+  for(let i = 0; i < 4; i++){
+    let st = quadStations[i];
+    let icon = quadSolved[i] ? "✅" : "❌";
+    // <a>タグを一番外側に配置し、display: block を指定することでカード全体をボタン化します
+    descHtml += `
+      <a href="${st.url}" target="_blank" style="color:var(--text-color); text-decoration:none; display:block;">
+        <div style="background:var(--bg-color); padding:10px; border-radius:8px; box-shadow:0 2px 6px rgba(0,0,0,0.15); border:1px solid #d3d6da; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.03)'" onmouseout="this.style.transform='scale(1)'">
+          <div style="font-size:12px; margin-bottom:4px;">${icon}</div>
+          <b style="font-size:14px; border-bottom:2px solid var(--correct-color); padding-bottom:2px;">${st.kanji}</b><br>
+          <span style="font-size:11px; color:#888; display:inline-block; margin-top:4px;">(${st.yomi})</span>
+        </div>
+      </a>`;
+  }
+  descHtml += `</div>`;
+  document.getElementById("quad-modal-desc").innerHTML = descHtml;
+
+  // 2. クリア手数の計算と、田の字型への絵文字の流し込み（ここは元の処理と同じです）
+  let clearTurns = ["X", "X", "X", "X"];
+  for(let b = 0; b < 4; b++) {
+    let gridHtml = "";
+    for(let i = 0; i < quadGridHistory.length; i++) {
+      let colors = quadGridHistory[i][b];
+      gridHtml += colors.map(c => colorToEmoji[c]).join("") + "<br>";
+      if (clearTurns[b] === "X" && colors.every(c => c === "correct")) {
+        clearTurns[b] = i + 1;
+      }
+    }
+    const qGrid = document.getElementById(`q-grid-${b}`);
+    if (qGrid) {
+      qGrid.innerHTML = `<div style="font-weight:bold; margin-bottom:5px; font-size:14px;">${clearTurns[b]}</div>` + gridHtml;
+    }
+  }
+
+  // 3. 【追加】戦績（プレイ回数・勝率など）を計算して画面に表示する
+  let targetMode = "quad" + currentMode;
+  let stUser = userStats[targetMode] || { played: 0, won: 0, currentStreak: 0, maxStreak: 0 };
+  let winRate = stUser.played > 0 ? Math.round((stUser.won / stUser.played) * 100) : 0;
+
+  document.getElementById("quad-stat-played").textContent = stUser.played;
+  document.getElementById("quad-stat-winrate").textContent = winRate;
+  document.getElementById("quad-stat-streak").textContent = stUser.currentStreak;
+  document.getElementById("quad-stat-maxstreak").textContent = stUser.maxStreak;
+
+  document.getElementById("quad-result-modal").classList.remove("hidden");
+}
+
+
+// クアッド専用のシェアテキストを組み立てる処理
+// 手数表示をお洒落にコンパクト化し、ハッシュタグを拡張したシェア関数
+function shareQuadResult(type) {
+  let clearTurns = ["X", "X", "X", "X"];
+  for(let b=0; b<4; b++) {
+    for(let i=0; i<quadGridHistory.length; i++) {
+      if (clearTurns[b] === "X" && quadGridHistory[i][b].every(c => c === "correct")) {
+        clearTurns[b] = i + 1;
+      }
+    }
+  }
+
+  // クアッドモードのセーブデータからハードモードの状態を正確に取得します
+  let stateKey = "quad" + currentMode;
+  let st = savedState[stateKey];
+  let isHard = st && st.isHardMode;
+
+  // ハードモードの状態に応じて、ゲームタイトルを切り替えます
+  let gameTitle = isHard ? `駅ドル スペシャルモード Hard` : `駅ドル スペシャルモード`;
+  let text = `${gameTitle} ${currentMode}文字モード\n\n`;
+  
+  const emojify = (t) => t === "X" ? "🟥 ✕" : `🟩 ${t}手`;
+  text += `① ${emojify(clearTurns[0])}  ② ${emojify(clearTurns[1])}\n`;
+  text += `③ ${emojify(clearTurns[2])}  ④ ${emojify(clearTurns[3])}\n\n`;
+
+  let currentUrl = window.location.href.split('?')[0];
+  
+  // ハッシュタグも、ハードモード時は専用のタグ（#駅ドルSpecial_Hard）が追加されるようにします
+  let hashtagStr = `#駅ドル\n#駅ドルSpecial\n#駅ドルSpecial${currentMode}\n`;
+  if (isHard) {
+    hashtagStr += `#駅ドルSpecial_Hard\n`;
+  }
+  text += hashtagStr;
+
+  // 実際のシェア送信処理を実行します
+  executeSharedShare(type, text, currentUrl);
+}
+
+
+// 通常モードの色判定処理を流用するためのラッパー（濁点・位置判定）
+function checkRowColors(guess, answer) {
+  let results = Array(guess.length).fill("absent");
+  let answerLetters = answer.split("");
+  let guessLetters = guess.split("");
+
+  // 1巡目：位置も文字も合っている（緑色）の判定
+  for (let i = 0; i < guess.length; i++) {
+    if (guessLetters[i] === answerLetters[i]) {
+      results[i] = "correct";
+      answerLetters[i] = null;
+      guessLetters[i] = null;
+    }
+  }
+  // 2巡目：位置違い（黄色）の判定
+  for (let i = 0; i < guess.length; i++) {
+    if (guessLetters[i] === null) continue;
+    const idx = answerLetters.indexOf(guessLetters[i]);
+    if (idx !== -1) {
+      results[i] = "present";
+      answerLetters[idx] = null;
+      guessLetters[i] = null;
+    }
+  }
+  // 3巡目：濁点違い（紫色）の判定
+  for (let i = 0; i < guess.length; i++) {
+    if (guessLetters[i] === null) continue;
+    // getBaseChar などの既存のグループ判定関数がグローバルにある前提
+    const gGroup = typeof getBaseChar === "function" ? getBaseChar(guessLetters[i]) : guessLetters[i];
+    
+    for (let j = 0; j < answerLetters.length; j++) {
+      if (answerLetters[j] === null) continue;
+      const aGroup = typeof getBaseChar === "function" ? getBaseChar(answerLetters[j]) : answerLetters[j];
+      if (gGroup === aGroup) {
+        results[i] = "diacritic";
+        answerLetters[j] = null;
+        break;
+      }
+    }
+  }
+  return results;
+}
+
+// 色の優先強度の判定（緑 ＞ 黄 ＞ 紫 ＞ 灰）
+function getQuadStrongerColor(curr, next) {
+  const p = { "correct": 4, "present": 3, "diacritic": 2, "absent": 1, "default": 0 };
+  return (p[next] || 0) > (p[curr] || 0) ? next : curr;
+}
+
+// キーボードの4分割色を割り当ててCSS変数を書き換える処理（清音・濁音連動版）
+function updateQuadKeyboardLogic(guessStr, resultsArray) {
+  for (let i = 0; i < guessStr.length; i++) {
+    let char = guessStr[i];
+    
+    // 1. 入力された文字自体の色を更新
+    if (!quadKeyColors[char]) {
+      quadKeyColors[char] = ["default", "default", "default", "default"];
+    }
+    for (let b = 0; b < 4; b++) {
+      let color = resultsArray[b][i];
+      quadKeyColors[char][b] = getQuadStrongerColor(quadKeyColors[char][b], color);
+    }
+
+    // 2. 灰色（absent）だった場合、濁音・半濁音・小文字グループにも灰色を伝播させる
+    for (let b = 0; b < 4; b++) {
+      let color = resultsArray[b][i];
+      // クリア済みの盤面は計算をスキップする
+      if (color === "absent" && !quadSolved[b]) { 
+        let base = getBaseChar(char);
+        let targetBaseChars = quadStations[b].yomi.split("").map(getBaseChar);
+        
+        // その盤面の答えに、文字グループ（か・が等）が一切含まれていない場合のみ処理
+        if (!targetBaseChars.includes(base)) {
+          let variants = Object.keys(baseMap).filter(k => baseMap[k] === base);
+          variants.push(base); // ベース文字も含める
+          
+          variants.forEach(v => {
+            if (!quadKeyColors[v]) {
+              quadKeyColors[v] = ["default", "default", "default", "default"];
+            }
+            // より強い色がついていなければ、灰色（absent）で上書きする
+            quadKeyColors[v][b] = getQuadStrongerColor(quadKeyColors[v][b], "absent");
+            applyQuadKeyStyle(v); // バリエーションのキーボード表示を更新
+          });
+        }
+      }
+    }
+    
+    // 3. 最後に、入力した文字自身のキーボード表示を更新
+    applyQuadKeyStyle(char);
+  }
+}
+
+// キーボードのDOM（見た目）を更新する専用関数
+function applyQuadKeyStyle(c) {
+  const keyBtn = document.getElementById(`key-${c}`);
+  if (keyBtn && quadKeyColors[c]) {
+    keyBtn.classList.add("quad-mode");
+    keyBtn.style.setProperty("--c1", getQuadColorCodeStr(quadKeyColors[c][0])); // 左上
+    keyBtn.style.setProperty("--c2", getQuadColorCodeStr(quadKeyColors[c][1])); // 右上
+    keyBtn.style.setProperty("--c3", getQuadColorCodeStr(quadKeyColors[c][2])); // 左下
+    keyBtn.style.setProperty("--c4", getQuadColorCodeStr(quadKeyColors[c][3])); // 右下
+  }
+}
+
+function getQuadColorCodeStr(name) {
+  if (name === "correct") return "var(--correct-color)";
+  if (name === "present") return "var(--present-color)";
+  if (name === "diacritic") return "var(--diacritic-color)";
+  if (name === "absent") return "var(--absent-color)";
+  return "#d3d6da";
+}
+
+
+// 内部の色名を実際のカラーコード（CSS変数）に変換する関数
+function getQuadColorCode(colorName) {
+  if (colorName === "correct") return "var(--correct-color)";
+  if (colorName === "present") return "var(--present-color)";
+  if (colorName === "diacritic") return "var(--diacritic-color)";
+  if (colorName === "absent") return "var(--absent-color)";
+  return "#d3d6da"; // 未入力のデフォルト灰色
+}
+
+
+/* 【修正版】クアッドモードの残り候補駅数をリアルタイム計算する関数 */
+function updateQuadRemainingCounts() {
+  // クアッドモード以外のときは何もしない
+  if (!isQuadMode) return;
+
+  // セーブデータからこれまでの回答履歴（単語リスト）を安全に取得
+  let stateKey = "quad" + currentMode;
+  const guesses = savedState[stateKey]?.guesses || [];
+  
+  // 今の文字数と同じ長さの全駅リストを用意
+  const basePool = stations.filter(s => s.yomi.length === currentMode);
+
+  // 4つの盤面を1つずつチェックしていく
+  for (let b = 0; b < 4; b++) {
+    const counterEl = document.getElementById(`quad-remain-${b}`);
+    if (!counterEl) continue;
+
+    // ▼▼▼ ここを修正：まだ1手目も入力していない時は、非表示にせず「--駅」のままにする ▼▼▼
+    if (guesses.length === 0) {
+      counterEl.textContent = "残り -- 駅";
+      continue;
+    }
+    // ▲▲▲ 修正ここまで ▲▲▲
+
+    // すでにクリアしている盤面は計算をスキップして「CLEAR!」と表示
+    if (quadSolved[b]) {
+      counterEl.textContent = "CLEAR!";
+      continue;
+    }
+
+    const targetYomi = quadStations[b].yomi;
+    let pool = [...basePool];
+    
+    // 送信済みの回答リストを1単語ずつシミュレーションにかけて駅プールを絞り込む
+    for (let i = 0; i < guesses.length; i++) {
+      const g = guesses[i];
+      if (!g) continue;
+
+      // ★修正箇所：判定アルゴリズムのズレを防ぐため、実際の色の判定にも共通関数「evaluateGuess」を使う
+      const actualColors = evaluateGuess(g, targetYomi);
+      const gArr = g.split("");
+
+      // 今回の回答結果と矛盾する駅を候補から外していく
+      pool = pool.filter(s => {
+        let simColors = evaluateGuess(g, s.yomi, gArr);
+        for (let j = 0; j < currentMode; j++) {
+          if (simColors[j] !== actualColors[j]) return false;
+        }
+        return true;
+      });
+    }
+
+    // 計算し終わった残り件数を画面に表示する
+    counterEl.textContent = `残り ${pool.length} 駅`;
+  }
+}
+
+
+// ==========================================
+// 全モードの答えを一括生成し、出禁リストを完全に共有する
+// ==========================================
+function simulateUnifiedAnswers(validPool, targetDayIndex, length) {
+  const unifiedStateKey = "ekidle_unified_rng_state_v3";
+  const cacheKey = "ekidle_daily_cached_answers";           // 今日の答え専用のキャッシュキー
+
+  //2回目以降の高速起動処理
+  const cachedDataStr = localStorage.getItem(cacheKey);
+  if (cachedDataStr) {
+    try {
+      const cache = JSON.parse(cachedDataStr);
+      //保存されたキャッシュの日付が「今日」と完全に一致していれば、計算をすべてスキップしてそのまま答えを返します
+      if (cache.dayIndex === targetDayIndex) {
+        return cache.answers;
+      }
+    } catch (e) {
+      console.error("キャッシュの読み込みに失敗しました", e);
+    }
+  }
+  
+  let savedState = {};
   try {
-    // Base64をデコードし、日本語を復元してからJSONオブジェクトに戻す
-    const secureJson = JSON.parse(decodeURIComponent(atob(code)));
-    
-    // 読み込んだコードの中に「データ本体」と「合言葉」が存在するか確認する
-    if (!secureJson.payload || !secureJson.sig) {
-      throw new Error("不正なデータ形式です。");
-    }
-    
-    // 読み込んだデータ本体から、改めて合言葉を計算し直す
-    const expectedChecksum = generateChecksum(secureJson.payload);
-    
-    // コードに記録されていた合言葉と、計算し直した合言葉が一致しなければエラーにする（改ざん検知）
-    if (secureJson.sig !== expectedChecksum) {
-      throw new Error("データが改ざんされているか、壊れています。");
-    }
-    
-    // 合言葉が一致したので、データ本体をJavaScriptで扱える形に戻す
-    const json = JSON.parse(secureJson.payload);
+    savedState = JSON.parse(localStorage.getItem(unifiedStateKey) || "{}");
+  } catch(e) {
+    console.error("共有出禁帳簿データが破損しています:", e);
+    savedState = {};
+  }
+  let bannedDays = savedState.bannedDays || {};
+  let startDay = savedState.lastCalculatedDay !== undefined ? savedState.lastCalculatedDay + 1 : 0;
+  
+  let uniqueYomiCount = new Set(validPool.map(s => s.yomi)).size;
+  let lookback = Math.min(1000, Math.floor(uniqueYomiCount * 0.7)); 
 
-    if (parsed.game !== "Ekidle") throw new Error("このコードは駅ドル用ではありません。（他のゲームのコードは使えません）");
+  let dailyAnswers = {}; //今日の全モードの答えを格納する箱
 
-    // データが存在するものだけローカルストレージに上書きしていく
-    if(json.stats) localStorage.setItem("ekiPuzzleStatsV2", json.stats);
-    if(json.archive) localStorage.setItem("ekiPuzzleArchiveV1", json.archive);
-    if(json.zukan) localStorage.setItem("ekiZukanData", json.zukan);
-    if(json.meta) localStorage.setItem("ekiZukanMeta", json.meta);
-    if(json.achievements) localStorage.setItem("ekiAchievements", json.achievements);
-    if(json.guesses) localStorage.setItem("ekiAllGuesses", json.guesses);
-    if(json.cleared) localStorage.setItem("ekiClearedDays", json.cleared);
-    if(json.settings) localStorage.setItem("ekiSettings", json.settings);
-    if(json.streak) localStorage.setItem("ekiLoginStreak", json.streak);
-    if(json.version) localStorage.setItem("ekiSystemVersion", json.version); 
-    if(json.log) localStorage.setItem("ekiPuzzleStateV1_Log", json.log);
+  const SECRET_SALT = "EkiDoru_Secret_2026!";
+  
+  //日付とソルトから、絶対に予測不可能な初期シードを作る関数
+  const generateSaltedSeed = (day, salt) => {
+    let str = day.toString() + salt;
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      hash = ((hash << 5) - hash) + str.charCodeAt(i);
+      hash |= 0; // 32bit整数に変換
+    }
+    return Math.abs(hash);
+  };
+
+  for (let d = startDay; d <= targetDayIndex; d++) {
+    // その日使える駅（出禁期間中のものは除外）
+    let pool = validPool.filter(s => 
+      (s.startDay === undefined || s.startDay <= d) &&
+      (s.endDay === undefined || s.endDay > d || s.endDay === 999999) &&
+      !(bannedDays[s.yomi] && bannedDays[s.yomi] > d)
+    );
+
+    //ソルトを混ぜた強固なシードに変更します
+    let seed = generateSaltedSeed(d, SECRET_SALT);
+    //1回ガチャを引いて、出禁リストに入れる内部処理
+    const drawGacha = (charLen) => {
+      let candidates = pool.filter(s => s.yomi.length === charLen);
+      
+      //枯渇時は出禁などの条件をすべて無視し、大元のリストから文字数が合う全駅を強制的に復活させる
+      if (candidates.length === 0) {
+        //出禁条件だけを外し、「その日(d)に現役である」という条件は維持して復活させます
+        candidates = validPool.filter(s => 
+          s.yomi.length === charLen &&
+          (s.startDay === undefined || s.startDay <= d) &&
+          (s.endDay === undefined || s.endDay > d || s.endDay === 999999)
+        );
+      }
+      
+      seed = Math.imul(seed ^ (seed >>> 15), 2246822507);
+      seed = Math.imul(seed ^ (seed >>> 13), 3266489909);
+      let hash = ((seed ^ (seed >>> 16)) >>> 0) / 4294967296;
+      
+      let selected = candidates[Math.floor(hash * candidates.length)];
+      //共通の出禁リストに追加し、今日の箱からも消す（同日の被り防止）
+      bannedDays[selected.yomi] = d + lookback + 1;
+      pool = pool.filter(s => s.yomi !== selected.yomi);
+      return selected;
+    };
+
+    //1つの共通箱から、ガチ・ゆる・クアッドの答えを順番に引く
+    //毎日すべてのモードの答えを「完全に固定された順番」で引くことで乱数消費を同期させます
+    let gachi4 = drawGacha(4);
+    let gachi5 = drawGacha(5);
+    let gachi6 = drawGacha(6);
+    let yuru5  = drawGacha(5);
+    let quad4 = [], quad5 = [], quad6 = [];
+    // 基準日からの日数が7の倍数（月曜日）の時だけクアッドを引く
+    if (d % 7 === 0) {
+      quad4  = [drawGacha(4), drawGacha(4), drawGacha(4), drawGacha(4)];
+      quad5  = [drawGacha(5), drawGacha(5), drawGacha(5), drawGacha(5)];
+      quad6  = [drawGacha(6), drawGacha(6), drawGacha(6), drawGacha(6)];
+    }
+
+    if (d === targetDayIndex) {
+      dailyAnswers = { 
+        "4": gachi4, 
+        "5": gachi5, 
+        "6": gachi6, 
+        "yurutetsu": yuru5, 
+        "quad4": quad4, 
+        "quad5": quad5, 
+        "quad6": quad6 
+      };
+    }
+  }
+
+  //出禁帳簿の保存
+  let stateToSave = { lastCalculatedDay: targetDayIndex, bannedDays: {} };
+  for (const y in bannedDays) {
+    if (bannedDays[y] > targetDayIndex) stateToSave.bannedDays[y] = bannedDays[y];
+  }
+  localStorage.setItem(unifiedStateKey, JSON.stringify(stateToSave));
+
+  //今日計算した答えをLocalStorageに保存する処理 
+  const cacheToSave = {
+    dayIndex: targetDayIndex, //今日を表す数字（例: 902）
+    answers: dailyAnswers     //今日選ばれた全モードの答えオブジェクト
+  };
+  localStorage.setItem(cacheKey, JSON.stringify(cacheToSave));
+
+  return dailyAnswers;
+}
+
+
+// ==========================================
+// データのエクスポートとインポート（自動圧縮＆改ざん防止機能付き）
+// ==========================================
+
+// ==========================================================================
+// 駅ドル（Ekidle）側コード：データを極限までスリム化して共通関数に渡す
+// ==========================================================================
+/* 
+  配列の順番は絶対ルールにする: parsed.s[0] がプレイ回数、parsed.s[1] がクリア回数…というように、
+  エクスポートとインポートで配列の順番（インデックス）を完全に一致させる必要があります。
+  将来的に項目を追加したい場合は、必ず「配列の最後に追加する」ように設計すると後方互換性が保てます。
+*/
+// データの書き出し（高圧縮エクスポート）
+async function exportUserData() {
+  try {
+    // 1. LocalStorageから生データを取得し、オブジェクトにパース
+    const stats = JSON.parse(localStorage.getItem("ekiPuzzleStatsV2") || "{}");
+    const zukan = JSON.parse(localStorage.getItem("ekiZukanData") || "[]");
+    const meta = JSON.parse(localStorage.getItem("ekiZukanMeta") || "{}");
+    const achievements = JSON.parse(localStorage.getItem("ekiAchievements") || "{}");
+    const settings = JSON.parse(localStorage.getItem("ekiSettings") || "{}");
+    const version = localStorage.getItem("ekiSystemVersion") || "1.0.0";
+
+    // 2. モード別の戦績（4, 5, 6, yuru, quad）を固定の順番で配列化
+    const modes = ["4", "5", "6", "yuru", "quad"];
+    const smData = modes.map(m => {
+      const ms = (stats.modeStats && stats.modeStats[m]) || { played: 0, won: 0, currentStreak: 0, maxStreak: 0, guesses: {} };
+      const ft = (stats.fastestTimes && stats.fastestTimes[m]) || null;
+      return [ms.played, ms.won, ms.currentStreak, ms.maxStreak, ms.guesses, ft];
+    });
+
+    // 3. 極限まで無駄を削ぎ落としたミニマムな配列データ（miniPayload）を作成
+    const miniPayload = {
+      s: [ stats.played || 0, stats.won || 0, stats.currentStreak || 0, stats.maxStreak || 0, stats.guesses || {}, stats.history || [], stats.calendar || {} ],
+      sm: smData,
+      z: zukan,
+      m: [ meta.totalUnlocked || 0, meta.consecutiveLogins || 0, meta.maxConsecutiveLogins || 0, meta.lastLoginDate || "", meta.firstPlayDate || "" ],
+      a: [ achievements.unlockedIds || [], achievements.progress || {} ],
+      c: [ settings.theme || "light", settings.volume || 50, settings.fontSize || "normal", settings.animationSkip || false, settings.yuruHint || true ],
+      v: version
+    };
+
+    // ★ 4. ここで【共通関数】を呼び出す！
+    // ゲーム名「Ekidle」と、スリム化したデータを渡すだけで、Gzip圧縮＆署名付きコードが返ってくる
+    const code = await generateSharedTransferCode("Ekidle", miniPayload);
+
+    // クリップボードへのコピー処理
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(code).then(() => {
+        alert("運行記録などのデータを引き継ぎコードとしてコピーしました！\n\nメモ帳などに貼り付けて大切に保管してください。");
+      }).catch(() => {
+        prompt("コピーに失敗したため、以下のコードを手動でコピーしてください:", code);
+      });
+    } else {
+      prompt("以下のコードをコピーして保管してください:", code);
+    }
+  } catch (err) {
+    alert("コードの生成に失敗しました。");
+    console.error("エクスポートエラー:", err);
+  }
+}
+
+// データの読み込み（高圧縮インポート）
+async function importUserData() {
+  const code = prompt("引き継ぎコードを入力してください:");
+  if (!code) return;
+
+  try {
+    // ★ 1. ここで【共通関数】を呼び出す！
+    // 解凍・改ざんチェック・対象ゲーム（Ekidle）かどうかの確認まで全てやってくれる
+    // 戻り値(parsed)は、エクスポート時の miniPayload と同じ構造
+    const parsed = await parseSharedTransferCode(code, "Ekidle");
+
+    // --- 2. データ構造の完全復元（配列からオブジェクトへ戻す） ---
     
-    alert("データを復元しました。再読み込みします。");
+    // モード別戦績の復元
+    const modes = ["4", "5", "6", "yuru", "quad"];
+    const modeStats = {};
+    const fastestTimes = {};
     
-    // ページを再読み込みして、復元したデータを直ちに画面に反映させる
+    modes.forEach((m, idx) => {
+      const data = parsed.sm[idx] || [0, 0, 0, 0, {}, null];
+      modeStats[m] = { played: data[0], won: data[1], currentStreak: data[2], maxStreak: data[3], guesses: data[4] };
+      fastestTimes[m] = data[5];
+    });
+
+    // 全体戦績オブジェクトの再構築
+    const newStats = {
+      played: parsed.s[0], won: parsed.s[1], currentStreak: parsed.s[2], maxStreak: parsed.s[3],
+      guesses: parsed.s[4], modeStats: modeStats, history: parsed.s[5], calendar: parsed.s[6], fastestTimes: fastestTimes
+    };
+
+    // 図鑑メタデータの再構築
+    const newMeta = {
+      totalUnlocked: parsed.m[0], consecutiveLogins: parsed.m[1], maxConsecutiveLogins: parsed.m[2],
+      lastLoginDate: parsed.m[3], firstPlayDate: parsed.m[4]
+    };
+
+    // 実績データの再構築
+    const newAchievements = {
+      unlockedIds: parsed.a[0], progress: parsed.a[1]
+    };
+
+    // 設定データの再構築
+    const newSettings = {
+      theme: parsed.c[0], volume: parsed.c[1], fontSize: parsed.c[2], animationSkip: parsed.c[3], yuruHint: parsed.c[4]
+    };
+
+    // --- 3. 各LocalStorageへの書き込み ---
+    localStorage.setItem("ekiPuzzleStatsV2", JSON.stringify(newStats));
+    localStorage.setItem("ekiZukanData", JSON.stringify(parsed.z));
+    localStorage.setItem("ekiZukanMeta", JSON.stringify(newMeta));
+    localStorage.setItem("ekiAchievements", JSON.stringify(newAchievements));
+    localStorage.setItem("ekiSettings", JSON.stringify(newSettings));
+    localStorage.setItem("ekiSystemVersion", parsed.v); 
+    
+    alert("データを正常に復元しました！再読み込みを行います。");
     location.reload();
   } catch(e) { 
-    // 壊れたコードや改ざんされたコードが入力された場合のエラー処理
-    alert("無効なコードです。正しくコピーできているか確認してください。"); 
+    // 共通関数が弾いたエラー（別ゲームのコード、改ざん等）をここでキャッチ
+    alert("無効な引き継ぎコード、または別のゲームのコードです。正しくコピーできているか確認してください。"); 
     console.error("インポートエラー:", e);
   }
 }
