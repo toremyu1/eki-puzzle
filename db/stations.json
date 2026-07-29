@@ -685509,12 +685509,12 @@
     "kanji": "秋田港駅",
     "yomi": "あきたこう",
     "url": "https://ja.wikipedia.org/wiki/秋田港駅",
-    "subPage": "引っ越し調査中",
+    "subPage": "廃止済",
     "unique_key": "https://ja.wikipedia.org/wiki/秋田港駅_秋田港駅",
-    "endDay": 999999,
+    "endDay": 940,
     "id": 11878,
     "startDay": 938,
-    "missingCount": 13
+    "missingCount": 14
   },
   {
     "pref": "",
@@ -702254,7 +702254,7 @@
     "endDay": 999999,
     "id": 12343,
     "startDay": 939,
-    "missingCount": 6
+    "missingCount": 7
   },
   {
     "pref": "",
