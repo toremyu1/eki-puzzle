@@ -42,6 +42,10 @@ def generate_answers():
         companies = s.get('companies', [])
         if not companies: continue
         if len(companies) == 1 and companies[0] == "日本貨物鉄道": continue
+
+        # 読み込み時に、初回取得の誤った発見日をメモリ上で自動的に0にリセットします
+        if 0 < s.get('startDay', 0) < 1000:
+            s['startDay'] = 0
         
         s['yomi'] = to_hiragana(s['yomi'])
         stations.append(s)
