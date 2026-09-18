@@ -786,7 +786,7 @@ def extract_and_count_stations():
                     continue
 
                 href = a_tag.get("href")
-                wiki_url = "https:" + href if href.startswith("//") else "https://ja.wikipedia.org" + href
+                wiki_url = urllib.parse.urljoin("https://ja.wikipedia.org", href)
 
                 # 【処理1】表示名（漢字等）の決定
                 # 駅名や(都道府県)などのカッコ書きを含め、そのまま表示名として採用する
