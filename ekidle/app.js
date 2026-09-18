@@ -137,7 +137,18 @@ async function initGame() {
     if (!rawData) return; // 取得失敗時は共通関数内でエラー画面が出るため処理を止める
 
     // 共通関数を使って不要な駅（貨物駅など）を弾き、ひらがな化の独自処理を足す
-    stations = getCleanStations(rawData).map(s => ({...s, yomi: toHiragana(s.yomi)}));
+    //stations = getCleanStations(rawData).map(s => ({...s, yomi: toHiragana(s.yomi)}));
+
+    // 修正後
+    stations = getCleanStations(rawData).map(s => {
+      let st = {...s, yomi: toHiragana(s.yomi)};
+      // 読み込み時に誤った発見日をメモリ上で自動的に0にリセットする
+      if (st.startDay > 0 && st.startDay < 1000) {
+        st.startDay = 0;
+      }
+      return st;
+    });
+    
     if (stations.length === 0) return;
 
     updateSharedLoading(60, "画面を準備中...");
