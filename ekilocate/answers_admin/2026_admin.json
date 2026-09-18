@@ -1,1 +1,278 @@
-{}
+{
+    "2026-10-01": {
+        "normal": {
+            "kanji": "潟元駅",
+            "pref": "香川県",
+            "municipality": "高松市"
+        },
+        "hard": {
+            "kanji": "蓮田駅",
+            "pref": "埼玉県",
+            "municipality": "蓮田市"
+        }
+    },
+    "2026-10-02": {
+        "normal": {
+            "kanji": "金塚駅",
+            "pref": "新潟県",
+            "municipality": "新発田市"
+        },
+        "hard": {
+            "kanji": "川辺沖駅",
+            "pref": "福島県",
+            "municipality": "玉川村"
+        }
+    },
+    "2026-10-03": {
+        "normal": {
+            "kanji": "学園前駅 (奈良県)",
+            "pref": "奈良県",
+            "municipality": "奈良市"
+        },
+        "hard": {
+            "kanji": "上浜駅",
+            "pref": "秋田県",
+            "municipality": "にかほ市"
+        }
+    },
+    "2026-10-04": {
+        "normal": {
+            "kanji": "禾生駅",
+            "pref": "山梨県",
+            "municipality": "都留市"
+        },
+        "hard": {
+            "kanji": "崇城大学前駅",
+            "pref": "熊本県",
+            "municipality": "熊本市"
+        }
+    },
+    "2026-10-05": {
+        "normal": {
+            "kanji": "周防下郷駅",
+            "pref": "山口県",
+            "municipality": "山口市"
+        },
+        "hard": {
+            "kanji": "金木駅",
+            "pref": "青森県",
+            "municipality": "五所川原市"
+        }
+    },
+    "2026-10-06": {
+        "normal": {
+            "kanji": "諏訪川原停留場",
+            "pref": "富山県",
+            "municipality": "富山市"
+        },
+        "hard": {
+            "kanji": "香川駅",
+            "pref": "神奈川県",
+            "municipality": "茅ヶ崎市"
+        }
+    },
+    "2026-10-07": {
+        "normal": {
+            "kanji": "初芝駅",
+            "pref": "大阪府",
+            "municipality": "堺市"
+        },
+        "hard": {
+            "kanji": "清児駅",
+            "pref": "大阪府",
+            "municipality": "貝塚市"
+        }
+    },
+    "2026-10-08": {
+        "normal": {
+            "kanji": "相武台下駅",
+            "pref": "神奈川県",
+            "municipality": "相模原市"
+        },
+        "hard": {
+            "kanji": "橋本駅 (神奈川県)",
+            "pref": "神奈川県",
+            "municipality": "相模原市"
+        }
+    },
+    "2026-10-09": {
+        "normal": {
+            "kanji": "蘇我駅",
+            "pref": "千葉県",
+            "municipality": "千葉市"
+        },
+        "hard": {
+            "kanji": "波田須駅",
+            "pref": "三重県",
+            "municipality": "熊野市"
+        }
+    },
+    "2026-10-10": {
+        "normal": {
+            "kanji": "軽井沢駅",
+            "pref": "長野県",
+            "municipality": "軽井沢町"
+        },
+        "hard": {
+            "kanji": "上大井駅",
+            "pref": "神奈川県",
+            "municipality": "大井町"
+        }
+    },
+    "2026-10-11": {
+        "normal": {
+            "kanji": "上三依塩原温泉口駅",
+            "pref": "栃木県",
+            "municipality": "日光市"
+        },
+        "hard": {
+            "kanji": "上町一丁目停留場",
+            "pref": "高知県",
+            "municipality": "高知市"
+        }
+    },
+    "2026-10-12": {
+        "normal": {
+            "kanji": "杉山駅",
+            "pref": "愛知県",
+            "municipality": "豊橋市"
+        },
+        "hard": {
+            "kanji": "冠着駅",
+            "pref": "長野県",
+            "municipality": "筑北村"
+        }
+    },
+    "2026-10-13": {
+        "normal": {
+            "kanji": "寸座駅",
+            "pref": "静岡県",
+            "municipality": "浜松市"
+        },
+        "hard": {
+            "kanji": "菅野駅",
+            "pref": "千葉県",
+            "municipality": "市川市"
+        }
+    },
+    "2026-10-14": {
+        "normal": {
+            "kanji": "原市駅",
+            "pref": "埼玉県",
+            "municipality": "上尾市"
+        },
+        "hard": {
+            "kanji": "上野幌駅",
+            "pref": "北海道",
+            "municipality": "札幌市"
+        }
+    },
+    "2026-10-15": {
+        "normal": {
+            "kanji": "羽根尾駅",
+            "pref": "群馬県",
+            "municipality": "長野原町"
+        },
+        "hard": {
+            "kanji": "上岡駅",
+            "pref": "大分県",
+            "municipality": "佐伯市"
+        }
+    },
+    "2026-10-16": {
+        "normal": {
+            "kanji": "初富駅",
+            "pref": "千葉県",
+            "municipality": "鎌ケ谷市"
+        },
+        "hard": {
+            "kanji": "皆瀬駅",
+            "pref": "長崎県",
+            "municipality": "佐世保市"
+        }
+    },
+    "2026-10-17": {
+        "normal": {
+            "kanji": "笠上黒生駅",
+            "pref": "千葉県",
+            "municipality": "銚子市"
+        },
+        "hard": {
+            "kanji": "上飯田駅",
+            "pref": "愛知県",
+            "municipality": "名古屋市"
+        }
+    },
+    "2026-10-18": {
+        "normal": {
+            "kanji": "半田埠頭駅",
+            "pref": "愛知県",
+            "municipality": "半田市"
+        },
+        "hard": {
+            "kanji": "袖崎駅",
+            "pref": "山形県",
+            "municipality": "村山市"
+        }
+    },
+    "2026-10-19": {
+        "normal": {
+            "kanji": "磐梯町駅",
+            "pref": "福島県",
+            "municipality": "磐梯町"
+        },
+        "hard": {
+            "kanji": "川崎貨物駅",
+            "pref": "神奈川県",
+            "municipality": "川崎市"
+        }
+    },
+    "2026-10-20": {
+        "normal": {
+            "kanji": "萩野駅",
+            "pref": "北海道",
+            "municipality": "白老町"
+        },
+        "hard": {
+            "kanji": "外苑前駅",
+            "pref": "東京都",
+            "municipality": "港区"
+        }
+    },
+    "2026-10-21": {
+        "normal": {
+            "kanji": "畠田駅",
+            "pref": "奈良県",
+            "municipality": "王寺町"
+        },
+        "hard": {
+            "kanji": "鎌倉高校前駅",
+            "pref": "神奈川県",
+            "municipality": "鎌倉市"
+        }
+    },
+    "2026-10-22": {
+        "normal": {
+            "kanji": "土師駅",
+            "pref": "鳥取県",
+            "municipality": "智頭町"
+        },
+        "hard": {
+            "kanji": "門川駅",
+            "pref": "宮崎県",
+            "municipality": "門川町"
+        }
+    },
+    "2026-10-23": {
+        "normal": {
+            "kanji": "関山駅",
+            "pref": "新潟県",
+            "municipality": "妙高市"
+        },
+        "hard": {
+            "kanji": "西武園ゆうえんち駅",
+            "pref": "埼玉県",
+            "municipality": "所沢市"
+        }
+    }
+}
