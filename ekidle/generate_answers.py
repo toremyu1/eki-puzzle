@@ -108,6 +108,11 @@ def generate_answers():
             # 枯渇時の安全装置：出禁ルールを無視して現役駅全体から復活させる
             if not candidates:
                 candidates = [s for s in valid_pool if len(s['yomi']) == char_len]
+
+            # 最終防衛ライン：現役駅全体から探しても本当に1つもない場合は、
+            # ダミーのデータを返して強制終了を防ぐ
+            if not candidates:
+                return {'kanji': f'ダミー{char_len}駅', 'yomi': 'だみい' + 'あ' * (char_len - 3)}
             
             seed = math_imul(seed ^ zero_fill_right_shift(seed, 15), 2246822507)
             seed = math_imul(seed ^ zero_fill_right_shift(seed, 13), 3266489909)
