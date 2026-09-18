@@ -252,6 +252,10 @@ async function initLocaGame() {
       if (!s.pref || !s.address || s.min_km == null) return false;
       // 貨物駅のチェック
       if (s.companies && s.companies.length === 1 && s.companies[0] === "日本貨物鉄道") return false;
+      // 全ての関門を突破した有効な駅に対してのみ、発見日を0に補正する
+      if (s.startDay > 0 && s.startDay < 1000) {
+        s.startDay = 0;
+      }
       // 全ての関門を突破した駅だけを残す
       return true;
     });
